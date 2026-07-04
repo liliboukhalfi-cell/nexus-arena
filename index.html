@@ -2,7 +2,8 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Nexus Arena — Shooter</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Zone Hostile — Shooter</title>
 <style>
   html, body { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
   #hud { position: fixed; inset: 0; z-index: 10; pointer-events: none; user-select: none; }
@@ -78,6 +79,43 @@
     border: 2px dashed rgba(255,233,138,.5);
   }
   #lobby-players { font-size: 18px; color: #7fd4ff; }
+  #lobby-timer { min-height: 26px; font-size: 20px; font-weight: 700; color: #ffe98a; }
+
+  /* ---------- Contrôles tactiles (mobile) ---------- */
+  #touch-ui { position: fixed; inset: 0; z-index: 15; display: none; pointer-events: none; }
+  body.touch-playing #touch-ui { display: block; }
+  #joy {
+    position: absolute; left: 4vw; bottom: 5vh; width: 140px; height: 140px;
+    border-radius: 50%; border: 2px solid rgba(255,255,255,.35);
+    background: rgba(255,255,255,.06); pointer-events: auto; touch-action: none;
+  }
+  #joy-knob {
+    position: absolute; left: 50%; top: 50%; width: 58px; height: 58px;
+    transform: translate(-50%,-50%); border-radius: 50%;
+    background: rgba(127,212,255,.45); border: 2px solid rgba(255,255,255,.6);
+  }
+  .tbtn {
+    position: absolute; border-radius: 50%; pointer-events: auto; touch-action: none;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-family: inherit; user-select: none;
+    background: rgba(255,255,255,.1); border: 2px solid rgba(255,255,255,.4);
+    text-shadow: 0 1px 4px rgba(0,0,0,.8);
+  }
+  .tbtn:active { background: rgba(127,212,255,.4); }
+  #btn-fire { right: 5vw; bottom: 6vh; width: 96px; height: 96px; font-size: 30px; border-color: rgba(255,107,107,.7); background: rgba(255,80,80,.18); }
+  #btn-jump { right: 26vw; bottom: 5vh; width: 62px; height: 62px; font-size: 24px; }
+  #btn-reload { right: 6vw; bottom: calc(6vh + 116px); width: 62px; height: 62px; font-size: 22px; }
+  /* Écrans étroits : menus compacts */
+  @media (max-width: 600px) {
+    #home h1, #lobby h1 { font-size: 34px; }
+    #overlay h1 { font-size: 30px; }
+    #overlay p { font-size: 13px; padding: 0 14px; }
+    .menu-btn { width: 84vw; font-size: 16px; }
+    #home .note { max-width: 84vw; font-size: 12px; }
+    #lobby .code { font-size: 38px; letter-spacing: 8px; padding: 10px 20px; }
+    #ammo { font-size: 22px; bottom: auto; top: 60px; }
+    #health-wrap { width: 40vw; left: 12px; bottom: auto; top: 64px; }
+  }
 </style>
 </head>
 <body>
@@ -93,7 +131,7 @@
   <div id="msg"></div>
 </div>
 <div id="home">
-  <h1>⚔ NEXUS ARENA</h1>
+  <h1>⚔ ZONE HOSTILE</h1>
   <button class="menu-btn" id="btn-online">🌐 Jouer en ligne</button>
   <button class="menu-btn" id="btn-create">👥 Créer une partie privée</button>
   <div class="join-row">
@@ -106,14 +144,21 @@
   Partie privée : partage le code, l'hôte lance la partie. Hors ligne : bots uniquement.</p>
 </div>
 <div id="lobby" style="display:none">
-  <h1>PARTIE PRIVÉE</h1>
+  <h1 id="lobby-title">PARTIE PRIVÉE</h1>
   <div class="code" id="lobby-code">······</div>
   <p id="lobby-info">Partage ce code avec tes amis</p>
   <div id="lobby-players">1 joueur connecté</div>
+  <div id="lobby-timer"></div>
   <button class="menu-btn" id="btn-start" style="display:none">🚀 Lancer la partie</button>
 </div>
+<div id="touch-ui">
+  <div id="joy"><div id="joy-knob"></div></div>
+  <div class="tbtn" id="btn-fire">🔥</div>
+  <div class="tbtn" id="btn-jump">⤴</div>
+  <div class="tbtn" id="btn-reload">R</div>
+</div>
 <div id="overlay" style="display:none">
-  <h1>⚔ NEXUS ARENA</h1>
+  <h1>⚔ ZONE HOSTILE</h1>
   <p id="intro">Des vagues de robots hostiles attaquent l'arène. Survis le plus longtemps possible.<br>
   ZQSD / WASD : bouger · Souris : viser · Clic : tirer · R : recharger · Maj : courir · Espace : sauter · V : vue 1ʳᵉ/3ᵉ personne</p>
   <div class="go" id="go-label">Clique pour combattre</div>
@@ -876,10 +921,89 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => keys[e.code] = false);
 
 let yaw = 0, pitch = 0;
+
+// ---------- Mobile : joystick + visée tactile ----------
+const IS_TOUCH = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window
+  || new URLSearchParams(location.search).has('touch'); // ?touch=1 : forcer pour tester sur PC
+let touchPlaying = false;
+const mob = { fwd: 0, strafe: 0, sprint: false, jump: false };
+// Actif = pointer lock (PC) ou partie tactile en cours (mobile)
+const inputActive = () => IS_TOUCH ? (touchPlaying && player.alive) : document.pointerLockElement === renderer.domElement;
+if (IS_TOUCH) {
+  const joy = document.getElementById('joy');
+  const knob = document.getElementById('joy-knob');
+  let joyId = null;
+  const setJoy = t => {
+    const r = joy.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    let dx = (t.clientX - cx) / (r.width / 2), dy = (t.clientY - cy) / (r.height / 2);
+    const len = Math.hypot(dx, dy);
+    if (len > 1) { dx /= len; dy /= len; }
+    mob.strafe = dx;
+    mob.fwd = -dy;
+    mob.sprint = len > 0.92 && mob.fwd > 0.55; // joystick poussé à fond vers l'avant = sprint
+    knob.style.left = (50 + dx * 34) + '%';
+    knob.style.top = (50 + dy * 34) + '%';
+  };
+  const resetJoy = () => {
+    joyId = null;
+    mob.fwd = 0; mob.strafe = 0; mob.sprint = false;
+    knob.style.left = '50%'; knob.style.top = '50%';
+  };
+  joy.addEventListener('touchstart', e => { e.preventDefault(); joyId = e.changedTouches[0].identifier; setJoy(e.changedTouches[0]); }, { passive: false });
+  joy.addEventListener('touchmove', e => {
+    e.preventDefault();
+    for (const t of e.changedTouches) if (t.identifier === joyId) setJoy(t);
+  }, { passive: false });
+  joy.addEventListener('touchend', e => { for (const t of e.changedTouches) if (t.identifier === joyId) resetJoy(); });
+  joy.addEventListener('touchcancel', resetJoy);
+  // Visée : glisser le doigt sur l'écran (hors joystick/boutons)
+  const looks = new Map(); // identifiant -> dernière position
+  renderer.domElement.addEventListener('touchstart', e => {
+    e.preventDefault();
+    for (const t of e.changedTouches) looks.set(t.identifier, { x: t.clientX, y: t.clientY });
+  }, { passive: false });
+  renderer.domElement.addEventListener('touchmove', e => {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      const p = looks.get(t.identifier);
+      if (!p) continue;
+      yaw -= (t.clientX - p.x) * 0.0045;
+      pitch -= (t.clientY - p.y) * 0.0045;
+      pitch = Math.max(-1.45, Math.min(1.45, pitch));
+      p.x = t.clientX; p.y = t.clientY;
+    }
+  }, { passive: false });
+  const endLook = e => { for (const t of e.changedTouches) looks.delete(t.identifier); };
+  renderer.domElement.addEventListener('touchend', endLook);
+  renderer.domElement.addEventListener('touchcancel', endLook);
+  // Boutons
+  const hold = (id, on, off) => {
+    const el = document.getElementById(id);
+    el.addEventListener('touchstart', e => { e.preventDefault(); on(); }, { passive: false });
+    el.addEventListener('touchend', e => { e.preventDefault(); if (off) off(); }, { passive: false });
+    el.addEventListener('touchcancel', () => { if (off) off(); });
+  };
+  hold('btn-fire', () => shooting = true, () => shooting = false);
+  hold('btn-jump', () => mob.jump = true, () => mob.jump = false);
+  hold('btn-reload', () => reload());
+  // Instructions adaptées au tactile
+  $('intro').innerHTML = 'Des vagues de robots hostiles attaquent l\'arène. Survis le plus longtemps possible.<br>' +
+    'Joystick : bouger (à fond vers l\'avant = courir) · Glisse l\'écran : viser · 🔥 tirer · ⤴ sauter · R recharger';
+  $('go-label').textContent = 'Touche l\'écran pour combattre';
+}
+
 const overlay = $('overlay');
 overlay.addEventListener('click', () => {
   if (!player.alive) { location.reload(); return; }
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (IS_TOUCH) { // pas de pointer lock sur mobile : on lance directement
+    touchPlaying = true;
+    document.body.classList.add('touch-playing');
+    overlay.style.display = 'none';
+    $('crosshair').style.display = 'block';
+    return;
+  }
   renderer.domElement.requestPointerLock();
 });
 document.addEventListener('pointerlockchange', () => {
@@ -989,7 +1113,13 @@ function hurt(dmg) {
 }
 function die() {
   player.alive = false;
-  document.exitPointerLock();
+  if (IS_TOUCH) {
+    touchPlaying = false;
+    document.body.classList.remove('touch-playing');
+    shooting = false;
+    overlay.style.display = 'flex';
+    $('crosshair').style.display = 'none';
+  } else document.exitPointerLock();
   $('overlay').querySelector('h1').textContent = '💀 TU ES TOMBÉ';
   $('overlay').querySelector('h1').classList.add('dead');
   $('intro').innerHTML = `Score final : <b>${score}</b> · Vague atteinte : <b>${wave}</b>`;
@@ -1009,7 +1139,7 @@ function animate() {
   // Zoom uniquement pendant le tir : dézoome immédiatement quand on relâche.
   // (aimT ne sert qu'au rangement de l'arme, qui garde un léger délai.)
   aimT = Math.max(0, aimT - dt);
-  const firing = shooting && document.pointerLockElement === renderer.domElement;
+  const firing = shooting && inputActive();
   if (firing) aimT = 1.1;
   const fovTarget = firing ? FOV_AIM : FOV_IDLE;
   if (Math.abs(camera.fov - fovTarget) > 0.05) {
@@ -1017,12 +1147,12 @@ function animate() {
     camera.updateProjectionMatrix();
   }
 
-  if (player.alive && document.pointerLockElement === renderer.domElement) {
-    // Déplacement
-    const fwd = (keys['KeyW'] ? 1 : 0) - (keys['KeyS'] ? 1 : 0);
-    const strafe = (keys['KeyD'] ? 1 : 0) - (keys['KeyA'] ? 1 : 0);
+  if (player.alive && inputActive()) {
+    // Déplacement (clavier + joystick tactile)
+    const fwd = Math.max(-1, Math.min(1, (keys['KeyW'] ? 1 : 0) - (keys['KeyS'] ? 1 : 0) + mob.fwd));
+    const strafe = Math.max(-1, Math.min(1, (keys['KeyD'] ? 1 : 0) - (keys['KeyA'] ? 1 : 0) + mob.strafe));
     // On ne peut pas courir en reculant : marche arrière lente, sprint vers l'avant uniquement
-    const sprint = (keys['ShiftLeft'] || keys['ShiftRight']) && fwd > 0;
+    const sprint = ((keys['ShiftLeft'] || keys['ShiftRight']) || mob.sprint) && fwd > 0;
     const speed = fwd < 0 ? 5.5 : (sprint ? 13 : 8);
     const dirX = Math.sin(yaw), dirZ = Math.cos(yaw);
     let nx = player.pos.x + (-dirX * fwd + dirZ * strafe) * speed * dt;
@@ -1030,7 +1160,7 @@ function animate() {
     [nx, nz] = collide(nx, nz, 0.7);
     player.pos.x = nx; player.pos.z = nz;
 
-    if (keys['Space'] && player.onGround) { player.velY = 8.5; player.onGround = false; }
+    if ((keys['Space'] || mob.jump) && player.onGround) { player.velY = 8.5; player.onGround = false; }
     player.velY -= 26 * dt;
     player.pos.y += player.velY * dt;
     if (player.pos.y <= EYE) { player.pos.y = EYE; player.velY = 0; player.onGround = true; }
@@ -1329,11 +1459,11 @@ function netSend(msg) {
 }
 
 function selfNetState() {
-  const fwdK = (keys['KeyW'] ? 1 : 0) - (keys['KeyS'] ? 1 : 0);
-  const moving = fwdK !== 0 || keys['KeyA'] || keys['KeyD'];
-  const back = fwdK < 0;
+  const fwdK = (keys['KeyW'] ? 1 : 0) - (keys['KeyS'] ? 1 : 0) + mob.fwd;
+  const moving = Math.abs(fwdK) > 0.1 || keys['KeyA'] || keys['KeyD'] || Math.abs(mob.strafe) > 0.1;
+  const back = fwdK < -0.1;
   const anim = (!player.alive || !moving) ? 'Idle'
-    : (back ? 'Walk' : ((keys['ShiftLeft'] || keys['ShiftRight']) ? 'Run' : 'Walk'));
+    : (back ? 'Walk' : ((keys['ShiftLeft'] || keys['ShiftRight'] || mob.sprint) ? 'Run' : 'Walk'));
   return {
     t: 'state', id: myId,
     p: [+player.pos.x.toFixed(2), +(player.pos.y - EYE).toFixed(2), +player.pos.z.toFixed(2)],
@@ -1406,7 +1536,24 @@ function onMsg(conn, d) {
       break;
     case 'dmg': hurt(d.amount); break;
     case 'start': if (!gameStarted) beginGame('client'); break;
-    case 'welcome': if (d.started && !gameStarted) beginGame('client'); break;
+    case 'welcome': {
+      if (d.started) {
+        if (pendingMode === 'private') {
+          // Code expiré : la partie privée a déjà commencé, on ne rejoint pas en cours
+          document.getElementById('lobby').style.display = 'none';
+          document.getElementById('home').style.display = 'flex';
+          homeStatus('⚠ Code expiré — la partie a déjà commencé');
+          try { peer.destroy(); } catch (e) {}
+          conns.length = 0;
+        } else if (!gameStarted) beginGame('client'); // public : on rejoint en cours
+      } else if (pendingMode === 'online') {
+        openLobbyScreen({ title: 'PARTIE PUBLIQUE', code: null, info: 'Partie trouvée ! Préparez-vous…', startBtn: false });
+        startLobbyCountdown(d.left || LOBBY_WAIT, null);
+      } else {
+        startLobbyCountdown(d.left || LOBBY_WAIT, null); // privé : synchronise le compte à rebours
+      }
+      break;
+    }
     case 'lobby': {
       const el = document.getElementById('lobby-players');
       if (el) el.textContent = d.n + ' joueur' + (d.n > 1 ? 's' : '') + ' connecté' + (d.n > 1 ? 's' : '');
@@ -1418,7 +1565,11 @@ function onMsg(conn, d) {
 function setupConn(conn, asHost) {
   conn.on('open', () => {
     conns.push(conn);
-    if (asHost) { send(conn, { t: 'welcome', started: gameStarted }); updateLobby(); }
+    if (asHost) {
+      const left = lobbyEndsAt ? Math.max(0, Math.ceil((lobbyEndsAt - Date.now()) / 1000)) : 0;
+      send(conn, { t: 'welcome', started: gameStarted, left });
+      updateLobby();
+    }
     else send(conn, selfNetState());
   });
   conn.on('data', d => onMsg(conn, d));
@@ -1455,6 +1606,34 @@ function beginGame(mode) {
   updateHud();
 }
 
+// --- Salon d'attente (60 s avant le début de la partie)
+const LOBBY_WAIT = 60; // secondes
+let pendingMode = null;   // 'online' | 'private' : mode en cours de connexion côté client
+let lobbyEndsAt = null;   // hôte : heure de démarrage automatique
+let joinedHub = false;    // client public : connexion au hub établie
+
+function openLobbyScreen(opts) {
+  document.getElementById('home').style.display = 'none';
+  document.getElementById('lobby').style.display = 'flex';
+  document.getElementById('lobby-title').textContent = opts.title;
+  document.getElementById('lobby-code').style.display = opts.code ? '' : 'none';
+  if (opts.code) document.getElementById('lobby-code').textContent = opts.code;
+  document.getElementById('lobby-info').textContent = opts.info;
+  document.getElementById('btn-start').style.display = opts.startBtn ? 'block' : 'none';
+}
+function startLobbyCountdown(seconds, onEnd) {
+  const el = document.getElementById('lobby-timer');
+  let left = Math.max(0, Math.round(seconds));
+  const tick = () => {
+    if (gameStarted) { el.textContent = ''; return; }
+    if (left <= 0) { el.textContent = 'Démarrage…'; if (onEnd) onEnd(); return; }
+    el.textContent = '⏱ La partie démarre dans ' + left + ' s';
+    left--;
+    setTimeout(tick, 1000);
+  };
+  tick();
+}
+
 // --- Menus
 const homeStatus = txt => document.getElementById('home-status').textContent = txt;
 const code6 = () => {
@@ -1467,29 +1646,45 @@ function hasNet() {
   if (typeof Peer === 'undefined') { homeStatus('⚠ Réseau indisponible — essaie le mode hors ligne'); return false; }
   return true;
 }
+// Serveurs STUN + relais TURN gratuits : sans TURN, deux joueurs derrière des box
+// strictes ou en 4G n'arrivent souvent pas à établir la connexion directe.
+const PEER_CFG = { config: { iceServers: [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+] } };
 
 // 1. Jouer en ligne : le premier arrivé héberge (id public fixe), les suivants le rejoignent
 function playOnline(attempt) {
   if (attempt > 2) { homeStatus('Personne en ligne accessible — partie avec bots'); beginGame('offline'); return; }
+  pendingMode = 'online';
   const hubId = 'nexus-arena-hub-' + attempt;
-  const p = new Peer(hubId);
+  const p = new Peer(hubId, PEER_CFG);
   p.on('open', () => {
     peer = p;
     p.on('connection', c => setupConn(c, true));
     homeStatus('');
-    beginGame('host');
+    // Hôte public : 1 minute d'attente pour laisser d'autres joueurs arriver,
+    // puis la partie démarre — les bots complètent s'il n'y a personne.
+    lobbyEndsAt = Date.now() + LOBBY_WAIT * 1000;
+    openLobbyScreen({ title: 'PARTIE PUBLIQUE', code: null, info: "En attente d'autres joueurs…", startBtn: false });
+    updateLobby();
+    startLobbyCountdown(LOBBY_WAIT, () => { broadcast({ t: 'start' }); beginGame('host'); });
   });
   p.on('error', err => {
     if (err.type === 'unavailable-id') { // quelqu'un héberge déjà : on le rejoint
       try { p.destroy(); } catch (e) {}
-      const p2 = new Peer();
+      const p2 = new Peer(PEER_CFG);
       peer = p2;
       p2.on('open', () => {
         const c = p2.connect(hubId, { reliable: true });
         setupConn(c, false);
-        setTimeout(() => { if (!gameStarted) { try { p2.destroy(); } catch (e) {} playOnline(attempt + 1); } }, 5000);
+        c.on('open', () => { joinedHub = true; });
+        setTimeout(() => { if (!gameStarted && !joinedHub) { try { p2.destroy(); } catch (e) {} playOnline(attempt + 1); } }, 5000);
       });
-      p2.on('error', () => { if (!gameStarted) playOnline(attempt + 1); });
+      p2.on('error', () => { if (!gameStarted && !joinedHub) playOnline(attempt + 1); });
     } else {
       homeStatus('⚠ Réseau (' + err.type + ') — partie avec bots');
       beginGame('offline');
@@ -1501,17 +1696,21 @@ function playOnline(attempt) {
 function createRoom() {
   roomCode = code6();
   isRoomHost = true;
+  pendingMode = 'private';
   homeStatus('Création de la partie…');
-  const p = new Peer('nexus-arena-' + roomCode);
+  const p = new Peer('nexus-arena-' + roomCode, PEER_CFG);
   p.on('open', () => {
     peer = p;
     p.on('connection', c => setupConn(c, true));
     homeStatus('');
-    document.getElementById('home').style.display = 'none';
-    document.getElementById('lobby').style.display = 'flex';
-    document.getElementById('lobby-code').textContent = roomCode;
-    document.getElementById('btn-start').style.display = 'block';
+    // Le code est valable 1 minute : ensuite la partie démarre toute seule
+    lobbyEndsAt = Date.now() + LOBBY_WAIT * 1000;
+    openLobbyScreen({
+      title: 'PARTIE PRIVÉE', code: roomCode,
+      info: 'Partage ce code — valable 1 minute', startBtn: true
+    });
     updateLobby();
+    startLobbyCountdown(LOBBY_WAIT, () => { broadcast({ t: 'start' }); beginGame('host'); });
   });
   p.on('error', err => {
     if (err.type === 'unavailable-id') createRoom(); // code déjà pris : on en tire un autre
@@ -1519,21 +1718,34 @@ function createRoom() {
   });
 }
 function joinRoom(code) {
+  pendingMode = 'private';
   homeStatus('Connexion à la partie ' + code + '…');
-  const p = new Peer();
+  const p = new Peer(PEER_CFG);
   peer = p;
+  let joined = false;
+  // Sans délai limite, un échec P2P laisse l'écran bloqué sur « Connexion… »
+  const deadline = setTimeout(() => {
+    if (joined) return;
+    try { p.destroy(); } catch (e) {}
+    homeStatus('⚠ Connexion impossible (réseau trop restrictif ?) — réessaie ou héberge la partie');
+  }, 12000);
   p.on('open', () => {
     const c = p.connect('nexus-arena-' + code, { reliable: true });
     setupConn(c, false);
     c.on('open', () => {
+      joined = true;
+      clearTimeout(deadline);
       homeStatus('');
-      document.getElementById('home').style.display = 'none';
-      document.getElementById('lobby').style.display = 'flex';
-      document.getElementById('lobby-code').textContent = code;
-      document.getElementById('lobby-info').textContent = "En attente du lancement par l'hôte…";
+      openLobbyScreen({
+        title: 'PARTIE PRIVÉE', code,
+        info: "En attente du lancement par l'hôte…", startBtn: false
+      });
     });
   });
-  p.on('error', err => homeStatus(err.type === 'peer-unavailable' ? '⚠ Code introuvable' : '⚠ Réseau : ' + err.type));
+  p.on('error', err => {
+    clearTimeout(deadline);
+    homeStatus(err.type === 'peer-unavailable' ? '⚠ Code introuvable — vérifie le code (la partie doit rester ouverte chez l\'hôte)' : '⚠ Réseau : ' + err.type);
+  });
 }
 
 document.getElementById('btn-solo').onclick = () => beginGame('offline');
