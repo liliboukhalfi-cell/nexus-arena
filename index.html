@@ -1665,6 +1665,9 @@ function playOnline(attempt) {
   p.on('open', () => {
     peer = p;
     p.on('connection', c => setupConn(c, true));
+    // Si la liaison avec l'annuaire PeerJS tombe, on se réinscrit :
+    // sinon l'hôte devient introuvable et les suivants créent leur propre partie
+    p.on('disconnected', () => { if (!p.destroyed) try { p.reconnect(); } catch (e) {} });
     homeStatus('');
     // Hôte public : 1 minute d'attente pour laisser d'autres joueurs arriver,
     // puis la partie démarre — les bots complètent s'il n'y a personne.
@@ -1676,15 +1679,24 @@ function playOnline(attempt) {
   p.on('error', err => {
     if (err.type === 'unavailable-id') { // quelqu'un héberge déjà : on le rejoint
       try { p.destroy(); } catch (e) {}
+      homeStatus('Partie trouvée ! Connexion en cours… (jusqu\'à 20 s)');
       const p2 = new Peer(PEER_CFG);
       peer = p2;
       p2.on('open', () => {
         const c = p2.connect(hubId, { reliable: true });
         setupConn(c, false);
         c.on('open', () => { joinedHub = true; });
-        setTimeout(() => { if (!gameStarted && !joinedHub) { try { p2.destroy(); } catch (e) {} playOnline(attempt + 1); } }, 5000);
+        // La négociation P2P peut être lente (mobile, 4G, relais TURN) :
+        // on lui laisse 20 s avant d'abandonner, sinon on créerait une
+        // partie séparée alors qu'une existe déjà.
+        setTimeout(() => { if (!gameStarted && !joinedHub) { try { p2.destroy(); } catch (e) {} playOnline(attempt + 1); } }, 20000);
       });
-      p2.on('error', () => { if (!gameStarted && !joinedHub) playOnline(attempt + 1); });
+      p2.on('error', e => {
+        if (e.type === 'peer-unavailable') { // l'hôte vient de partir : on prend sa place
+          try { p2.destroy(); } catch (e2) {}
+          if (!gameStarted && !joinedHub) playOnline(attempt);
+        } else if (!gameStarted && !joinedHub) playOnline(attempt + 1);
+      });
     } else {
       homeStatus('⚠ Réseau (' + err.type + ') — partie avec bots');
       beginGame('offline');
@@ -1702,6 +1714,7 @@ function createRoom() {
   p.on('open', () => {
     peer = p;
     p.on('connection', c => setupConn(c, true));
+    p.on('disconnected', () => { if (!p.destroyed) try { p.reconnect(); } catch (e) {} });
     homeStatus('');
     // Le code est valable 1 minute : ensuite la partie démarre toute seule
     lobbyEndsAt = Date.now() + LOBBY_WAIT * 1000;
