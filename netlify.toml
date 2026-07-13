@@ -1,0 +1,8 @@
+# Configuration Netlify
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# La clé secrète Metered se règle dans l'interface Netlify
+# (Site settings → Environment variables → METERED_SECRET_KEY),
+# JAMAIS ici ni dans git.

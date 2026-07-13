@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -14,9 +14,59 @@
   #health { height: 100%; width: 100%; background: linear-gradient(90deg, #ff4d4d, #7CFC00); transition: width .15s; }
   #ammo {
     position: absolute; bottom: 22px; right: 28px; color: #fff; font-size: 30px; font-weight: 700;
-    text-shadow: 0 2px 6px rgba(0,0,0,.9);
+    text-shadow: 0 2px 6px rgba(0,0,0,.9); text-align: right; line-height: 1.1;
   }
   #ammo small { font-size: 15px; opacity: .8; }
+  #weapon-name { font-size: 15px; font-weight: 600; color: #7fd4ff; letter-spacing: .5px; }
+  #xp-hud { position: absolute; bottom: 52px; left: 24px; width: 260px; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.9); }
+  #xp-label { font-size: 12px; letter-spacing: .5px; margin-bottom: 3px; opacity: .9; }
+  #xp-bar { height: 7px; background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.35); border-radius: 5px; overflow: hidden; }
+  #xp-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #ffd24d, #ffe98a); transition: width .3s; }
+  /* Niveau : décalé à gauche du bouton plein écran (plus aucun chevauchement) */
+  #home-level { position: absolute; top: 34px; right: 170px; font-size: 17px; font-weight: 700; color: #ffe98a; text-shadow: 0 2px 6px rgba(0,0,0,.8); }
+  /* Panneau Duel (1v1 / 2v2) avec son propre champ de code */
+  #duel-panel, #loup-panel { display: none; flex-direction: column; gap: 10px; padding: 12px; border: 2px solid rgba(127,212,255,.3); border-radius: 12px; background: rgba(127,212,255,.05); }
+  #duel-panel.open, #loup-panel.open { display: flex; }
+  #duel-tabs { display: flex; gap: 8px; justify-content: center; }
+  /* Équipes (lobby 2v2) */
+  #team-row { display: none; gap: 10px; justify-content: center; }
+  #team-row.on { display: flex; }
+  .team-btn { padding: 10px 18px; border-radius: 12px; font-family: inherit; font-size: 15px; font-weight: 700; color: #fff; cursor: pointer; background: rgba(255,255,255,.06); border: 2px solid transparent; }
+  .team-btn.bleu { border-color: #4da3ff; }
+  .team-btn.rouge { border-color: #ff5c5c; }
+  .team-btn.sel.bleu { background: rgba(77,163,255,.3); }
+  .team-btn.sel.rouge { background: rgba(255,92,92,.3); }
+  /* Cœurs (vies) du mode duel */
+  #hearts { position: absolute; bottom: 46px; left: 24px; font-size: 22px; letter-spacing: 4px; text-shadow: 0 2px 6px rgba(0,0,0,.9); display: none; }
+  /* Lunette du sniper : vignette circulaire noire + réticule fin, rien d'autre */
+  #scope { position: absolute; inset: 0; display: none; pointer-events: none; }
+  #scope.on { display: block; }
+  #scope::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,.55) 36%, rgba(0,0,0,.98) 42%);
+  }
+  #scope .h { position: absolute; top: 50%; left: 0; right: 0; height: 1.5px; background: rgba(0,0,0,.8); transform: translateY(-50%); }
+  #scope .v { position: absolute; left: 50%; top: 0; bottom: 0; width: 1.5px; background: rgba(0,0,0,.8); transform: translateX(-50%); }
+  #btn-scope { right: 7vw; bottom: calc(6vh + 196px); width: 62px; height: 62px; font-size: 24px; }
+  #btn-view { left: 6vw; bottom: calc(5vh + 158px); width: 56px; height: 56px; font-size: 22px; }
+  #btn-scope.sel { background: rgba(127,212,255,.4); border-color: #7fd4ff; }
+  /* Cartes de choix d'arme (lobby duel) : image en haut + description, comme le croquis */
+  #loadout-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; max-width: 620px; }
+  .wcard {
+    width: 168px; padding: 10px; border-radius: 16px; cursor: pointer; color: #fff;
+    background: rgba(255,255,255,.05); border: 2px solid rgba(127,212,255,.35);
+    text-align: center; font-family: inherit;
+  }
+  .wcard .wimg { font-size: 44px; background: rgba(0,0,0,.35); border-radius: 10px; padding: 10px 0; margin-bottom: 8px; }
+  .wcard .wname { font-weight: 800; font-size: 15px; margin-bottom: 5px; }
+  .wcard .wdesc { font-size: 11.5px; opacity: .85; line-height: 1.45; }
+  .wcard.sel { border-color: #ffe98a; background: rgba(255,233,138,.14); }
+  #loup-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  /* Stamina du loup (dash) */
+  #stam-wrap { position: absolute; bottom: 78px; left: 24px; width: 200px; height: 9px; background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.4); border-radius: 6px; overflow: hidden; }
+  #stam { height: 100%; width: 100%; background: linear-gradient(90deg, #ffb84d, #ffe14d); transition: width .1s; }
+  #btn-dash { right: 7vw; bottom: calc(6vh + 196px); width: 66px; height: 66px; font-size: 26px; border-color: rgba(255,209,77,.7); }
+  body.ctrl-editing #btn-dash { display: flex !important; }
   #topbar {
     position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
     color: #fff; text-align: center; text-shadow: 0 2px 6px rgba(0,0,0,.9);
@@ -72,6 +122,73 @@
     border: 2px solid rgba(127,212,255,.5); border-radius: 12px; font-family: inherit;
   }
   #home .note { font-size: 13px; opacity: .65; max-width: 420px; line-height: 1.6; }
+  .opt-label { margin-top: 6px; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; opacity: .7; }
+  #skin-row, #quality-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 560px; }
+  .chip {
+    padding: 8px 14px; font-size: 14px; font-weight: 600; color: #fff;
+    background: rgba(255,255,255,.06); border: 2px solid rgba(127,212,255,.35);
+    border-radius: 20px; cursor: pointer; font-family: inherit;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .chip .dot { width: 13px; height: 13px; border-radius: 50%; border: 1px solid rgba(255,255,255,.5); }
+  .chip.sel { border-color: #ffe98a; background: rgba(255,233,138,.15); }
+
+  /* ---------- Accueil : disposition en écran complet ---------- */
+  #home h1 { position: absolute; top: 26px; left: 50%; transform: translateX(-50%); margin: 0; }
+  #home-left {
+    position: absolute; left: 4vw; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 14px; align-items: stretch;
+    width: min(360px, 42vw); text-align: center;
+  }
+  #home-left .menu-btn { width: 100%; }
+  #home-left .join-row { justify-content: center; }
+  /* Personnage en gros plan, ancré en bas, légèrement à droite du centre */
+  #skin-preview {
+    position: absolute; left: 63%; transform: translateX(-50%); bottom: 0;
+    height: 80vh; width: calc(80vh * 0.75);
+  }
+  .icon-btn {
+    position: absolute; width: 54px; height: 54px; border-radius: 50%;
+    font-size: 24px; line-height: 1; color: #fff; cursor: pointer;
+    background: rgba(255,255,255,.07); border: 2px solid rgba(127,212,255,.45);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .icon-btn:hover { background: rgba(127,212,255,.25); }
+  #btn-settings { top: 20px; right: 26px; }
+  #btn-fullscreen { top: 20px; right: 90px; }
+  #btn-skin { bottom: 24px; left: 26px; }
+  /* Nom du personnage : plaque sous l'aperçu, centrée sur le perso */
+  #skin-name {
+    position: absolute; left: 63%; transform: translateX(-50%); bottom: 3vh;
+    padding: 7px 26px; font-size: 22px; font-weight: 800; letter-spacing: 3px;
+    text-transform: uppercase; color: #fff; white-space: nowrap;
+    background: linear-gradient(180deg, rgba(10,16,30,.2), rgba(10,16,30,.85));
+    border-bottom: 2px solid #7fd4ff; text-shadow: 0 2px 10px rgba(0,0,0,.9);
+    pointer-events: none; z-index: 4;
+  }
+  .panel {
+    position: absolute; display: none; flex-direction: column; gap: 12px;
+    background: rgba(8,12,24,.96); border: 2px solid rgba(127,212,255,.35);
+    border-radius: 14px; padding: 16px 18px; z-index: 5; max-width: min(440px, 88vw);
+  }
+  .panel.open { display: flex; }
+  #settings-panel { top: 86px; right: 26px; }
+  #skin-panel { bottom: 92px; left: 26px; }
+  .check-line { font-size: 14px; display: flex; gap: 8px; align-items: center; cursor: pointer; }
+  .check-line input { accent-color: #7fd4ff; width: 17px; height: 17px; }
+  #keys-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; max-height: 190px; overflow-y: auto; }
+  .key-line { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; }
+  .key-line button {
+    min-width: 84px; padding: 5px 8px; font-family: inherit; font-size: 12px; font-weight: 700;
+    color: #ffe98a; background: rgba(255,255,255,.08); border: 1px solid rgba(255,233,138,.45);
+    border-radius: 8px; cursor: pointer;
+  }
+  .key-line button.waiting { color: #7fd4ff; border-color: #7fd4ff; animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .5; } }
+  @media (max-width: 700px) {
+    #home-left { left: 50%; top: auto; bottom: 10vh; transform: translateX(-50%); width: 86vw; }
+    #skin-preview { left: 50%; bottom: auto; top: 9vh; height: 42vh; width: calc(42vh * 0.75); }
+  }
   #home-status { min-height: 22px; color: #ffb86b; font-size: 15px; }
   #lobby .code {
     font-size: 54px; font-weight: 800; letter-spacing: 12px; color: #ffe98a;
@@ -102,9 +219,19 @@
     text-shadow: 0 1px 4px rgba(0,0,0,.8);
   }
   .tbtn:active { background: rgba(127,212,255,.4); }
-  #btn-fire { right: 5vw; bottom: 6vh; width: 96px; height: 96px; font-size: 30px; border-color: rgba(255,107,107,.7); background: rgba(255,80,80,.18); }
-  #btn-jump { right: 26vw; bottom: 5vh; width: 62px; height: 62px; font-size: 24px; }
-  #btn-reload { right: 6vw; bottom: calc(6vh + 116px); width: 62px; height: 62px; font-size: 22px; }
+  #btn-fire { right: 6vw; bottom: 6vh; width: 92px; height: 92px; font-size: 30px; border-color: rgba(255,107,107,.7); background: rgba(255,80,80,.18); }
+  #btn-reload { right: 7vw; bottom: calc(6vh + 118px); width: 62px; height: 62px; font-size: 22px; }
+  /* Éditeur de placement des commandes (glisser-déposer) */
+  #ctrl-edit { position: fixed; inset: 0; z-index: 40; background: rgba(5,8,18,.72); }
+  #ctrl-edit-bar {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 10px; align-items: center; color: #fff;
+    background: rgba(8,12,24,.95); border: 2px solid rgba(127,212,255,.4);
+    border-radius: 14px; padding: 10px 16px; font-size: 14px; z-index: 46;
+  }
+  body.ctrl-editing #touch-ui { display: block !important; z-index: 45; }
+  body.ctrl-editing #touch-ui > * { outline: 2px dashed #ffe98a; cursor: grab; }
+  body.ctrl-editing #btn-scope { display: flex !important; } /* placer aussi le bouton visée */
   /* Écrans étroits : menus compacts */
   @media (max-width: 600px) {
     #home h1, #lobby h1 { font-size: 34px; }
@@ -127,35 +254,108 @@
   </div>
   <div id="crosshair" style="display:none"></div>
   <div id="health-wrap"><div id="health"></div></div>
-  <div id="ammo"><span id="clip">30</span><small> / ∞</small></div>
+  <div id="ammo"><span id="weapon-name">Fusil d'assaut</span><br><span id="clip">30</span><small> / ∞</small></div>
+  <div id="hearts">❤️❤️❤️</div>
+  <div id="scope"><div class="h"></div><div class="v"></div></div>
+  <div id="stam-wrap" style="display:none"><div id="stam"></div></div>
+  <div id="xp-hud">
+    <div id="xp-label">Niv. 1</div>
+    <div id="xp-bar"><div id="xp-bar-fill"></div></div>
+  </div>
   <div id="msg"></div>
+  <div id="debug-panel" style="position:absolute;top:10px;left:10px;background:rgba(0,0,0,.75);color:#7fffb0;font:12px monospace;padding:8px 12px;border-radius:8px;white-space:pre;line-height:1.5;"></div>
 </div>
 <div id="home">
   <h1>⚔ ZONE HOSTILE</h1>
-  <button class="menu-btn" id="btn-online">🌐 Jouer en ligne</button>
-  <button class="menu-btn" id="btn-create">👥 Créer une partie privée</button>
-  <div class="join-row">
-    <input id="join-code" maxlength="6" placeholder="CODE" autocomplete="off">
-    <button class="menu-btn small" id="btn-join">Rejoindre</button>
+  <div id="home-level">⭐ Niveau 1</div>
+  <canvas id="skin-preview" width="480" height="640"></canvas>
+  <div id="home-left">
+    <button class="menu-btn" id="btn-duel">⚔ Duel</button>
+    <div id="duel-panel">
+      <div id="duel-tabs">
+        <button class="chip sel" data-dmode="1v1">1 vs 1</button>
+        <button class="chip" data-dmode="2v2">2 vs 2</button>
+      </div>
+      <button class="menu-btn small" id="btn-duel-create">Créer un duel 1v1</button>
+      <div class="join-row">
+        <input id="duel-code" maxlength="6" placeholder="CODE DUEL" autocomplete="off">
+        <button class="menu-btn small" id="btn-duel-join">Rejoindre</button>
+      </div>
+    </div>
+    <button class="menu-btn" id="btn-loup">🐺 Jeu du Loup</button>
+    <div id="loup-panel">
+      <button class="menu-btn small" id="btn-loup-create">Créer une partie Loup</button>
+      <div class="join-row">
+        <input id="loup-code" maxlength="6" placeholder="CODE LOUP" autocomplete="off">
+        <button class="menu-btn small" id="btn-loup-join">Rejoindre</button>
+      </div>
+    </div>
+    <button class="menu-btn" id="btn-create">👥 Créer une partie privée</button>
+    <div class="join-row">
+      <input id="join-code" maxlength="6" placeholder="CODE" autocomplete="off">
+      <button class="menu-btn small" id="btn-join">Rejoindre</button>
+    </div>
+    <button class="menu-btn" id="btn-solo">🎯 Tutoriel / Hors ligne</button>
+    <div id="home-status"></div>
+    <p class="note">Duel : affronte tes amis en 1v1 ou 2v2, 3 vies chacun, sans bots.
+    Partie privée : coopération contre les vagues, partage le code. Hors ligne : bots uniquement.</p>
   </div>
-  <button class="menu-btn" id="btn-solo">🎯 Tutoriel / Hors ligne</button>
-  <div id="home-status"></div>
-  <p class="note">En ligne : tous les joueurs présents combattent les vagues ensemble (des bots complètent).
-  Partie privée : partage le code, l'hôte lance la partie. Hors ligne : bots uniquement.</p>
+  <button class="icon-btn" id="btn-settings" title="Paramètres">⚙</button>
+  <button class="icon-btn" id="btn-fullscreen" title="Plein écran">⛶</button>
+  <button class="icon-btn" id="btn-skin" title="Choisir ton personnage">🎭</button>
+  <div id="skin-name"></div>
+  <div class="panel" id="settings-panel">
+    <div class="opt-label">Graphismes</div>
+    <div id="quality-row">
+      <button class="chip" data-quality="basse">Basse</button>
+      <button class="chip" data-quality="normale">Normale</button>
+      <button class="chip" data-quality="haute">Haute</button>
+    </div>
+    <div class="opt-label">Commandes tactiles</div>
+    <button class="menu-btn small" id="btn-ctrl-edit">🎮 Personnaliser le placement</button>
+    <div class="opt-label">Touches (PC)</div>
+    <div id="keys-row"></div>
+    <button class="chip" id="keys-reset">Touches par défaut</button>
+    <label class="check-line"><input type="checkbox" id="chk-music"> Musique de fond</label>
+    <label class="check-line"><input type="checkbox" id="chk-fps"> Afficher FPS et infos techniques</label>
+  </div>
+  <div class="panel" id="skin-panel">
+    <div class="opt-label">Ton personnage</div>
+    <div id="skin-row"></div>
+  </div>
 </div>
 <div id="lobby" style="display:none">
   <h1 id="lobby-title">PARTIE PRIVÉE</h1>
   <div class="code" id="lobby-code">······</div>
   <p id="lobby-info">Partage ce code avec tes amis</p>
   <div id="lobby-players">1 joueur connecté</div>
+  <div id="team-row">
+    <button class="team-btn bleu" id="btn-team-0">🔵 Équipe Bleue</button>
+    <button class="team-btn rouge" id="btn-team-1">🔴 Équipe Rouge</button>
+  </div>
+  <div id="loadout-row" style="display:none">
+    <div class="opt-label" style="width:100%">Choisis ton arme</div>
+  </div>
+  <div id="loup-row" style="display:none">
+    <div class="opt-label" style="width:100%">Ton objet de survie (3 utilisations)</div>
+  </div>
   <div id="lobby-timer"></div>
   <button class="menu-btn" id="btn-start" style="display:none">🚀 Lancer la partie</button>
 </div>
 <div id="touch-ui">
   <div id="joy"><div id="joy-knob"></div></div>
   <div class="tbtn" id="btn-fire">🔥</div>
-  <div class="tbtn" id="btn-jump">⤴</div>
   <div class="tbtn" id="btn-reload">R</div>
+  <div class="tbtn" id="btn-scope" style="display:none">🔭</div>
+  <div class="tbtn" id="btn-view">👁</div>
+  <div class="tbtn" id="btn-dash" style="display:none">⚡</div>
+</div>
+<div id="ctrl-edit" style="display:none">
+  <div id="ctrl-edit-bar">
+    <span>👆 Glisse chaque commande où tu veux</span>
+    <button class="menu-btn small" id="ctrl-reset">Réinitialiser</button>
+    <button class="menu-btn small" id="ctrl-done">✔ Terminé</button>
+  </div>
 </div>
 <div id="overlay" style="display:none">
   <h1>⚔ ZONE HOSTILE</h1>
@@ -164,6 +364,7 @@
   <div class="go" id="go-label">Clique pour combattre</div>
 </div>
 
+<script>window.__errs = []; window.onerror = (m, s, l, c) => { window.__errs.push(m + ' @' + l + ':' + c); };</script>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script type="importmap">
 { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
@@ -186,6 +387,54 @@ function sfx(freq, dur, type = 'square', vol = 0.15, slide = 0.5) {
   o.start(); o.stop(audioCtx.currentTime + dur);
 }
 
+// ---------- Musique de fond (synthèse, ambiance de combat, désactivable) ----------
+let musicOn = localStorage.getItem('zh-music') !== '0';
+let musicNodes = null, musicTimer = null;
+function startMusic() {
+  if (!audioCtx || !musicOn || musicNodes) return;
+  const master = audioCtx.createGain();
+  master.gain.value = 0.0;
+  master.gain.linearRampToValueAtTime(0.16, audioCtx.currentTime + 2);
+  master.connect(audioCtx.destination);
+  // Nappe grave continue (deux oscillateurs légèrement désaccordés)
+  const droneA = audioCtx.createOscillator(), droneB = audioCtx.createOscillator();
+  const droneG = audioCtx.createGain(); droneG.gain.value = 0.5;
+  droneA.type = 'sawtooth'; droneB.type = 'sawtooth';
+  droneA.frequency.value = 55; droneB.frequency.value = 55.6; // La grave
+  const lp = audioCtx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 380;
+  droneA.connect(lp); droneB.connect(lp); lp.connect(droneG).connect(master);
+  droneA.start(); droneB.start();
+  musicNodes = { master, droneA, droneB };
+  // Motif rythmique : notes de tension jouées en boucle
+  const scale = [110, 130.8, 146.8, 164.8, 196]; // La mineur, pulsation
+  let step = 0;
+  const beat = () => {
+    if (!musicNodes) return;
+    const t = audioCtx.currentTime;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'triangle';
+    o.frequency.value = scale[step % scale.length] * (step % 8 < 4 ? 1 : 1.5);
+    g.gain.value = 0; g.gain.linearRampToValueAtTime(0.09, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    o.connect(g).connect(master);
+    o.start(t); o.stop(t + 0.55);
+    step++;
+    musicTimer = setTimeout(beat, 300);
+  };
+  beat();
+}
+function stopMusic() {
+  if (musicTimer) { clearTimeout(musicTimer); musicTimer = null; }
+  if (musicNodes) {
+    try {
+      musicNodes.master.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.6);
+      const n = musicNodes;
+      setTimeout(() => { try { n.droneA.stop(); n.droneB.stop(); } catch (e) {} }, 700);
+    } catch (e) {}
+    musicNodes = null;
+  }
+}
+
 // ---------- Scène ----------
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0d1220);
@@ -201,15 +450,56 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 document.body.appendChild(renderer.domElement);
 
-const moon = new THREE.DirectionalLight(0xbfd4ff, 1.4);
+const moon = new THREE.DirectionalLight(0xbfd4ff, 1.5);
 moon.position.set(40, 80, 20);
 moon.castShadow = true;
 moon.shadow.mapSize.set(2048, 2048);
 moon.shadow.camera.left = -140; moon.shadow.camera.right = 140;
 moon.shadow.camera.top = 140; moon.shadow.camera.bottom = -140;
 moon.shadow.camera.far = 500;
+moon.shadow.bias = -0.0004;
+moon.shadow.normalBias = 0.02;
 scene.add(moon);
-scene.add(new THREE.AmbientLight(0x3d4a66, 1.0));
+scene.add(new THREE.AmbientLight(0x3d4a66, 0.5));
+// ?test=lumieres|skins|bots : désactive un ajout récent pour isoler un problème
+// de performance propre à certaines cartes graphiques
+const PERF_TEST = new URLSearchParams(location.search).get('test') || '';
+// Lumière d'hémisphère : le ciel bleuté éclaire le dessus, le sol renvoie un
+// vert sombre par-dessous — c'est ce rebond qui rend une scène crédible
+const hemi = new THREE.HemisphereLight(0x94b8ff, 0x1c2416, 0.7);
+// Contre-jour froid opposé à la lune : détache les silhouettes du fond
+const rim = new THREE.DirectionalLight(0x6a86c8, 0.5);
+rim.position.set(-50, 30, -40);
+if (PERF_TEST !== 'lumieres') scene.add(hemi, rim);
+
+// ---------- Qualité graphique (réglable à l'accueil) ----------
+const QUALITIES = {
+  basse:   { pr: 0.62, shadows: false, mapSize: 1024, exposure: 1.05 },
+  normale: { pr: 1,    shadows: true,  mapSize: 1536, exposure: 1.1 },
+  haute:   { pr: Math.min(devicePixelRatio, 2), shadows: true, mapSize: 2048, exposure: 1.12 }
+};
+// On démarre prudent (normale) : si le jeu tourne mal, la qualité baisse toute
+// seule ; le joueur peut monter en Haute depuis l'accueil s'il a la machine.
+// (v2 : oublie le « haute » imposé automatiquement par l'ancienne version)
+if (!localStorage.getItem('zh-q-v2')) { localStorage.removeItem('zh-quality'); localStorage.setItem('zh-q-v2', '1'); }
+let quality = localStorage.getItem('zh-quality') || 'normale';
+if (!QUALITIES[quality]) quality = 'normale';
+function applyQuality(q) {
+  quality = q;
+  localStorage.setItem('zh-quality', q);
+  const Q = QUALITIES[q];
+  renderer.setPixelRatio(Q.pr);
+  renderer.shadowMap.enabled = Q.shadows;
+  moon.castShadow = Q.shadows;
+  moon.shadow.mapSize.set(Q.mapSize, Q.mapSize);
+  if (moon.shadow.map) { moon.shadow.map.dispose(); moon.shadow.map = null; }
+  renderer.toneMappingExposure = Q.exposure;
+  renderer.setSize(innerWidth, innerHeight);
+  scene.traverse(o => { if (o.isMesh && o.material) o.material.needsUpdate = true; });
+  document.querySelectorAll('[data-quality]').forEach(b =>
+    b.classList.toggle('sel', b.dataset.quality === q));
+}
+applyQuality(quality);
 
 // Ciel étoilé + disque lunaire
 const starPos = [];
@@ -382,18 +672,36 @@ const rand = (() => { let s = 1337; return () => { s = (s * 16807) % 2147483647;
 const obstacles = []; // {x, z, hx, hz} AABB demi-tailles
 const obstacleMeshes = [];
 const crateMat = new THREE.MeshStandardMaterial({ color: 0xb99f7e, map: crateTex, roughness: 0.9 });
-for (let i = 0; i < 42; i++) {
-  const x = (rand() - 0.5) * (ARENA * 2 - 30), z = (rand() - 0.5) * (ARENA * 2 - 30);
+const barrelMat = new THREE.MeshStandardMaterial({ color: 0x9a5a2c, roughness: 0.55, metalness: 0.5 });
+const containerCols = [0x3a6b4a, 0x8a3b34, 0x3a5a7a, 0x8a7a34, 0x555b66];
+const containerMats = containerCols.map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.7, metalness: 0.35 }));
+for (let i = 0; i < 60; i++) {
+  const x = (rand() - 0.5) * (ARENA * 2 - 24), z = (rand() - 0.5) * (ARENA * 2 - 24);
   if (Math.abs(x) < 9 && Math.abs(z) < 9) continue; // zone de spawn dégagée
   let mesh, hx, hz;
-  if (rand() < 0.4) {
-    const s = 2 + rand() * 2.5;
+  const r = rand();
+  if (r < 0.14) {
+    // Conteneur maritime : gros bloc coloré, vraie couverture haute
+    const cl = 6 + rand() * 4, ch = 2.6, cw = 2.5;
+    const horiz = rand() < 0.5;
+    mesh = new THREE.Mesh(new THREE.BoxGeometry(horiz ? cl : cw, ch, horiz ? cw : cl),
+      containerMats[(rand() * containerMats.length) | 0]);
+    mesh.position.set(x, ch / 2, z);
+    hx = (horiz ? cl : cw) / 2 + 0.15; hz = (horiz ? cw : cl) / 2 + 0.15;
+  } else if (r < 0.26) {
+    // Baril métallique (empilable visuellement)
+    const rr = 0.6, h = 1.5 + (rand() < 0.3 ? 1.5 : 0);
+    mesh = new THREE.Mesh(new THREE.CylinderGeometry(rr, rr, h, 14), barrelMat);
+    mesh.position.set(x, h / 2, z);
+    hx = hz = rr + 0.2;
+  } else if (r < 0.5) {
+    const s = 1.8 + rand() * 2.4;
     mesh = new THREE.Mesh(new THREE.BoxGeometry(s, s, s), crateMat);
     mesh.position.set(x, s / 2, z);
     mesh.rotation.y = rand() * Math.PI;
-    hx = hz = s * 0.72; // marge pour la rotation
+    hx = hz = s * 0.72;
   } else {
-    // Mur de couverture en briques — aligné aux axes pour une collision exacte
+    // Mur de briques bas — couverture à hauteur de torse
     const wlen = 5 + rand() * 6, wh = 2.3 + rand() * 1.1, wd = 0.5;
     const horiz = rand() < 0.5;
     const tex = brickTex.clone();
@@ -412,10 +720,27 @@ for (let i = 0; i < 42; i++) {
   obstacles.push({ x, z, hx, hz });
   obstacleMeshes.push(mesh);
 }
+// Lampadaires d'ambiance. Halos lumineux visibles partout (mesh émissif, gratuit) ;
+// seules 3 émettent une vraie lumière dynamique (coûteux sur GPU faible).
+const lampCols = [0xff7a3c, 0x4db8ff, 0xff4d6a, 0x6affa0, 0xffd24d];
+for (let i = 0; i < 6; i++) {
+  const ang = (i / 6) * Math.PI * 2, d = 42 + rand() * 42;
+  const lx = Math.cos(ang) * d, lz = Math.sin(ang) * d;
+  const col = lampCols[i % lampCols.length];
+  if (i < 3) { // 3 vraies lumières seulement
+    const lamp = new THREE.PointLight(col, 26, 50, 2);
+    lamp.position.set(lx, 7, lz);
+    scene.add(lamp);
+  }
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 6), new THREE.MeshBasicMaterial({ color: col }));
+  bulb.position.set(lx, 7, lz);
+  scene.add(bulb);
+}
 
 // Collision cercle vs AABB : renvoie la position corrigée
 function collide(px, pz, radius) {
   for (const o of obstacles) {
+    if (o.off) continue; // mur retiré par le rétrécissement (mode loup)
     const dx = px - o.x, dz = pz - o.z;
     const cx = Math.max(-o.hx, Math.min(o.hx, dx)), cz = Math.max(-o.hz, Math.min(o.hz, dz));
     const ex = dx - cx, ez = dz - cz;
@@ -426,7 +751,7 @@ function collide(px, pz, radius) {
       pz = o.z + cz + (ez / d) * radius;
     }
   }
-  const lim = ARENA - 1.8;
+  const lim = (duelMode === 'loup' && loupLimit) ? loupLimit : ARENA - 1.8;
   px = Math.max(-lim, Math.min(lim, px));
   pz = Math.max(-lim, Math.min(lim, pz));
   return [px, pz];
@@ -527,31 +852,49 @@ function makeStickman(mainColor, limbColor) {
 }
 
 let enemySeq = 0;
+// Bot : le personnage « Ombre » (capuche, yeux rouges), fusil épaulé, PLUS GRAND
+// que les joueurs (1.35×, costauds 1.55×) — silhouette menaçante et lisible
+function makeEnemyRig(tough) {
+  const rig = makeCharacter(SKIN_BOT, true); // bots « comme avant » : capuche + yeux rouges, sans téléchargement
+  rig.postBuild = r => {
+    if (tough) for (const e of r.eyes) e.material.color.setHex(0xff5500); // costaud : yeux orange
+    r.aimBlend = 1; // les bras tiennent toujours le fusil
+    r.attachRifle(true);
+    r.setAnim('Run');
+    r.model.scale.setScalar(tough ? 1.55 : 1.35);
+    // Les bots ne projettent pas d'ombre : divise par deux leur coût de rendu
+    r.model.traverse(o => { if (o.isMesh) o.castShadow = false; });
+  };
+  if (rig.ready) rig.postBuild(rig);
+  return rig;
+}
 function spawnEnemy(wave) {
   const ang = rand() * Math.PI * 2;
   const dist = ARENA * 0.75 + rand() * 10;
   const x = Math.cos(ang) * dist, z = Math.sin(ang) * dist;
   const tough = rand() < Math.min(0.1 + wave * 0.04, 0.45); // costauds plus fréquents au fil des vagues
-  const sm = makeStickman(tough ? 0x9b4dff : 0x2bb3e8, tough ? 0x2a0a55 : 0x101a8a);
-  sm.group.position.set(x, 0, z);
-  if (tough) sm.group.scale.setScalar(1.25);
-  scene.add(sm.group);
   const e = {
     id: ++enemySeq,
-    mesh: sm.group, sm, hp: tough ? 5 : 2, maxHp: tough ? 5 : 2, tough,
+    hp: tough ? 5 : 2, maxHp: tough ? 5 : 2, tough,
     speed: (tough ? 3.2 : 4.5) + rand() * 1.5 + wave * 0.15,
     attackCd: 0, shootCd: 1.5 + rand() * 2, hitFlash: 0, dead: false, deathT: 0,
     phase: rand() * Math.PI * 2
   };
-  sm.group.traverse(o => o.userData.enemy = e);
+  const sm = makeStickman(tough ? 0x9b4dff : 0x2bb3e8, tough ? 0x2a0a55 : 0x101a8a);
+  e.sm = sm;
+  e.mesh = sm.group;
+  e.mesh.position.set(x, 0, z);
+  if (tough) e.mesh.scale.setScalar(1.4);
+  scene.add(e.mesh);
+  e.mesh.traverse(o => o.userData.enemy = e);
   enemies.push(e);
   return e;
 }
 
 // Applique des dégâts à un ennemi (tir local ou reçu d'un client)
-function damageEnemy(e, point) {
+function damageEnemy(e, point, dmg = 1) {
   if (!e || e.dead) return;
-  e.hp--;
+  e.hp -= dmg;
   e.hitFlash = 0.15;
   if (point) burst(point, 0xffaa33, 8);
   sfx(200, 0.1, 'sawtooth', 0.1, 0.4);
@@ -559,20 +902,56 @@ function damageEnemy(e, point) {
     e.dead = true;
     e.deathT = 0;
     score += e.tough ? 250 : 100;
+    gainXp(e.tough ? 25 : 10);
     sfx(120, 0.35, 'sawtooth', 0.15, 0.3);
     burst(e.mesh.position, e.tough ? 0xb266ff : 0x66ccff, 18);
   }
   updateHud();
 }
 
+// ---------- Progression : XP & niveaux (sauvegardés entre les parties) ----------
+const xpForLevel = lvl => 100 + (lvl - 1) * 60; // XP requis pour passer le niveau
+const profile = {
+  level: parseInt(localStorage.getItem('zh-level'), 10) || 1,
+  xp: parseInt(localStorage.getItem('zh-xp'), 10) || 0,
+  best: parseInt(localStorage.getItem('zh-best'), 10) || 0
+};
+function saveProfile() {
+  localStorage.setItem('zh-level', profile.level);
+  localStorage.setItem('zh-xp', profile.xp);
+  localStorage.setItem('zh-best', profile.best);
+}
+function gainXp(amount) {
+  profile.xp += amount;
+  let leveled = false;
+  while (profile.xp >= xpForLevel(profile.level)) {
+    profile.xp -= xpForLevel(profile.level);
+    profile.level++;
+    leveled = true;
+  }
+  if (leveled) { showMsg('⭐ NIVEAU ' + profile.level + ' !', 1800); sfx(660, 0.25, 'triangle', 0.14, 2); }
+  saveProfile();
+  updateXpHud();
+}
+function updateXpHud() {
+  const need = xpForLevel(profile.level);
+  const bar = $('xp-bar-fill');
+  if (bar) bar.style.width = Math.min(100, profile.xp / need * 100) + '%';
+  const lab = $('xp-label');
+  if (lab) lab.textContent = 'Niv. ' + profile.level + ' · ' + profile.xp + '/' + need + ' XP';
+  const hl = $('home-level');
+  if (hl) hl.textContent = '⭐ Niveau ' + profile.level;
+}
+
 // ---------- Ennemis côté client (multijoueur) : simple rendu piloté par l'hôte ----------
-const clientEnemies = new Map(); // id -> { mesh, sm, target, tough, hp, dead, deathT, phase }
+const clientEnemies = new Map(); // id -> { mesh, rig|sm, target, tough, hp, dead, deathT, phase }
 function makeClientEnemy(id, tough) {
-  const sm = makeStickman(tough ? 0x9b4dff : 0x2bb3e8, tough ? 0x2a0a55 : 0x101a8a);
-  if (tough) sm.group.scale.setScalar(1.25);
-  scene.add(sm.group);
-  const v = { mesh: sm.group, sm, target: new THREE.Vector3(), tough, hp: tough ? 5 : 2, dead: false, deathT: 0, phase: rand() * Math.PI * 2 };
-  sm.group.traverse(o => o.userData.enemyId = id);
+  const v = { target: new THREE.Vector3(), tough, hp: tough ? 5 : 2, dead: false, deathT: 0, phase: rand() * Math.PI * 2 };
+  v.sm = makeStickman(tough ? 0x9b4dff : 0x2bb3e8, tough ? 0x2a0a55 : 0x101a8a);
+  v.mesh = v.sm.group;
+  if (tough) v.mesh.scale.setScalar(1.4);
+  scene.add(v.mesh);
+  v.mesh.traverse(o => o.userData.enemyId = id);
   return v;
 }
 function applyEnemies(list) {
@@ -586,7 +965,10 @@ function applyEnemies(list) {
       clientEnemies.set(ed.id, v);
     }
     v.target.set(ed.x, 0, ed.z);
-    if (ed.hp < v.hp) { v.sm.skin.emissiveIntensity = 2.5; setTimeout(() => v.sm.skin.emissiveIntensity = 0.15, 140); }
+    if (ed.hp < v.hp) {
+      if (v.sm) { v.sm.skin.emissiveIntensity = 2.5; setTimeout(() => v.sm.skin.emissiveIntensity = 0.15, 140); }
+      else if (v.mats) { v.mats.forEach(mt => mt.emissive.setHex(0x991111)); setTimeout(() => v.mats.forEach(mt => mt.emissive.setHex(0)), 140); }
+    }
     v.hp = ed.hp;
     if (ed.dd && !v.dead) { v.dead = true; v.deathT = 0; burst(v.mesh.position, v.tough ? 0xb266ff : 0x66ccff, 14); }
   }
@@ -711,14 +1093,10 @@ playerSm.group.visible = false;
 scene.add(playerSm.group);
 let thirdPerson = false;
 
-// ---------- Soldat réaliste : modèle 3D animé (squelette + animations pro) ----------
-// makeHuman() reste en secours si le chargement réseau échoue
-const playerModel = {
-  root: new THREE.Group(), mixer: null, actions: {}, current: null,
-  spine: null, hand: null, rifle: null, loaded: false
-};
-playerModel.root.visible = false;
-scene.add(playerModel.root);
+// ---------- Système de personnages procéduraux ----------
+// Chaque personnage est construit sur mesure : proportions, tenue, coiffure,
+// visage, accessoires et démarche qui lui sont propres. Aucun modèle téléchargé :
+// tout est généré, donc le jeu marche aussi hors ligne.
 function makeRifleProp() {
   const metal = new THREE.MeshStandardMaterial({ color: 0x16181c, roughness: 0.35, metalness: 0.8 });
   const poly = new THREE.MeshStandardMaterial({ color: 0x2b2f36, roughness: 0.6, metalness: 0.2 });
@@ -735,103 +1113,865 @@ function makeRifleProp() {
   const sight = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.045, 0.1), metal);
   sight.position.set(0, 0.075, -0.08);
   r.add(body, barrel, mag, stock, sight);
+  mergeGroupMeshes(r); // 5 pièces → 2 (une par matériau)
   r.traverse(o => { if (o.isMesh) o.castShadow = true; });
   return r;
 }
 // Les joueurs distants (multijoueur) — créés à la volée quand leur état arrive
 const remotePlayers = new Map(); // id -> { rig, target, lastState, conn }
-let soldierGltf = null;
+// ---------- Fabriques de base ----------
+const CM = (c, r = 0.8, m = 0, ds = false) =>
+  new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m, side: ds ? THREE.DoubleSide : THREE.FrontSide });
+const cBox = (w, h, d, mat) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+const cSph = (r, mat, ws = 12, hs = 9) => new THREE.Mesh(new THREE.SphereGeometry(r, ws, hs), mat);
+const cCyl = (rt, rb, h, mat, seg = 10) => new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat);
+const cCone = (r, h, mat) => new THREE.Mesh(new THREE.ConeGeometry(r, h, 8), mat);
+const cTorus = (r, t, mat) => new THREE.Mesh(new THREE.TorusGeometry(r, t, 8, 20), mat);
+const cCaps = (r, h, mat) => new THREE.Mesh(new THREE.CapsuleGeometry(r, h, 3, 10), mat);
 
-// Monte un "rig" complet (animations, pivot de visée au torse, fusil, pose de bras
-// calibrée) sur un modèle Soldier. IMPORTANT : appeler AVANT de déplacer le modèle
-// (les offsets sont calculés modèle à l'origine, rotation nulle).
-function buildRigOn(model, animations) {
-  const rig = { model, actions: {}, current: null, aimBlend: 0, onAim: false };
-  rig.mixer = new THREE.AnimationMixer(model);
-  for (const clip of animations) rig.actions[clip.name] = rig.mixer.clipAction(clip);
-  const idle = rig.actions['Idle'] || Object.values(rig.actions)[0];
-  if (idle) { idle.play(); rig.current = idle.getClip().name; }
-  rig.spine = model.getObjectByName('mixamorigSpine1') || model.getObjectByName('mixamorigSpine');
-  rig.spine2 = model.getObjectByName('mixamorigSpine2') || rig.spine;
-  rig.hand = model.getObjectByName('mixamorigRightHand');
-  // Pivot de visée accroché AU TORSE : le fusil épaulé rebondit avec la poitrine
-  rig.mixer.setTime(0.8);
-  model.updateMatrixWorld(true);
-  const spWs = new THREE.Vector3();
-  rig.spine2.getWorldScale(spWs);
-  const aimPivot = new THREE.Group();
-  rig.spine2.add(aimPivot);
-  aimPivot.scale.setScalar(1 / spWs.x);
-  aimPivot.position.copy(rig.spine2.worldToLocal(new THREE.Vector3(0.15, 1.44, -0.02)));
-  aimPivot.quaternion.copy(rig.spine2.getWorldQuaternion(new THREE.Quaternion()).invert());
-  const aimGun = new THREE.Group(); // reçoit l'angle de visée haut/bas
-  aimPivot.add(aimGun);
-  rig.aimPivot = aimPivot;
-  rig.aimGun = aimGun;
-  // Pose de visée calibrée (coudes naturels, clavicules figées)
-  const E = (ex, ey, ez) => new THREE.Quaternion().setFromEuler(new THREE.Euler(ex, ey, ez));
-  rig.aimPose = [
-    { bone: model.getObjectByName('mixamorigRightShoulder'), q: E(0.032, 0.116, 1.667) },
-    { bone: model.getObjectByName('mixamorigLeftShoulder'), q: E(-3.112, -0.032, -1.502) },
-    { bone: model.getObjectByName('mixamorigRightArm'), q: E(-2.56, 0.59, 2.26) },
-    { bone: model.getObjectByName('mixamorigRightForeArm'), q: E(-2.8, -1.5, 0) },
-    { bone: model.getObjectByName('mixamorigLeftArm'), q: E(-2.06, -1.76, 0.1) },
-    { bone: model.getObjectByName('mixamorigLeftForeArm'), q: E(-0.45, -1.8, 0) }
-  ].filter(b => b.bone);
-  const rifle = makeRifleProp();
-  rig.rifle = rifle;
-  rig.attachRifle = aim => {
-    const parent = aim ? rig.aimGun : rig.spine2;
-    const ws = new THREE.Vector3();
-    parent.getWorldScale(ws);
-    const k = 1 / ws.x;
-    parent.add(rifle);
-    rifle.scale.setScalar(k);
-    if (aim) { // épaulé
-      rifle.position.set(0, -0.03, -0.1);
-      rifle.rotation.set(0, 0, 0);
-    } else { // en bandoulière dans le dos (calibré)
-      rifle.position.set(-0.06 * k, -0.127 * k, -0.193 * k);
-      rifle.rotation.set(-2.21, -2.84, -5.94);
+// ---------- Cape en simulation de tissu (Verlet) ----------
+// Grille de points épinglée aux épaules, simulée dans l'espace du torse :
+// gravité + vent ambiant + traînée liée au déplacement du porteur.
+const CAPE_W = 5, CAPE_H = 7;
+function makeCape(torso, width, length, yTop, mat) {
+  const pts = [], prev = [], pins = [];
+  for (let j = 0; j < CAPE_H; j++) {
+    for (let i = 0; i < CAPE_W; i++) {
+      const x = (i / (CAPE_W - 1) - 0.5) * width;
+      const p = new THREE.Vector3(x, yTop - (j / (CAPE_H - 1)) * length, 0.15 + j * 0.012);
+      pts.push(p);
+      prev.push(p.clone());
+      if (j === 0) pins.push(p.clone());
     }
+  }
+  const geo = new THREE.PlaneGeometry(width, length, CAPE_W - 1, CAPE_H - 1);
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.userData.noMerge = true; // géométrie animée chaque frame
+  mesh.frustumCulled = false;
+  mesh.castShadow = true;
+  torso.add(mesh);
+  const restH = width / (CAPE_W - 1), restV = length / (CAPE_H - 1);
+  return { pts, prev, pins, geo, mesh, restH, restV, t: 0 };
+}
+function updateCape(cape, dt, velLocal) {
+  const { pts, prev, pins, geo, restH, restV } = cape;
+  cape.t += dt;
+  const windZ = 0.9 + Math.sin(cape.t * 2.3) * 0.5 + Math.max(0, -velLocal.z) * 1.6;
+  const windX = Math.sin(cape.t * 1.7) * 0.35 - velLocal.x * 0.9;
+  const d2 = Math.min(dt, 0.033) ** 2;
+  for (let k = 0; k < pts.length; k++) {
+    if (k < CAPE_W) { pts[k].copy(pins[k]); prev[k].copy(pins[k]); continue; }
+    const p = pts[k], pr = prev[k];
+    const vx = (p.x - pr.x) * 0.985, vy = (p.y - pr.y) * 0.985, vz = (p.z - pr.z) * 0.985;
+    pr.copy(p);
+    p.x += vx + windX * d2;
+    p.y += vy - 9.5 * d2;
+    p.z += vz + windZ * d2;
+  }
+  for (let it = 0; it < 3; it++) {
+    for (let j = 0; j < CAPE_H; j++) for (let i = 0; i < CAPE_W; i++) {
+      const k = j * CAPE_W + i;
+      if (i + 1 < CAPE_W) relax(pts[k], pts[k + 1], restH, j === 0);
+      if (j + 1 < CAPE_H) relax(pts[k], pts[k + CAPE_W], restV, j === 0);
+    }
+    for (const p of pts) if (p.z < 0.05) p.z = 0.05; // ne traverse pas le dos
+  }
+  const pos = geo.attributes.position;
+  for (let k = 0; k < pts.length; k++) pos.setXYZ(k, pts[k].x, pts[k].y, pts[k].z);
+  pos.needsUpdate = true;
+  geo.computeVertexNormals();
+}
+function relax(a, b, rest, aPinned) {
+  const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z;
+  const d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
+  const f = (d - rest) / d * 0.5;
+  if (aPinned) { b.x -= dx * f * 2; b.y -= dy * f * 2; b.z -= dz * f * 2; }
+  else {
+    a.x += dx * f; a.y += dy * f; a.z += dz * f;
+    b.x -= dx * f; b.y -= dy * f; b.z -= dz * f;
+  }
+}
+
+// ---------- Chaînes de cheveux (couettes, mèches longues) ----------
+// Petite chaîne Verlet semi-rigide accrochée à la tête : rebondit avec la
+// démarche puis revient vers sa forme de repos.
+function makeHairChain(head, root, dir, segLen, segs, radii, mat) {
+  const pts = [], prev = [], rest = [], meshes = [];
+  for (let i = 0; i <= segs; i++) {
+    const p = root.clone().addScaledVector(dir, segLen * i);
+    pts.push(p.clone()); prev.push(p.clone()); rest.push(p.clone());
+    if (i > 0) {
+      const m = cSph(radii[Math.min(i - 1, radii.length - 1)], mat);
+      m.castShadow = true;
+      m.userData.noMerge = true; // suit la simulation, ne pas fusionner
+      head.add(m);
+      meshes.push(m);
+    }
+  }
+  return { pts, prev, rest, meshes, segLen, t: Math.random() * 9 };
+}
+function updateHairChain(ch, dt, velLocal) {
+  const d2 = Math.min(dt, 0.033) ** 2;
+  ch.t += dt;
+  for (let i = 1; i < ch.pts.length; i++) {
+    const p = ch.pts[i], pr = ch.prev[i];
+    const vx = (p.x - pr.x) * 0.92, vy = (p.y - pr.y) * 0.92, vz = (p.z - pr.z) * 0.92;
+    pr.copy(p);
+    p.x += vx - velLocal.x * d2 * 3;
+    p.y += vy - 7 * d2;
+    p.z += vz - velLocal.z * d2 * 3 + Math.sin(ch.t * 3 + i) * d2 * 0.4;
+    p.lerp(ch.rest[i], 0.10); // raideur : revient vers la coiffure de repos
+  }
+  for (let i = 1; i < ch.pts.length; i++) {
+    const a = ch.pts[i - 1], b = ch.pts[i];
+    const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z;
+    const d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
+    const f = (d - ch.segLen) / d;
+    b.x -= dx * f; b.y -= dy * f; b.z -= dz * f;
+  }
+  for (let i = 0; i < ch.meshes.length; i++) ch.meshes[i].position.copy(ch.pts[i + 1]);
+}
+
+// ---------- IK 2 os pour poser les mains sur l'arme ----------
+// Résout épaule+coude pour que la main atteigne la cible (espace torse).
+const _ikV = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+const _ikQ = [new THREE.Quaternion(), new THREE.Quaternion()];
+const _DOWN = new THREE.Vector3(0, -1, 0);
+function solveArmIK(shoulderPos, target, pole, L1, L2, outShoulderQ, outElbowQ) {
+  const toT = _ikV[0].subVectors(target, shoulderPos);
+  const d = Math.min(Math.max(toT.length(), Math.abs(L1 - L2) + 0.01), L1 + L2 - 0.01);
+  toT.normalize();
+  const poleDir = _ikV[1].subVectors(pole, shoulderPos).normalize();
+  const n = _ikV[2].crossVectors(toT, poleDir).normalize();
+  if (n.lengthSq() < 1e-6) n.set(1, 0, 0);
+  const cosA = (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d);
+  const a = Math.acos(Math.min(1, Math.max(-1, cosA)));
+  const upperDir = _ikV[3].copy(toT).applyAxisAngle(n, a);
+  outShoulderQ.setFromUnitVectors(_DOWN, upperDir);
+  const elbowPos = _ikV[1].copy(shoulderPos).addScaledVector(upperDir, L1);
+  const foreDir = _ikV[2].subVectors(target, elbowPos).normalize();
+  const invShoulder = _ikQ[0].copy(outShoulderQ).invert();
+  outElbowQ.setFromUnitVectors(_DOWN, foreDir.applyQuaternion(invShoulder));
+}
+// ---------- Corps humain réaliste : mannequin Xbot (squelette mixamo + mocap) ----------
+// Un seul maillage humain anatomique, sans texture imprimée : chaque personnage
+// le repeint (tenue par zones), le remodèle (échelles d'os) et l'équipe en 3D.
+const XBOT_URL = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/models/gltf/Xbot.glb';
+let xbotGltf = null;
+const rigsEnAttente = new Set(); // rigs créés avant la fin du téléchargement
+new GLTFLoader().load(XBOT_URL, g => {
+  xbotGltf = g;
+  for (const rig of [...rigsEnAttente]) buildXInto(rig, rig.skinIdx);
+  rigsEnAttente.clear();
+}, undefined, err => console.warn('Corps 3D non chargé :', err.message || err));
+
+// Repère aligné sur les axes du monde, accroché à un os : suit l'os ensuite.
+// (à créer modèle à l'origine, rotation nulle)
+function worldFrameOn(bone) {
+  const ws = new THREE.Vector3();
+  bone.getWorldScale(ws);
+  const g = new THREE.Group();
+  bone.add(g);
+  g.scale.setScalar(1 / ws.x);
+  g.quaternion.copy(bone.getWorldQuaternion(new THREE.Quaternion()).invert());
+  return g;
+}
+
+// Peinture du corps : couleur par sommet selon la zone anatomique.
+// ny = hauteur 0..1, nx = |x|/portée (bras en T), z = profondeur (>0 : visage).
+const zoneGeoCache = new Map();
+function paintedGeometry(baseGeo, cfg, dark) {
+  const key = baseGeo.uuid + '|' + cfg.name + '|' + dark;
+  if (zoneGeoCache.has(key)) return zoneGeoCache.get(key);
+  const Z = {};
+  for (const k in cfg.zones) Z[k] = new THREE.Color(cfg.zones[k]);
+  const geo = baseGeo.clone();
+  baseGeo.computeBoundingBox();
+  const bb = baseGeo.boundingBox;
+  const spanY = 1.81, maxAx = 0.9; // bornes mesurées du mannequin
+  const pos = geo.attributes.position;
+  const col = new Float32Array(pos.count * 3);
+  const defPaint = (ny, nx, z) => {
+    if (ny > 0.945) return Z.hair;
+    if (ny > 0.862) return Z.skin;
+    if (ny > 0.68 && nx > 0.74) return Z.hands || Z.skin;
+    if (ny > 0.68 && nx > 0.30) return Z.sleeves;
+    if (ny > 0.545) return Z.top;
+    if (ny > 0.165) return Z.pants;
+    return Z.boots;
+  };
+  const painter = cfg.paint || defPaint;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const ny = (pos.getY(i) - bb.min.y) / spanY;
+    const nx = Math.abs(x) / maxAx;
+    const c = painter(ny, nx, pos.getZ(i), Z, defPaint, Math.sign(x)) || Z.top;
+    col[i * 3] = c.r * dark; col[i * 3 + 1] = c.g * dark; col[i * 3 + 2] = c.b * dark;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  zoneGeoCache.set(key, geo);
+  return geo;
+}
+
+// Épaissit un os perpendiculairement à sa direction (bras musclés, torse large…)
+function thickenBone(bone, f) {
+  if (!bone || f === 1 || !f) return;
+  const child = bone.children.find(b => b.isBone);
+  const a = child ? child.position.clone().normalize() : new THREE.Vector3(0, 1, 0);
+  const s = new THREE.Vector3(f, f, f);
+  ['x', 'y', 'z'].forEach((k, i) => { if (Math.abs(a.getComponent(i)) > 0.7) s.setComponent(i, 1); });
+  bone.scale.multiply(s);
+}
+
+// ---------- Personnages VRM (VRoid, style anime) ----------
+// De vrais modèles d'artistes : vêtements, visages, cheveux physiques natifs.
+// Les animations mocap du mannequin Xbot sont retargetées sur leur squelette.
+const VRM_LIB_URL = 'https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@2/lib/three-vrm.module.min.js';
+let vrmLibP = null;
+const vrmLib = () => vrmLibP || (vrmLibP = import(VRM_LIB_URL));
+const xbotReady = () => xbotGltf ? Promise.resolve() : new Promise(ok => {
+  const t = setInterval(() => { if (xbotGltf) { clearInterval(t); ok(); } }, 200);
+});
+const vrmBuffers = new Map(); // url -> Promise<ArrayBuffer>
+function fetchVrm(url, onProgress) {
+  if (vrmBuffers.has(url)) return vrmBuffers.get(url);
+  const p = (async () => {
+    const rep = await fetch(url);
+    if (!rep.ok) throw new Error('HTTP ' + rep.status);
+    const total = +rep.headers.get('content-length') || 0;
+    const reader = rep.body.getReader();
+    const parts = [];
+    let recu = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      parts.push(value);
+      recu += value.length;
+      if (onProgress && total) onProgress(recu / total);
+    }
+    const buf = new Uint8Array(recu);
+    let o = 0;
+    for (const c of parts) { buf.set(c, o); o += c.length; }
+    return buf.buffer;
+  })();
+  vrmBuffers.set(url, p);
+  p.catch(() => vrmBuffers.delete(url));
+  return p;
+}
+// Retarget d'un clip mixamo (Xbot) vers les os humanoïdes normalisés du VRM
+const MIX2VRM = {
+  mixamorigHips: 'hips', mixamorigSpine: 'spine', mixamorigSpine1: 'chest', mixamorigSpine2: 'upperChest',
+  mixamorigNeck: 'neck', mixamorigHead: 'head',
+  mixamorigLeftShoulder: 'leftShoulder', mixamorigLeftArm: 'leftUpperArm', mixamorigLeftForeArm: 'leftLowerArm', mixamorigLeftHand: 'leftHand',
+  mixamorigRightShoulder: 'rightShoulder', mixamorigRightArm: 'rightUpperArm', mixamorigRightForeArm: 'rightLowerArm', mixamorigRightHand: 'rightHand',
+  mixamorigLeftUpLeg: 'leftUpperLeg', mixamorigLeftLeg: 'leftLowerLeg', mixamorigLeftFoot: 'leftFoot', mixamorigLeftToeBase: 'leftToes',
+  mixamorigRightUpLeg: 'rightUpperLeg', mixamorigRightLeg: 'rightLowerLeg', mixamorigRightFoot: 'rightFoot', mixamorigRightToeBase: 'rightToes'
+};
+function retargetClip(clip, vrm) {
+  const vrm0 = vrm.meta && (vrm.meta.metaVersion === '0' || vrm.meta.metaVersion === undefined);
+  const src = xbotGltf.scene;
+  src.updateMatrixWorld(true);
+  // hauteur de hanches LOCALE : l'armature mixamo est en centimètres (~104),
+  // c'est cette unité que portent les pistes de position du clip
+  const mixHipsY = src.getObjectByName('mixamorigHips').position.y;
+  vrm.scene.updateMatrixWorld(true);
+  const vrmHipsY = vrm.humanoid.getNormalizedBoneNode('hips').getWorldPosition(new THREE.Vector3()).y;
+  const scale = vrmHipsY / mixHipsY;
+  const restInv = new THREE.Quaternion(), parentRest = new THREE.Quaternion(), q = new THREE.Quaternion();
+  const tracks = [];
+  for (const track of clip.tracks) {
+    const dot = track.name.lastIndexOf('.');
+    const mixName = track.name.slice(0, dot), prop = track.name.slice(dot + 1);
+    const vrmBone = MIX2VRM[mixName];
+    if (!vrmBone) continue;
+    const vrmNode = vrm.humanoid.getNormalizedBoneNode(vrmBone);
+    const mixNode = src.getObjectByName(mixName);
+    if (!vrmNode || !mixNode) continue;
+    if (prop === 'quaternion') {
+      mixNode.getWorldQuaternion(restInv).invert();
+      mixNode.parent.getWorldQuaternion(parentRest);
+      const vals = Array.from(track.values);
+      for (let i = 0; i < vals.length; i += 4) {
+        q.fromArray(vals, i).premultiply(parentRest).multiply(restInv);
+        if (vrm0) { q.x = -q.x; q.z = -q.z; }
+        q.toArray(vals, i);
+      }
+      tracks.push(new THREE.QuaternionKeyframeTrack(vrmNode.name + '.quaternion', Array.from(track.times), vals));
+    } else if (prop === 'position' && vrmBone === 'hips') {
+      const vals = Array.from(track.values).map((v, i) => v * scale * (vrm0 && i % 3 !== 1 ? -1 : 1));
+      tracks.push(new THREE.VectorKeyframeTrack(vrmNode.name + '.position', Array.from(track.times), vals));
+    }
+  }
+  return new THREE.AnimationClip(clip.name, clip.duration, tracks);
+}
+
+// Monte un personnage VRM complet dans rig.model (async)
+async function buildVrmInto(rig, idx) {
+  const cfg = SKINS[idx] || SKINS[0];
+  const { VRMLoaderPlugin, VRMUtils } = await vrmLib();
+  const [buf] = await Promise.all([fetchVrm(cfg.vrm, rig.onProgress), xbotReady()]);
+  if (rig.skinIdx !== idx && rig._vrmWant !== idx) return; // choix changé entre-temps
+  const loader = new GLTFLoader();
+  loader.register(p => new VRMLoaderPlugin(p));
+  const gltf = await new Promise((ok, ko) => loader.parse(buf.slice(0), '', ok, ko));
+  const vrm = gltf.userData.vrm;
+  VRMUtils.removeUnnecessaryVertices && VRMUtils.removeUnnecessaryVertices(gltf.scene);
+  VRMUtils.rotateVRM0 && VRMUtils.rotateVRM0(vrm);
+  vrm.scene.traverse(o => { if (o.isMesh || o.isSkinnedMesh) { o.castShadow = true; o.frustumCulled = false; } });
+
+  const model = rig.model;
+  while (model.children.length) model.remove(model.children[0]);
+  const keepP = model.position.clone(), keepR = model.rotation.clone(), keepS = model.scale.clone();
+  model.position.set(0, 0, 0); model.rotation.set(0, 0, 0); model.scale.set(1, 1, 1);
+  const inner = new THREE.Group();
+  inner.add(vrm.scene);
+  model.add(inner);
+  model.updateMatrixWorld(true);
+  // Calibrage du sens : le jeu veut le visage vers -Z (bras gauche vers -X)
+  const lArm = vrm.humanoid.getNormalizedBoneNode('leftUpperArm').getWorldPosition(new THREE.Vector3());
+  if (lArm.x > 0) inner.rotation.y = Math.PI; // il regardait +Z : demi-tour
+  model.updateMatrixWorld(true);
+
+  rig.vrm = vrm;
+  // Animations retargetées (cache par modèle)
+  rig.realMixer = new THREE.AnimationMixer(vrm.scene);
+  const clipOf = n => retargetClip(THREE.AnimationClip.findByName(xbotGltf.animations, n), vrm);
+  rig.actions = { Idle: rig.realMixer.clipAction(clipOf('idle')), Walk: rig.realMixer.clipAction(clipOf('walk')), Run: rig.realMixer.clipAction(clipOf('run')) };
+  const wantAnim = rig.current || 'Idle';
+  rig.actions.Idle.play();
+  rig.current = 'Idle';
+  rig.setAnim = n => {
+    if (rig.current === n || !rig.actions[n]) return;
+    const prev = rig.actions[rig.current], nx2 = rig.actions[n];
+    nx2.reset().fadeIn(0.22).play();
+    if (prev) prev.fadeOut(0.22);
+    rig.current = n;
+  };
+  // IK sur les os BRUTS (après vrm.update) : mains posées sur l'arme
+  const raw = n => vrm.humanoid.getRawBoneNode(n);
+  rig.bones = { shR: raw('rightUpperArm'), elR: raw('rightLowerArm'), shL: raw('leftUpperArm'), elL: raw('leftLowerArm') };
+  const wp = b => b.getWorldPosition(new THREE.Vector3());
+  rig.ik = {
+    axShR: raw('rightLowerArm').position.clone().normalize(),
+    axElR: raw('rightHand').position.clone().normalize(),
+    axShL: raw('leftLowerArm').position.clone().normalize(),
+    axElL: raw('leftHand').position.clone().normalize(),
+    L1R: wp(rig.bones.shR).distanceTo(wp(rig.bones.elR)),
+    L2R: wp(rig.bones.elR).distanceTo(wp(raw('rightHand'))),
+    L1L: wp(rig.bones.shL).distanceTo(wp(rig.bones.elL)),
+    L2L: wp(rig.bones.elL).distanceTo(wp(raw('leftHand')))
+  };
+  // Pivot d'arme sur le torse brut
+  const chest = raw('upperChest') || raw('chest') || raw('spine');
+  rig.frames = { chest: worldFrameOn(chest) };
+  rig.gunPivotInner = new THREE.Group();
+  const chestY = chest.getWorldPosition(new THREE.Vector3()).y;
+  rig.gunPivotInner.position.set(0.13, 1.36 - chestY, -0.14);
+  rig.frames.chest.add(rig.gunPivotInner);
+  rig.rifle = makeRifleProp();
+  rig.rifle.scale.setScalar(0.85);
+  rig.attachRifle = aim => {
+    (aim ? rig.gunPivotInner : rig.frames.chest).add(rig.rifle);
+    if (aim) { rig.rifle.position.set(0, -0.02, -0.08); rig.rifle.rotation.set(0, 0, 0); }
+    else { rig.rifle.position.set(0, 0.08, 0.13); rig.rifle.rotation.set(0.25, 0.15, 1.1); }
   };
   rig.attachRifle(false);
+  for (const k of ['mats', 'eyes', 'chains', 'capes', 'props', 'aimPose'])
+    { if (rig[k]) rig[k].length = 0; else rig[k] = []; }
+  vrm.scene.traverse(o => { if ((o.isMesh || o.isSkinnedMesh) && o.material && !Array.isArray(o.material)) rig.mats.push(o.material); });
+  rig.isVrm = true;
+
+  model.position.copy(keepP); model.rotation.copy(keepR); model.scale.copy(keepS);
+  model.updateMatrixWorld(true);
+  rig.ready = true;
+  if (wantAnim !== 'Idle') rig.setAnim(wantAnim);
+  if (rig.postBuild) rig.postBuild(rig);
+  if (rig.postBuild2) rig.postBuild2(rig);
+}
+
+// Construit (ou reconstruit) un personnage : VRM d'abord, mannequin en secours
+function buildXInto(rig, idx) {
+  rig.skinIdx = idx;
+  rig._vrmWant = idx;
+  rig.ready = false;
+  if (rig.fallbackOnly) return buildXbotFallback(rig, idx); // bots : léger et instantané
+  buildVrmInto(rig, idx).catch(err => {
+    console.warn('VRM indisponible (' + (SKINS[idx] || {}).name + ') : ' + err.message + ' — secours mannequin');
+    buildXbotFallback(rig, idx);
+  });
   return rig;
 }
+function buildXbotFallback(rig, idx) {
+  const cfg = SKINS[idx] || SKINS[0];
+  rig.skinIdx = idx;
+  rig.ready = false;
+  if (!xbotGltf) { rigsEnAttente.add(rig); return rig; }
+  rigsEnAttente.delete(rig);
+  const wantAnim = rig.current || 'Idle'; // animation demandée avant le chargement
+  const model = rig.model;
+  while (model.children.length) model.remove(model.children[0]);
+  // on construit modèle à l'origine (repères monde), puis on restaure sa pose
+  const keepP = model.position.clone(), keepR = model.rotation.clone(), keepS = model.scale.clone();
+  model.position.set(0, 0, 0); model.rotation.set(0, 0, 0); model.scale.set(1, 1, 1);
 
-new GLTFLoader().load(
-  'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/models/gltf/Soldier.glb',
-  gltf => {
-    soldierGltf = gltf;
-    const model = gltf.scene;
-    model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
-    playerModel.root.add(model);
-    Object.assign(playerModel, buildRigOn(model, gltf.animations));
-    playerModel.loaded = true;
-    // Rigs des joueurs distants arrivés avant la fin du chargement
-    for (const r of remotePlayers.values()) if (!r.rig) r.rig = makeRemoteRig();
-  },
-  undefined,
-  err => console.warn('Soldat 3D non chargé (mode secours) :', err.message || err)
-);
+  const inner = skeletonClone(xbotGltf.scene);
+  inner.rotation.y = Math.PI; // le mannequin regarde +Z, le jeu attend -Z
+  inner.scale.setScalar(cfg.h || 1);
+  model.add(inner);
+  const B = n => inner.getObjectByName('mixamorig' + n);
+  // Morphologie propre au personnage
+  // Attention : l'échelle d'un os se propage à tous ses descendants. On
+  // n'épaissit donc qu'UN os par zone, et on annule l'héritage là où il
+  // déformerait (épaules/cou après le torse, colonne après les hanches).
+  const mo = cfg.morph || {};
+  const unInherit = (names, f) => {
+    for (const n of names) { const b = B(n); if (b) b.scale.multiply(new THREE.Vector3(1 / f, 1, 1 / f)); }
+  };
+  if (mo.head) B('Head').scale.multiplyScalar(mo.head);
+  for (const n of ['LeftArm', 'RightArm']) thickenBone(B(n), mo.arms); // l'avant-bras hérite
+  for (const n of ['LeftUpLeg', 'RightUpLeg']) thickenBone(B(n), mo.legs);
+  if (mo.torso) {
+    thickenBone(B('Spine1'), mo.torso);
+    unInherit(['LeftShoulder', 'RightShoulder', 'Neck'], mo.torso); // bras/tête normaux, épaules élargies
+  }
+  if (mo.hips) {
+    thickenBone(B('Hips'), mo.hips);
+    unInherit(['Spine'], mo.hips); // le buste ne suit pas l'élargissement des hanches
+  }
+  inner.updateMatrixWorld(true);
 
-function makeRemoteRig() {
-  if (!soldierGltf) return null;
-  const model = skeletonClone(soldierGltf.scene);
-  model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
-  scene.add(model);
-  return buildRigOn(model, soldierGltf.animations);
+  // Peau + tenue : géométrie peinte, matériau propre au rig (flash de dégât)
+  // (tableaux vidés en place : les ennemis gardent des références dessus)
+  for (const k of ['mats', 'eyes', 'chains', 'capes', 'props', 'aimPose'])
+    { if (rig[k]) rig[k].length = 0; else rig[k] = []; }
+  inner.traverse(o => {
+    if (o.isSkinnedMesh) {
+      const dark = /Joints/i.test(o.name) ? 0.5 : 1; // articulations en teinte sombre
+      o.geometry = paintedGeometry(o.geometry, cfg, dark);
+      const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.72, vertexColors: true });
+      o.material = m;
+      rig.mats.push(m);
+      o.castShadow = true;
+    }
+  });
+
+  // Animations mocap : Idle / Walk / Run en fondu croisé
+  rig.realMixer = new THREE.AnimationMixer(inner);
+  const clipOf = n => THREE.AnimationClip.findByName(xbotGltf.animations, n);
+  rig.actions = {
+    Idle: rig.realMixer.clipAction(clipOf('idle')),
+    Walk: rig.realMixer.clipAction(clipOf('walk')),
+    Run: rig.realMixer.clipAction(clipOf('run'))
+  };
+  rig.actions.Idle.play();
+  rig.current = 'Idle';
+  rig.setAnim = n => {
+    if (rig.current === n || !rig.actions[n]) return;
+    const prev = rig.actions[rig.current], nx2 = rig.actions[n];
+    nx2.reset().fadeIn(0.22).play();
+    if (prev) prev.fadeOut(0.22);
+    rig.current = n;
+  };
+
+  // Os utiles + données d'IK (axes mesurés sur le squelette, pas devinés)
+  const bones = rig.bones = {
+    shR: B('RightArm'), elR: B('RightForeArm'), shL: B('LeftArm'), elL: B('LeftForeArm'),
+    spine2: B('Spine2'), head: B('Head'), hips: B('Hips')
+  };
+  const wp = (b, out) => b.getWorldPosition(out || new THREE.Vector3());
+  rig.ik = {
+    axShR: bones.elR.position.clone().normalize(),
+    axElR: B('RightHand').position.clone().normalize(),
+    axShL: bones.elL.position.clone().normalize(),
+    axElL: B('LeftHand').position.clone().normalize(),
+    L1R: wp(bones.shR).distanceTo(wp(bones.elR)),
+    L2R: wp(bones.elR).distanceTo(wp(B('RightHand'))),
+    L1L: wp(bones.shL).distanceTo(wp(bones.elL)),
+    L2L: wp(bones.elL).distanceTo(wp(B('LeftHand')))
+  };
+
+  // Repères d'accessoires (alignés monde à la pose T, visage vers -Z, droite +X)
+  rig.frames = {
+    head: worldFrameOn(bones.head), chest: worldFrameOn(bones.spine2), hips: worldFrameOn(bones.hips),
+    lFore: worldFrameOn(bones.elL), footL: worldFrameOn(B('LeftFoot')), footR: worldFrameOn(B('RightFoot'))
+  };
+  // Pivot d'arme : devant l'épaule droite, suit la poitrine
+  rig.gunPivotInner = new THREE.Group();
+  rig.gunPivotInner.position.set(0.15, 0.03, -0.12);
+  rig.frames.chest.add(rig.gunPivotInner);
+  if (!rig.aimGun) rig.aimGun = new THREE.Object3D();   // piloté par le code du jeu (pitch)
+  if (!rig.spine) rig.spine = new THREE.Object3D();     // absorbe les retouches externes
+
+  // Accessoires / simulation du personnage (tableaux déjà vidés en place plus haut)
+  const M = (...a) => { const m = CM(...a); return m; };
+  const put = (parent, mesh, x = 0, y = 0, z = 0) => { mesh.position.set(x, y, z); parent.add(mesh); mesh.castShadow = true; return mesh; };
+  const C = {
+    rig, F: rig.frames, M, put,
+    box: cBox, sph: cSph, cyl: cCyl, cone: cCone, torus: cTorus,
+    eyes(color) { // yeux lumineux (Ombre)
+      const mat = new THREE.MeshBasicMaterial({ color });
+      for (const s of [-1, 1]) rig.eyes.push(put(rig.frames.head, cSph(0.02, mat, 8, 6), s * 0.034, 0.10, -0.105));
+    },
+    face(o = {}) { // yeux blancs + iris + sourcils + bouche (le mannequin est lisse)
+      const white = CM(0xf2f2f2, 0.35), iris = CM(o.iris || 0x33261e, 0.3);
+      const sc = o.anime ? 1.45 : 1;
+      for (const s of [-1, 1]) {
+        const e = put(rig.frames.head, cSph(0.016 * sc, white, 8, 6), s * 0.033, 0.099, -0.098);
+        e.scale.z = 0.5;
+        const ir = put(rig.frames.head, cSph(0.009 * sc, iris, 8, 6), s * 0.033, 0.099, -0.106);
+        ir.scale.z = 0.5;
+        rig.eyes.push(ir);
+        const brow = put(rig.frames.head, cBox(0.034, 0.006, 0.006, CM(o.brow || 0x2a2a2a, 0.9)), s * 0.033, 0.125 + (o.anime ? 0.008 : 0), -0.098);
+        brow.rotation.z = s * (o.browTilt || 0);
+      }
+      put(rig.frames.head, cBox(0.026, 0.006, 0.005, CM(o.mouthC || 0x8a4a3c, 0.8)), 0, 0.045, -0.104);
+    },
+    hood(color) {
+      const hd = new THREE.Mesh(
+        new THREE.SphereGeometry(0.15, 16, 12, -Math.PI * 0.25, Math.PI * 1.5, 0, Math.PI * 0.62),
+        CM(color, 0.95, 0, true));
+      hd.rotation.x = -0.2;
+      return put(rig.frames.head, hd, 0, 0.10, 0.02);
+    },
+    hairCap(color, sx = 1, sy = 0.85, sz = 1.05, y = 0, z = 0) {
+      const hm = CM(color, 0.93);
+      const hair = cSph(0.108, hm, 14, 11);
+      hair.scale.set(sx, sy, sz);
+      put(rig.frames.head, hair, 0, 0.115 + y, 0.012 + z);
+      return hm;
+    },
+    fringe(mat, sx = 1.2, sy = 0.5, sz = 0.65) {
+      const fr = cSph(0.085, mat, 10, 8);
+      fr.scale.set(sx, sy, sz);
+      put(rig.frames.head, fr, 0, 0.145, -0.055);
+    },
+    chain(root, dir, segLen, segs, radii, color) {
+      rig.chains.push(makeHairChain(rig.frames.head, root, dir, segLen, segs, radii, CM(color, 0.93)));
+    },
+    cape(color, w = 0.55, l = 0.9) {
+      rig.capes.push(makeCape(rig.frames.chest, w, l, 0.06, CM(color, 0.9, 0, true)));
+    }
+  };
+  if (cfg.build) cfg.build(C);
+
+  // Fusil
+  rig.rifle = makeRifleProp();
+  rig.attachRifle = aim => {
+    (aim ? rig.gunPivotInner : rig.frames.chest).add(rig.rifle);
+    if (aim) { rig.rifle.position.set(0, -0.02, -0.1); rig.rifle.rotation.set(0, 0, 0); }
+    else { rig.rifle.position.set(0, 0.05, 0.15); rig.rifle.rotation.set(0.25, 0.15, 1.1); }
+  };
+  rig.attachRifle(false);
+
+  model.position.copy(keepP); model.rotation.copy(keepR); model.scale.copy(keepS);
+  model.updateMatrixWorld(true);
+  rig.ready = true;
+  if (wantAnim !== 'Idle') rig.setAnim(wantAnim);
+  if (rig.postBuild) rig.postBuild(rig); // réglages différés (bots : fusil, ombres…)
+  if (rig.postBuild2) rig.postBuild2(rig);
+  return rig;
+}
+// Fusionne les meshes fixes directement enfants d'un groupe, par matériau.
+// Les éléments dynamiques (cheveux simulés, cape, texte texturé) sont exclus.
+function mergeGroupMeshes(group) {
+  const byMat = new Map();
+  for (const ch of group.children) {
+    if (ch.isMesh && ch.geometry && !ch.userData.noMerge && !ch.material.map) {
+      const k = ch.material.uuid;
+      if (!byMat.has(k)) byMat.set(k, []);
+      byMat.get(k).push(ch);
+    }
+  }
+  for (const arr of byMat.values()) {
+    if (arr.length < 2) continue;
+    let total = 0;
+    const parts = arr.map(m => {
+      m.updateMatrix();
+      const gg = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone();
+      gg.applyMatrix4(m.matrix);
+      total += gg.attributes.position.count;
+      return gg;
+    });
+    const pos = new Float32Array(total * 3), nor = new Float32Array(total * 3);
+    let off = 0;
+    for (const gg of parts) {
+      pos.set(gg.attributes.position.array, off);
+      nor.set(gg.attributes.normal.array, off);
+      off += gg.attributes.position.count * 3;
+      gg.dispose();
+    }
+    const merged = new THREE.BufferGeometry();
+    merged.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    merged.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+    const mesh = new THREE.Mesh(merged, arr[0].material);
+    mesh.castShadow = true;
+    for (const m of arr) group.remove(m);
+    group.add(mesh);
+  }
 }
 
-function rigSetAnim(rig, name) {
-  if (rig.current === name || !rig.actions[name]) return;
-  const prev = rig.actions[rig.current];
-  const next = rig.actions[name];
-  next.reset().fadeIn(0.22).play();
-  if (prev) prev.fadeOut(0.22);
-  rig.current = name;
+// ---------- IK 2 os sur le squelette réel : les mains tiennent l'arme ----------
+const _bV1 = new THREE.Vector3(), _bV2 = new THREE.Vector3(), _bV3 = new THREE.Vector3(),
+  _bV4 = new THREE.Vector3(), _bV5 = new THREE.Vector3(), _bV6 = new THREE.Vector3(), _bV7 = new THREE.Vector3();
+const _bQ1 = new THREE.Quaternion(), _bQ2 = new THREE.Quaternion(), _bQ3 = new THREE.Quaternion();
+const _tR = new THREE.Vector3(), _pR = new THREE.Vector3(), _tL = new THREE.Vector3(), _pL = new THREE.Vector3();
+const _UPY = new THREE.Vector3(0, 1, 0);
+function solveBoneArm(shBone, elBone, axSh, axEl, L1, L2, tgtW, poleW, blend) {
+  const sPos = shBone.getWorldPosition(_bV1);
+  const toT = _bV2.subVectors(tgtW, sPos);
+  const d = Math.min(Math.max(toT.length(), Math.abs(L1 - L2) + 0.01), L1 + L2 - 0.005);
+  toT.normalize();
+  const poleDir = _bV3.subVectors(poleW, sPos).normalize();
+  const n = _bV4.crossVectors(toT, poleDir).normalize();
+  if (n.lengthSq() < 1e-6) n.set(0, 1, 0);
+  const cosA = (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d);
+  const a = Math.acos(Math.min(1, Math.max(-1, cosA)));
+  const upperDir = _bV5.copy(toT).applyAxisAngle(n, a);
+  const pq = shBone.parent.getWorldQuaternion(_bQ1);
+  const qS = _bQ2.setFromUnitVectors(axSh, _bV6.copy(upperDir).applyQuaternion(_bQ3.copy(pq).invert()));
+  shBone.quaternion.slerp(qS, blend);
+  const wqS = _bQ3.copy(pq).multiply(shBone.quaternion);
+  const elPos = _bV3.copy(sPos).addScaledVector(upperDir, L1);
+  const foreDir = _bV4.subVectors(tgtW, elPos).normalize();
+  const qE = _bQ2.setFromUnitVectors(axEl, foreDir.applyQuaternion(_bQ1.copy(wqS).invert()));
+  elBone.quaternion.slerp(qE, blend);
 }
-function setAnim(name) { if (playerModel.loaded) rigSetAnim(playerModel, name); }
+
+// Après chaque pas d'animation : visée (pitch + IK), cape, cheveux
+function xbotExtras(rig, dt) {
+  // VRM : applique l'animation normalisée aux os réels + physique des cheveux
+  if (rig.isVrm && rig.vrm) rig.vrm.update(dt);
+  if (!rig._pp) rig._pp = rig.model.position.clone();
+  _bV1.subVectors(rig.model.position, rig._pp).divideScalar(Math.max(dt, 1e-4));
+  rig._pp.copy(rig.model.position);
+  const velLocal = _bV7.copy(_bV1).applyAxisAngle(_UPY, -rig.model.rotation.y);
+  const t = Math.min(1, Math.max(0, rig.aimBlend));
+  rig.gunPivotInner.rotation.x = rig.aimGun.rotation.x; // pitch piloté par le jeu
+  if (t > 0.02) {
+    rig.gunPivotInner.updateWorldMatrix(true, false);
+    const gp = rig.gunPivotInner;
+    const ms = rig.model.scale.x; // les bots agrandis ont des bras plus longs
+    gp.localToWorld(_tR.set(0.005, -0.085, 0.02));   // poignée
+    gp.localToWorld(_pR.set(0.4, -0.55, 0.15));      // coude droit : dehors-bas
+    solveBoneArm(rig.bones.shR, rig.bones.elR, rig.ik.axShR, rig.ik.axElR, rig.ik.L1R * ms, rig.ik.L2R * ms, _tR, _pR, t);
+    gp.localToWorld(_tL.set(-0.02, -0.055, -0.22));  // garde-main
+    gp.localToWorld(_pL.set(-0.45, -0.55, -0.05));
+    solveBoneArm(rig.bones.shL, rig.bones.elL, rig.ik.axShL, rig.ik.axElL, rig.ik.L1L * ms, rig.ik.L2L * ms, _tL, _pL, t);
+  }
+  for (const ch of rig.chains) updateHairChain(ch, dt, velLocal);
+  for (const cp of rig.capes) updateCape(cp, dt, velLocal);
+}
+
+// ---------- API des personnages (compatible avec tout le code du jeu) ----------
+const CHAR_SCALE = 1.28; // les personnages anime sont petits : on les agrandit
+function makeCharacter(idx, fallbackOnly) {
+  const rig = {
+    fallbackOnly: !!fallbackOnly,
+    model: new THREE.Group(), skinIdx: idx, aimBlend: 0, ready: false, current: 'Idle',
+    mats: [], eyes: [], chains: [], capes: [], props: [], aimPose: [],
+    aimGun: new THREE.Object3D(), spine: new THREE.Object3D(),
+    actions: { Idle: { timeScale: 1 }, Walk: { timeScale: 1 }, Run: { timeScale: 1 } }
+  };
+  Object.defineProperty(rig, 'loaded', { get: () => rig.ready }); // « chargé » = corps 3D prêt
+  rig.setAnim = n => { rig.current = n; };
+  rig.attachRifle = () => {};
+  rig.mixer = { update: dt => { if (rig.ready) { rig.realMixer.update(dt); xbotExtras(rig, dt); } } };
+  rig.model.scale.setScalar(CHAR_SCALE);
+  buildXInto(rig, idx);
+  return rig;
+}
+function applySkinToRig(rig, idx) {
+  if (!rig || (rig.skinIdx === idx && rig.ready)) return;
+  const wasAim = rig.ready && rig.rifle && rig.rifle.parent === rig.gunPivotInner;
+  buildXInto(rig, idx);
+  if (rig.ready && wasAim) rig.attachRifle(true);
+}
+function rigSetAnim(rig, name) { if (rig && rig.setAnim) rig.setAnim(name); }
+function setAnim(name) { rigSetAnim(playerModel, name); }
+function makeRemoteRig(sk) {
+  const rig = makeCharacter(typeof sk === 'number' ? sk : 0);
+  scene.add(rig.model);
+  return rig;
+}
+// Marque tous les meshes du rig avec l'id du joueur (cible des tirs en duel).
+// Le corps VRM arrivant en asynchrone, on re-marque à chaque (re)construction.
+function markPlayerRig(rig, id) {
+  if (!rig) return;
+  const mark = () => rig.model.traverse(o => { o.userData.playerId = id; });
+  rig.postBuild2 = mark;
+  mark();
+}
+// ---------- Les 8 personnages : tenue peinte + morphologie + équipement ----------
+// (repères : ny hauteur 0-1, nx |x| bras en T, z>0 = visage ; frames tête/torse/
+//  hanches alignés monde, visage vers -Z, droite du personnage vers +X)
+const VRM_BASE = 'https://cdn.jsdelivr.net/gh/madjin/vrm-samples@master/';
+const SKINS = [
+  { name: 'Ombre', vrm: VRM_BASE + 'vroid/beta/Darkness_Shibu.vrm', h: 1.0, morph: { arms: 0.95 },
+    zones: { hair: 0x191c22, skin: 0x8a97a8, top: 0x2e3742, sleeves: 0x353f4b, pants: 0x232a33, boots: 0x14181d, hands: 0x11141a },
+    build(C) { // assassin : capuche, yeux rouges, masque, sangles, sac
+      C.eyes(0xff2211);
+      C.hood(0x39434f);
+      C.put(C.F.head, C.box(0.115, 0.055, 0.05, C.M(0x3c444e, 0.55, 0.35)), 0, 0.045, -0.10);
+      for (const s of [-1, 1]) {
+        const strap = C.put(C.F.chest, C.box(0.045, 0.42, 0.02, C.M(0x1a1e24, 0.7)), s * 0.07, 0.02, -0.13);
+        strap.rotation.z = s * 0.42;
+      }
+      C.put(C.F.chest, C.box(0.26, 0.32, 0.12, C.M(0x272d36, 0.9)), 0, -0.02, 0.17);
+    } },
+  { name: 'Marco', vrm: VRM_BASE + 'vroid/beta/Sendagaya_Shibu.vrm', h: 0.97, morph: { head: 1.12, torso: 1.22, arms: 1.12 },
+    zones: { hair: 0x3a3f47, skin: 0xd9a077, top: 0xece5d8, sleeves: 0x9aa4b0, pants: 0xb9b3a0, boots: 0x6b4a2f },
+    build(C) { // cartoon costaud : banane, barbichette, veste ouverte, ceinture
+      const hm = C.hairCap(0x3a3f47, 0.98, 0.9, 1.12, 0.01, -0.01);
+      C.put(C.F.head, C.box(0.09, 0.05, 0.05, C.M(0x33373e, 0.95)), 0, 0.025, -0.088);
+      C.face({ iris: 0x4a3423, brow: 0x33373e });
+      for (const s of [-1, 1]) {
+        const panel = C.put(C.F.chest, C.box(0.09, 0.42, 0.03, C.M(0x9aa4b0, 0.85)), s * 0.135, -0.06, -0.115);
+        panel.rotation.y = -s * 0.25;
+      }
+      C.put(C.F.chest, C.box(0.32, 0.42, 0.04, C.M(0x9aa4b0, 0.85)), 0, -0.06, 0.115);
+      C.put(C.F.hips, C.box(0.30, 0.05, 0.20, C.M(0x5b3d22, 0.8)), 0, 0.02, 0);
+      C.put(C.F.hips, C.box(0.06, 0.045, 0.02, C.M(0xc9a53c, 0.35, 0.85)), 0, 0.02, -0.105);
+    } },
+  { name: 'Vincent', vrm: VRM_BASE + 'vroid/beta/HairSample_Male.vrm', h: 1.08, morph: { arms: 0.94, torso: 0.96 },
+    zones: { hair: 0x0d0d12, skin: 0xe8cdb4, top: 0x1c1a1e, sleeves: 0x241d20, pants: 0x1c1a1e, boots: 0xc9a53c, gold: 0xc9a53c },
+    paint(ny, nx, z, Z, def, sx) {
+      if (sx > 0 && ny > 0.68 && nx > 0.52) return Z.gold; // gantelet doré (bras gauche)
+      if (ny < 0.24) return Z.boots;                       // grandes bottes dorées
+      return def(ny, nx, z);
+    },
+    build(C) { // cape rouge au vent, cheveux noirs longs, bandeau, griffes dorées
+      C.cape(0x8c1616, 0.58, 0.95);
+      C.put(C.F.chest, C.cyl(0.115, 0.13, 0.14, C.M(0x8c1616, 0.9)), 0, 0.14, 0.02); // col haut
+      const hm = C.hairCap(0x0d0d12, 1.05, 0.95, 1.12, 0.01, 0.01);
+      C.fringe(hm, 1.15, 0.62, 0.7);
+      for (const [rx, rd] of [[-0.05, [-0.2, -0.75, 0.5]], [0, [0, -0.7, 0.6]], [0.05, [0.2, -0.75, 0.5]]])
+        C.chain(new THREE.Vector3(rx, 0.12, 0.08), new THREE.Vector3(...rd).normalize(), 0.09, 5, [0.045, 0.038, 0.03, 0.022, 0.014], 0x0d0d12);
+      const band = C.put(C.F.head, C.torus(0.098, 0.016, C.M(0x8c1616, 0.7)), 0, 0.128, 0);
+      band.rotation.x = Math.PI / 2;
+      C.face({ iris: 0x8c1616, brow: 0x0d0d12 });
+      for (const s of [-1, 0, 1]) { // griffes du gantelet
+        const claw = C.put(C.F.lFore, C.cone(0.014, 0.09, C.M(0xc9a53c, 0.3, 0.9)), -0.30, 0.015 * s, 0.02 * s);
+        claw.rotation.z = Math.PI / 2;
+      }
+      for (const f of [C.F.footL, C.F.footR]) { // pointes de bottes
+        const tip = C.put(f, C.cone(0.035, 0.12, C.M(0xc9a53c, 0.3, 0.9)), 0, -0.03, -0.17);
+        tip.rotation.x = -Math.PI / 2;
+      }
+    } },
+  { name: 'Punkette', vrm: VRM_BASE + 'vroid/beta/Sakurada_Fumiriya.vrm', h: 0.88, morph: { head: 1.15, torso: 0.92 },
+    zones: { hair: 0xe6c86d, skin: 0xe9bf9a, top: 0x2c2620, tee: 0xe8e2d4, pants: 0x24211d, ray1: 0xe0a32e, ray2: 0xe8e2d4, boots: 0x5a4632, hands: 0x33302b, makeup: 0x2f2a33 },
+    paint(ny, nx, z, Z) {
+      if (ny > 0.945) return Z.hair;
+      if (ny > 0.912) return Z.skin;
+      if (ny > 0.882 && z > 0.045) return Z.makeup; // maquillage sombre des yeux
+      if (ny > 0.862) return Z.skin;
+      if (ny > 0.68 && nx > 0.78) return Z.hands;   // mitaines
+      if (ny > 0.68 && nx > 0.30) return Z.skin;    // bras nus
+      if (ny > 0.66) return Z.top;                  // gilet court
+      if (ny > 0.60) return Z.tee;                  // haut déchiré
+      if (ny > 0.545) return Z.skin;                // ventre nu (crop top)
+      if (ny > 0.445) return Z.pants;               // mini short
+      if (ny > 0.165) return Math.floor(ny * 15) % 2 ? Z.ray1 : Z.ray2; // collants rayés
+      return Z.boots;
+    },
+    build(C) { // couettes physiques, piques d'épaule, chaîne, boucle COV
+      const hm = C.hairCap(0xe6c86d, 1.02, 0.85, 1.05, 0, 0);
+      C.fringe(hm, 1.2, 0.5, 0.62);
+      for (const s of [-1, 1])
+        C.chain(new THREE.Vector3(s * 0.115, 0.13, 0.02), new THREE.Vector3(s * 0.55, -0.55, 0.3).normalize(), 0.075, 5, [0.05, 0.042, 0.034, 0.026, 0.016], 0xe6c86d);
+      C.face({ anime: true, iris: 0x7fb4c9, brow: 0xbfa050 });
+      for (const [dz, h2] of [[-0.05, 0.10], [0, 0.12], [0.05, 0.10]])
+        C.put(C.F.chest, C.cone(0.028, h2, C.M(0x3a332c, 0.55, 0.4)), 0.20, 0.14, dz);
+      const chain = C.put(C.F.chest, C.torus(0.088, 0.013, C.M(0x8b8f96, 0.35, 0.9)), 0, 0.10, -0.02);
+      chain.rotation.x = Math.PI / 2 - 0.35;
+      C.put(C.F.hips, C.box(0.07, 0.05, 0.015, C.M(0xc9a53c, 0.35, 0.85)), 0, 0.01, -0.105);
+    } },
+  { name: 'Rousse', vrm: VRM_BASE + 'vroid/beta/HairSample_Female.vrm', h: 0.99, morph: { hips: 1.05 },
+    zones: { hair: 0xc23c1d, skin: 0xedc9a8, top: 0xf2ede2, sleeves: 0xedc9a8, pants: 0x6b7280, boots: 0x74522f },
+    paint(ny, nx, z, Z, def) {
+      if (ny > 0.545 && ny < 0.60) return Z.skin; // ventre nu sous le débardeur
+      return def(ny, nx, z);
+    },
+    build(C) { // cowgirl : carré roux, gilet kaki, holster, plaques
+      const hm = C.hairCap(0xc23c1d, 1.1, 0.95, 1.12, 0, 0.01);
+      C.fringe(hm, 1.18, 0.55, 0.66);
+      C.chain(new THREE.Vector3(0, 0.10, 0.10), new THREE.Vector3(0, -0.8, 0.5).normalize(), 0.08, 4, [0.05, 0.045, 0.04, 0.03], 0xc23c1d);
+      C.face({ iris: 0x4e7a52, brow: 0x8a2f18 });
+      for (const s of [-1, 1]) {
+        const panel = C.put(C.F.chest, C.box(0.10, 0.34, 0.035, C.M(0x6d7050, 0.9)), s * 0.115, 0.0, -0.105);
+        panel.rotation.y = -s * 0.15;
+      }
+      C.put(C.F.chest, C.box(0.30, 0.34, 0.04, C.M(0x6d7050, 0.9)), 0, 0.0, 0.11);
+      const belt = C.put(C.F.hips, C.box(0.29, 0.05, 0.19, C.M(0x4d3a24, 0.8)), 0, 0.02, 0);
+      belt.rotation.z = 0.1;
+      C.put(C.F.hips, C.box(0.06, 0.14, 0.07, C.M(0x3c2d1c, 0.85)), 0.16, -0.07, 0.01);
+      C.put(C.F.chest, C.box(0.035, 0.05, 0.008, C.M(0xb9bec6, 0.3, 0.9)), 0, 0.03, -0.125);
+    } },
+  { name: 'Kawaii', vrm: VRM_BASE + 'vroid/beta/Sendagaya_Shino.vrm', h: 0.90, morph: { head: 1.2, torso: 0.90, arms: 0.92 },
+    zones: { hair: 0xcbb3e6, skin: 0xf3d9c2, top: 0xf4f4f4, sleeves: 0xf4f4f4, pants: 0x222222, boots: 0x30323a },
+    paint(ny, nx, z, Z, def) {
+      if (ny > 0.68 && nx > 0.52) return Z.skin;  // manches courtes : avant-bras nus
+      if (ny > 0.42 && ny <= 0.545) return Z.pants; // short de sport
+      if (ny > 0.165 && ny <= 0.42) return Z.skin;  // jambes nues
+      return def(ny, nx, z);
+    },
+    build(C) { // grosse chevelure pastel + mèches physiques, visage anime
+      const hm = C.hairCap(0xcbb3e6, 1.22, 1.0, 1.22, 0.01, 0.01);
+      C.fringe(hm, 1.28, 0.6, 0.72);
+      for (const s of [-1, 1])
+        C.chain(new THREE.Vector3(s * 0.115, 0.07, 0.01), new THREE.Vector3(s * 0.25, -0.9, 0.1).normalize(), 0.07, 4, [0.05, 0.045, 0.038, 0.028], 0xcbb3e6);
+      C.face({ anime: true, iris: 0xc76f9a, brow: 0xa88fc4 });
+      for (const f of [C.F.footL, C.F.footR]) // semelles de baskets
+        C.put(f, C.box(0.11, 0.025, 0.24, C.M(0xf4f4f4, 0.6)), 0, -0.065, -0.04);
+    } },
+  { name: 'Soldate', vrm: VRM_BASE + 'Seed-san/vrm/Seed-san.vrm', h: 0.98, morph: {},
+    zones: { hair: 0x9fe0c8, skin: 0xf0d3ba, top: 0x4a5a34, sleeves: 0x4a5a34, pants: 0x46552f, boots: 0x22261c, hands: 0x2b2f26, gear: 0x333b26 },
+    paint(ny, nx, z, Z, def) {
+      if (ny > 0.33 && ny < 0.40) return Z.gear; // genouillères
+      return def(ny, nx, z);
+    },
+    build(C) { // militaire anime : carré menthe, plastron, poches
+      const hm = C.hairCap(0x9fe0c8, 1.08, 0.92, 1.1, 0, 0.005);
+      C.fringe(hm, 1.15, 0.55, 0.68);
+      C.face({ anime: true, iris: 0x6b4a2f, brow: 0x74a891 });
+      C.put(C.F.chest, C.box(0.24, 0.27, 0.05, C.M(0x37402a, 0.9)), 0, 0.01, -0.115);
+      C.put(C.F.chest, C.box(0.26, 0.27, 0.05, C.M(0x37402a, 0.9)), 0, 0.01, 0.115);
+      for (const s of [-1, 1])
+        C.put(C.F.chest, C.box(0.07, 0.09, 0.045, C.M(0x2c331f, 0.9)), s * 0.07, -0.09, -0.125);
+    } },
+  { name: 'Gamer', vrm: VRM_BASE + 'Avatar_Orion.vrm', h: 1.05, morph: { head: 1.05, torso: 1.32, arms: 1.45, legs: 1.12 },
+    zones: { hair: 0x15161a, skin: 0x7a4b2e, top: 0x4a4f55, sleeves: 0x7a4b2e, pants: 0x24262b, boots: 0x191b1f },
+    paint(ny, nx, z, Z, def) {
+      if (ny > 0.68 && nx > 0.30) return Z.skin;           // bras nus musclés
+      if (ny > 0.80 && ny <= 0.862 && nx > 0.14) return Z.skin; // épaules nues (débardeur)
+      return def(ny, nx, z);
+    },
+    build(C) { // bodybuilder : casque audio, barbe courte
+      const band = C.put(C.F.head, C.torus(0.108, 0.016, C.M(0x1b1d22, 0.55)), 0, 0.10, 0);
+      band.rotation.y = Math.PI / 2;
+      for (const s of [-1, 1]) {
+        const cup = C.put(C.F.head, C.cyl(0.042, 0.042, 0.035, C.M(0x15161a, 0.45, 0.35)), s * 0.105, 0.085, 0);
+        cup.rotation.z = Math.PI / 2;
+      }
+      C.put(C.F.head, C.box(0.095, 0.04, 0.04, C.M(0x1b1206, 0.95)), 0, 0.02, -0.088);
+      C.face({ iris: 0x2e1f14, brow: 0x15161a });
+    } }
+];
+const SKIN_BOT = 0; // les bots incarnent « Ombre »
+let mySkin = parseInt(localStorage.getItem('zh-skin'), 10) || 0;
+if (!(mySkin >= 0 && mySkin < SKINS.length)) mySkin = 0;
+
+// Le personnage du joueur local (visible en 3e personne et pour les autres joueurs)
+const playerModel = makeCharacter(mySkin);
+playerModel.root = playerModel.model;
+playerModel.root.visible = false;
+scene.add(playerModel.root);
+// Progression du téléchargement du personnage, affichée à l'accueil
+playerModel.onProgress = f => {
+  const el = document.getElementById('home-status');
+  if (el && !gameStarted) el.textContent = f >= 1 ? '' : '⏬ Personnage : ' + Math.round(f * 100) + ' %';
+};
+
 
 // ---------- Particules d'impact ----------
 const particles = [];
@@ -875,11 +2015,204 @@ function ejectShell(origin, rightDir) {
 }
 
 // ---------- État du jeu ----------
+// ---------- Armes ----------
+// spread en degrés, pellets = projectiles par tir, dmg en points de vie
+// pdmg = dégâts par balle contre un JOUEUR (duel), dmg = contre les bots
+const WEAPONS = [
+  { name: 'Pistolet',     icon: '🔫', desc: 'Équilibré · recharge rapide · 30 munitions',
+    clip: 30, fireCd: 0.10, auto: true, spread: 1.1, pellets: 1, dmg: 1, pdmg: 10, reload: 1.1,  recoil: 1.0, range: 160, snd: 'rifle', scale: 1.0 },
+  { name: 'Mitraillette', icon: '💥', desc: 'Mitraille · 50 munitions · courte portée · dégâts faibles par balle',
+    clip: 50, fireCd: 0.07, auto: true,  spread: 2.4, pellets: 1, dmg: 1, pdmg: 6,  reload: 1.6,  recoil: 0.7, range: 45,  snd: 'smg',    scale: 0.85 },
+  { name: 'Sniper',       icon: '🎯', desc: 'Vise (clic droit / 🔭) pour tirer · 1 balle = très gros dégâts',
+    clip: 5,  fireCd: 1.1,  auto: false, spread: 0.03, pellets: 1, dmg: 5, pdmg: 85, reload: 1.6, recoil: 3.0, range: 600, snd: 'sniper', scale: 1.25 }
+];
+// Progression (modes bots) : pistolet → mitraillette (10 kills) → sniper (20 kills)
+const UNLOCK_ORDER = [0, 1, 2];
+let killCount = 0, unlockedWeapons = 1;
+let duelLoadout = 0; // arme choisie avant un duel (cartes du salon)
+const isUnlocked = i => duelMode ? true : UNLOCK_ORDER.indexOf(i) < unlockedWeapons;
+function onKill() {
+  killCount++;
+  if (killCount % 10 === 0 && unlockedWeapons < WEAPONS.length) {
+    const wi = UNLOCK_ORDER[unlockedWeapons];
+    unlockedWeapons++;
+    showMsg('🔫 Nouvelle arme débloquée : ' + WEAPONS[wi].name + ' (touche ' + (wi + 1) + ')', 2500);
+    sfx(520, 0.3, 'triangle', 0.15, 1.8);
+  }
+}
+let weaponIdx = 0; // pistolet de base
+let curWeapon = WEAPONS[0];
+let scoped = false; // sniper : lunette active (obligatoire pour tirer)
 const player = {
   pos: new THREE.Vector3(0, 1.8, 0), velY: 0, onGround: true,
-  hp: 100, clip: 30, reloading: false, fireCd: 0, alive: true
+  hp: 100, clip: WEAPONS[0].clip, reloading: false, fireCd: 0, alive: true,
+  lives: 3, invuln: 0, // duel : 3 cœurs + invulnérabilité brève au respawn
+  loupCharges: 3, // mode loup : utilisations restantes de l'objet (par partie)
+  clips: WEAPONS.map(w => w.clip) // munitions chargées propres à chaque arme
 };
-const CLIP_SIZE = 30;
+// ---------- État du mode Duel ----------
+let duelMode = null;   // null | '1v1' | '2v2'
+let duelSel = '1v1';   // onglet sélectionné dans le panneau Duel
+let myTeam = 0;        // 2v2 : 0 = bleue, 1 = rouge
+const duelTeams = new Map(); // id -> équipe
+const duelElim = new Set();  // joueurs éliminés (0 cœur)
+let duelOver = false;
+function teamOf(id) {
+  if (id === myId) return myTeam;
+  if (duelTeams.has(id)) return duelTeams.get(id);
+  const r = remotePlayers.get(id);
+  return r && r.lastState && typeof r.lastState.tm === 'number' ? r.lastState.tm : 0;
+}
+
+// ---------- Mode Loup 🐺 ----------
+// Un loup secret au fusil à pompe (2 tirs) contre des survivants sans arme,
+// équipés d'une guérison ou d'un bouclier (3 charges). 3 manches de 90 s,
+// l'arène rétrécit et les murs s'éclaircissent à chaque manche.
+let wolfId = null, loupRound = 0, loupLimit = 0, loupEndsAt = 0;
+let loupScoreW = 0, loupScoreS = 0, loupRoundOver = false, loupHudT = 0;
+let myItem = 'heal';        // objet choisi dans le salon
+let shieldUntil = 0;        // bouclier actif jusqu'à cet instant
+let wolfStamina = 100, dashVel = 0;
+const isWolf = () => wolfId === myId;
+const LOUP_GUN = { name: 'Fusil à pompe 🐺', icon: '🐺', desc: '', clip: 2, fireCd: 0.8, auto: false,
+  spread: 1.4, pellets: 1, dmg: 1, pdmg: 70, reload: 1.2, recoil: 2.2, range: 45, snd: 'shotgun', scale: 0.9 };
+const LOUP_ITEMS = {
+  heal:   { name: 'Guérison', icon: '❤️', desc: 'Tir dans le vide : te soigne · Tir sur un joueur : le soigne · Instantané · 3 charges' },
+  shield: { name: 'Bouclier', icon: '🛡️', desc: 'Intouchable 15 s · Sur toi (tir dans le vide) ou un allié (tir sur lui) · 3 charges' }
+};
+function loupMyWeapon() { // arme/outil selon le rôle
+  if (isWolf()) { curWeapon = LOUP_GUN; weaponIdx = -1; player.clip = LOUP_GUN.clip; }
+  else {
+    const it = LOUP_ITEMS[myItem];
+    curWeapon = { name: it.name + ' ' + it.icon, icon: it.icon, clip: 3, fireCd: 0.6, auto: false,
+      spread: 0, pellets: 1, dmg: 0, pdmg: 0, reload: 99, recoil: 0.2, range: 90, snd: 'pistol', scale: 0.62 };
+    weaponIdx = -1;
+    player.clip = player.loupCharges; // charges restantes de la PARTIE (pas par manche)
+  }
+  updateHud();
+}
+// Utilisation d'un objet : dans le vide = sur soi, sur un joueur = pour lui
+function useItem() {
+  if (player.loupCharges <= 0) { showMsg('❌ Plus de charges !', 900); return; }
+  player.fireCd = curWeapon.fireCd;
+  player.loupCharges--;
+  player.clip = player.loupCharges;
+  recoil = 0.4;
+  sfx(myItem === 'heal' ? 620 : 460, 0.18, 'triangle', 0.14, 1.5);
+  // cible ?
+  raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+  const models = [];
+  for (const [pid, r] of remotePlayers) if (r.rig) models.push(r.rig.model);
+  const hits = raycaster.intersectObjects(models, true);
+  const obst = raycaster.intersectObjects([...obstacleMeshes, ...walls, floor], false);
+  const target = (hits.length && (!obst.length || hits[0].distance < obst[0].distance) && hits[0].distance < 90)
+    ? hits[0].object.userData.playerId : null;
+  if (myItem === 'heal') {
+    if (target) { netSend({ t: 'lp_item', kind: 'heal', to: target }); showMsg('❤️ Joueur soigné !', 1000); burst(hits[0].point, 0x66ff88, 12); }
+    else { player.hp = 100; showMsg('❤️ Tu es soigné !', 1000); }
+  } else {
+    if (target) { netSend({ t: 'lp_item', kind: 'shield', to: target }); showMsg('🛡️ Bouclier posé sur un joueur !', 1000); burst(hits[0].point, 0x66ccff, 12); }
+    else { shieldUntil = Date.now() + 15000; showMsg('🛡️ Bouclier actif 15 s !', 1200); }
+  }
+  updateHud();
+}
+// Dash du loup (touche personnalisable, bouton ⚡ sur mobile)
+function tryDash() {
+  if (!(duelMode === 'loup' && isWolf() && gameStarted && player.alive)) return;
+  if (wolfStamina < 34) { showMsg('⚡ Pas assez de stamina', 700); return; }
+  wolfStamina -= 34;
+  dashVel = 26;
+  sfx(300, 0.15, 'sawtooth', 0.12, 2.2);
+}
+// Rétrécissement : limite de déplacement + murs éclaircis (mais on peut se cacher)
+function applyLoupShrink(limit, n) {
+  loupLimit = limit;
+  let restants = 0;
+  for (let i = 0; i < obstacleMeshes.length; i++) {
+    const o = obstacles[i], m = obstacleMeshes[i];
+    const dehors = Math.abs(o.x) > limit - 2 || Math.abs(o.z) > limit - 2;
+    const eclairci = (n === 2 && i % 3 === 0) || (n === 3 && i % 3 !== 2); // manche 2 : -1/3, manche 3 : -2/3
+    o.off = dehors || eclairci;
+    m.visible = !o.off;
+    if (!o.off) restants++;
+  }
+  // Garantie : au moins 5 cachettes dans la zone, quoi qu'il arrive
+  for (let i = 0; i < obstacles.length && restants < 5; i++) {
+    const o = obstacles[i];
+    if (o.off && Math.abs(o.x) < limit - 4 && Math.abs(o.z) < limit - 4) {
+      o.off = false;
+      obstacleMeshes[i].visible = true;
+      restants++;
+    }
+  }
+}
+// Début de manche (host décide, tout le monde applique)
+function applyLoupRound(d) {
+  loupRound = d.n; loupEndsAt = d.ends; loupRoundOver = false;
+  duelElim.clear();
+  applyLoupShrink(d.limit, d.n);
+  player.hp = 100; player.alive = true; shieldUntil = 0; wolfStamina = 100;
+  const l = d.limit - 10;
+  player.pos.set((Math.random() - 0.5) * 2 * l, EYE, (Math.random() - 0.5) * 2 * l);
+  // remet l'écran de combat (au cas où on était éliminé à la manche d'avant)
+  $('overlay').querySelector('h1').textContent = '⚔ ZONE HOSTILE';
+  $('overlay').querySelector('h1').classList.remove('dead');
+  $('go-label').textContent = IS_TOUCH ? 'Touche l\'écran pour combattre' : 'Clique pour combattre';
+  loupMyWeapon();
+  showMsg('🐺 MANCHE ' + d.n + ' / 3' + (isWolf() ? ' — TU ES LE LOUP, élimine-les tous !' : ' — Survis 90 secondes !'), 3000);
+  sfx(180, 0.6, 'sawtooth', 0.16, 1.8);
+  updateHud();
+}
+function startLoupRound(n) { // host uniquement
+  const d = { t: 'lp_round', n, limit: [95, 60, 35][n - 1], ends: Date.now() + 90000 };
+  broadcast(d);
+  applyLoupRound(d);
+}
+// Fin de manche / de partie (host)
+function loupCheck(dt) {
+  if (duelMode !== 'loup' || !gameStarted || duelOver) return;
+  // régénération stamina + dash + bouclier visuel côté local
+  if (isWolf()) {
+    wolfStamina = Math.min(100, wolfStamina + dt * 14);
+    $('stam').style.width = wolfStamina + '%';
+  }
+  loupHudT += dt;
+  if (loupHudT > 0.5) { loupHudT = 0; updateHud(); }
+  if (!authority || loupRoundOver) return;
+  const ids = [myId, ...remotePlayers.keys()];
+  if (wolfId && !ids.includes(wolfId)) { loupEnd(false); return; } // le loup a quitté
+  const survivants = ids.filter(id => id !== wolfId && !duelElim.has(id));
+  if (survivants.length === 0) endLoupRound('wolf');
+  else if (Date.now() > loupEndsAt) endLoupRound('surv');
+}
+function endLoupRound(winner) { // host
+  loupRoundOver = true;
+  if (winner === 'wolf') loupScoreW++; else loupScoreS++;
+  const d = { t: 'lp_score', w: loupScoreW, s: loupScoreS, winner, round: loupRound };
+  broadcast(d);
+  applyLoupScore(d);
+  setTimeout(() => {
+    if (duelOver) return;
+    if (loupScoreW >= 2 || loupScoreS >= 2 || loupRound >= 3) loupEnd(loupScoreW > loupScoreS);
+    else startLoupRound(loupRound + 1);
+  }, 4000);
+}
+function applyLoupScore(d) {
+  loupScoreW = d.w; loupScoreS = d.s; loupRoundOver = true;
+  showMsg((d.winner === 'wolf' ? '🐺 Le loup remporte la manche ' : '🛡️ Les survivants tiennent la manche ') + d.round
+    + ' — Loup ' + d.w + ' · Survivants ' + d.s, 3500);
+}
+function loupEnd(wolfWon) { // host décide, tout le monde applique
+  if (authority) broadcast({ t: 'lp_end', wolfWon });
+  applyLoupEnd(wolfWon);
+}
+function applyLoupEnd(wolfWon) {
+  const jaiGagne = isWolf() ? wolfWon : !wolfWon;
+  duelEnd(jaiGagne);
+  $('intro').innerHTML = (wolfWon ? '🐺 Le loup a dévoré tout le monde !' : '🛡️ Les survivants ont tenu bon !')
+    + '<br>Score final — Loup ' + loupScoreW + ' · Survivants ' + loupScoreS;
+}
+const CLIP_SIZE = 30; // (conservé pour compat éventuelle)
 let score = 0, wave = 0, toSpawn = 0, spawnTimer = 0, betweenWaves = 0;
 
 const $ = id => document.getElementById(id);
@@ -893,8 +2226,30 @@ function showMsg(text, ms = 2200) {
 function updateHud() {
   $('health').style.width = Math.max(player.hp, 0) + '%';
   $('clip').textContent = player.reloading ? '…' : player.clip;
+  const wn = $('weapon-name');
+  if (wn) wn.textContent = curWeapon.name + '  [' + (weaponIdx + 1) + ']';
+  const bs = $('btn-scope'); // bouton visée : seulement avec le sniper en main
+  if (bs) bs.style.display = (IS_TOUCH && gameStarted && curWeapon.snd === 'sniper') ? 'flex' : 'none';
   $('score').textContent = score;
-  $('wave').textContent = wave;
+  if (!duelMode) $('wave').textContent = wave; // en duel, le bandeau affiche « ⚔ DUEL »
+  if (duelMode === 'loup') {
+    const reste = Math.max(0, Math.ceil((loupEndsAt - Date.now()) / 1000));
+    const surv = [myId, ...remotePlayers.keys()].filter(id => id !== wolfId && !duelElim.has(id)).length;
+    $('left').textContent = '🐺 Manche ' + loupRound + '/3 · ⏱ ' + reste + ' s · Survivants : ' + surv
+      + ' · Loup ' + loupScoreW + '-' + loupScoreS + ' Survivants';
+    const sw = $('stam-wrap');
+    if (sw) sw.style.display = (gameStarted && isWolf()) ? 'block' : 'none';
+    const bd = $('btn-dash');
+    if (bd) bd.style.display = (IS_TOUCH && gameStarted && isWolf()) ? 'flex' : 'none';
+    return;
+  }
+  if (duelMode) {
+    $('hearts').textContent = '❤️'.repeat(Math.max(0, player.lives)) + '🖤'.repeat(Math.max(0, 3 - player.lives));
+    const opps = [...remotePlayers.keys()].filter(id => !duelElim.has(id)
+      && (duelMode !== '2v2' || teamOf(id) !== myTeam)).length;
+    $('left').textContent = '⚔ Adversaires en vie : ' + opps;
+    return;
+  }
   const enLeft = authority
     ? enemies.filter(e => !e.dead).length + toSpawn
     : [...clientEnemies.values()].filter(v => !v.dead).length;
@@ -913,10 +2268,32 @@ function startWave() {
 
 // ---------- Contrôles ----------
 const keys = {};
+// ---------- Touches PC personnalisables ----------
+const BIND_DEFAULTS = {
+  forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD',
+  jump: 'Space', sprint: 'ShiftLeft', reload: 'KeyR', view: 'KeyV', dash: 'KeyE'
+};
+const BIND_LABELS = {
+  forward: 'Avancer', back: 'Reculer', left: 'Gauche', right: 'Droite',
+  jump: 'Sauter', sprint: 'Courir', reload: 'Recharger', view: 'Changer de vue', dash: 'Dash (loup)'
+};
+let BIND = Object.assign({}, BIND_DEFAULTS);
+try { Object.assign(BIND, JSON.parse(localStorage.getItem('zh-binds') || '{}')); } catch (e) {}
+const kd = a => !!keys[BIND[a]] || (a === 'sprint' && !!keys['ShiftRight']);
+let bindWaiting = null; // action en attente d'une touche (éditeur)
 addEventListener('keydown', e => {
+  if (bindWaiting) { // l'éditeur capture la prochaine touche pressée
+    e.preventDefault();
+    BIND[bindWaiting] = e.code;
+    localStorage.setItem('zh-binds', JSON.stringify(BIND));
+    bindWaiting = null;
+    if (typeof refreshKeysRow === 'function') refreshKeysRow();
+    return;
+  }
   keys[e.code] = true;
-  if (e.code === 'KeyR') reload();
-  if (e.code === 'KeyV') thirdPerson = !thirdPerson;
+  if (e.code === BIND.reload) reload();
+  if (e.code === BIND.view) thirdPerson = !thirdPerson;
+  if (e.code === BIND.dash) tryDash();
 });
 addEventListener('keyup', e => keys[e.code] = false);
 
@@ -926,7 +2303,7 @@ let yaw = 0, pitch = 0;
 const IS_TOUCH = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window
   || new URLSearchParams(location.search).has('touch'); // ?touch=1 : forcer pour tester sur PC
 let touchPlaying = false;
-const mob = { fwd: 0, strafe: 0, sprint: false, jump: false };
+const mob = { fwd: 0, strafe: 0, sprint: false, jump: false, lookX: 0, lookY: 0 };
 // Actif = pointer lock (PC) ou partie tactile en cours (mobile)
 const inputActive = () => IS_TOUCH ? (touchPlaying && player.alive) : document.pointerLockElement === renderer.domElement;
 if (IS_TOUCH) {
@@ -950,7 +2327,7 @@ if (IS_TOUCH) {
     mob.fwd = 0; mob.strafe = 0; mob.sprint = false;
     knob.style.left = '50%'; knob.style.top = '50%';
   };
-  joy.addEventListener('touchstart', e => { e.preventDefault(); joyId = e.changedTouches[0].identifier; setJoy(e.changedTouches[0]); }, { passive: false });
+  joy.addEventListener('touchstart', e => { if (document.body.classList.contains('ctrl-editing')) return; e.preventDefault(); joyId = e.changedTouches[0].identifier; setJoy(e.changedTouches[0]); }, { passive: false });
   joy.addEventListener('touchmove', e => {
     e.preventDefault();
     for (const t of e.changedTouches) if (t.identifier === joyId) setJoy(t);
@@ -980,23 +2357,91 @@ if (IS_TOUCH) {
   // Boutons
   const hold = (id, on, off) => {
     const el = document.getElementById(id);
-    el.addEventListener('touchstart', e => { e.preventDefault(); on(); }, { passive: false });
+    el.addEventListener('touchstart', e => { if (document.body.classList.contains('ctrl-editing')) return; e.preventDefault(); on(); }, { passive: false });
     el.addEventListener('touchend', e => { e.preventDefault(); if (off) off(); }, { passive: false });
     el.addEventListener('touchcancel', () => { if (off) off(); });
   };
-  hold('btn-fire', () => shooting = true, () => shooting = false);
-  hold('btn-jump', () => mob.jump = true, () => mob.jump = false);
+  hold('btn-fire', () => { shooting = true; wantFire = true; }, () => shooting = false);
   hold('btn-reload', () => reload());
+  hold('btn-scope', () => setScoped(!scoped)); // sniper : bouton visée
+  hold('btn-view', () => thirdPerson = !thirdPerson); // 👁 vue 1ʳᵉ/3ᵉ personne
+  hold('btn-dash', () => tryDash()); // ⚡ dash du loup
   // Instructions adaptées au tactile
-  $('intro').innerHTML = 'Des vagues de robots hostiles attaquent l\'arène. Survis le plus longtemps possible.<br>' +
-    'Joystick : bouger (à fond vers l\'avant = courir) · Glisse l\'écran : viser · 🔥 tirer · ⤴ sauter · R recharger';
+  $('intro').innerHTML = 'Survis aux vagues ou remporte ton duel.<br>' +
+    'Joystick : bouger (à fond = courir) · Glisse l\'écran : viser · 🔥 tirer · R recharger';
   $('go-label').textContent = 'Touche l\'écran pour combattre';
+}
+
+// ---------- Placement libre des commandes tactiles (éditeur glisser-déposer) ----------
+const CTRL_IDS = ['joy', 'btn-fire', 'btn-reload', 'btn-scope', 'btn-view', 'btn-dash'];
+function applyCtrlLayout() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem('zh-ctrl-pos') || 'null'); } catch (e) {}
+  for (const id of CTRL_IDS) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    if (saved && saved[id]) {
+      el.style.left = saved[id].l + '%';
+      el.style.top = saved[id].t + '%';
+      el.style.right = 'auto';
+      el.style.bottom = 'auto';
+    } else { // retour au CSS d'origine
+      el.style.left = el.style.top = el.style.right = el.style.bottom = '';
+    }
+  }
+}
+applyCtrlLayout();
+let ctrlEditing = false;
+function openCtrlEdit() {
+  ctrlEditing = true;
+  document.getElementById('ctrl-edit').style.display = 'block';
+  document.body.classList.add('ctrl-editing');
+  document.getElementById('settings-panel').classList.remove('open');
+}
+function closeCtrlEdit(saveIt) {
+  // IMPORTANT : mesurer les positions AVANT de masquer (un élément caché = 0,0)
+  if (saveIt) {
+    const out = {};
+    for (const id of CTRL_IDS) {
+      const r = document.getElementById(id).getBoundingClientRect();
+      if (r.width > 0) out[id] = { l: +(r.left / innerWidth * 100).toFixed(2), t: +(r.top / innerHeight * 100).toFixed(2) };
+    }
+    localStorage.setItem('zh-ctrl-pos', JSON.stringify(out));
+  }
+  ctrlEditing = false;
+  document.getElementById('ctrl-edit').style.display = 'none';
+  document.body.classList.remove('ctrl-editing');
+  applyCtrlLayout();
+}
+document.getElementById('ctrl-done').onclick = () => closeCtrlEdit(true);
+document.getElementById('ctrl-reset').onclick = () => { localStorage.removeItem('zh-ctrl-pos'); applyCtrlLayout(); };
+for (const id of CTRL_IDS) {
+  const el = document.getElementById(id);
+  if (!el) continue;
+  el.addEventListener('pointerdown', e => {
+    if (!ctrlEditing) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const r = el.getBoundingClientRect();
+    const offX = e.clientX - r.left, offY = e.clientY - r.top;
+    const move = ev => {
+      el.style.left = Math.max(0, Math.min(innerWidth - r.width, ev.clientX - offX)) / innerWidth * 100 + '%';
+      el.style.top = Math.max(0, Math.min(innerHeight - r.height, ev.clientY - offY)) / innerHeight * 100 + '%';
+      el.style.right = 'auto';
+      el.style.bottom = 'auto';
+    };
+    const up = () => { removeEventListener('pointermove', move); removeEventListener('pointerup', up); };
+    addEventListener('pointermove', move);
+    addEventListener('pointerup', up);
+  });
 }
 
 const overlay = $('overlay');
 overlay.addEventListener('click', () => {
   if (!player.alive) { location.reload(); return; }
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  startMusic();
   if (IS_TOUCH) { // pas de pointer lock sur mobile : on lance directement
     touchPlaying = true;
     document.body.classList.add('touch-playing');
@@ -1013,59 +2458,126 @@ document.addEventListener('pointerlockchange', () => {
 });
 document.addEventListener('mousemove', e => {
   if (document.pointerLockElement !== renderer.domElement) return;
-  yaw -= e.movementX * 0.0021;
-  pitch -= e.movementY * 0.0021;
+  const sens = scoped ? 0.0005 : 0.0021; // lunette : visée fine, bien moins sensible
+  yaw -= e.movementX * sens;
+  pitch -= e.movementY * sens;
   pitch = Math.max(-1.45, Math.min(1.45, pitch));
 });
 addEventListener('mousedown', e => {
-  if (e.button === 0 && document.pointerLockElement === renderer.domElement) shooting = true;
+  if (e.button === 0 && document.pointerLockElement === renderer.domElement) { shooting = true; wantFire = true; }
+  // Clic droit : bascule la lunette du sniper
+  if (e.button === 2 && document.pointerLockElement === renderer.domElement && curWeapon.snd === 'sniper') {
+    setScoped(!scoped);
+  }
 });
+addEventListener('contextmenu', e => { if (gameStarted) e.preventDefault(); });
 addEventListener('mouseup', e => { if (e.button === 0) shooting = false; });
-let shooting = false;
+let shooting = false, wantFire = false; // wantFire = front de pression (armes semi-auto)
+
+// Changement d'arme : touches 1-4 et molette
+addEventListener('keydown', e => {
+  if (!gameStarted) return;
+  const m = e.code.match(/^Digit([1-4])$/);
+  if (m) switchWeapon(+m[1] - 1);
+});
+addEventListener('wheel', e => {
+  if (!inputActive()) return;
+  let i = weaponIdx; // molette : passe à l'arme débloquée suivante
+  for (let k = 0; k < WEAPONS.length; k++) {
+    i = (i + (e.deltaY > 0 ? 1 : -1) + WEAPONS.length) % WEAPONS.length;
+    if (isUnlocked(i)) break;
+  }
+  switchWeapon(i);
+}, { passive: true });
 
 // ---------- Tir ----------
 const raycaster = new THREE.Raycaster();
 let recoil = 0, recoilPitch = 0, recoilYaw = 0, shakeT = 0;
 let aimT = 0, aimBlend = 0, rifleOnAim = false; // sortie/rangement de l'arme + zoom
+// Son de tir propre à chaque arme (synthèse, aucun fichier)
+function gunSound(kind) {
+  if (!audioCtx) return;
+  if (kind === 'pistol') { sfx(720 + Math.random() * 150, 0.09, 'square', 0.12, 0.2); sfx(120, 0.13, 'sawtooth', 0.09, 0.4); }
+  else if (kind === 'smg') { sfx(850 + Math.random() * 250, 0.05, 'square', 0.09, 0.2); sfx(160, 0.07, 'sawtooth', 0.06, 0.5); }
+  else if (kind === 'shotgun') { sfx(320, 0.22, 'sawtooth', 0.18, 0.3); sfx(90, 0.3, 'sawtooth', 0.16, 0.5); sfx(1400, 0.05, 'square', 0.1, 0.1); }
+  else if (kind === 'sniper') { sfx(1300, 0.06, 'square', 0.15, 0.08); sfx(75, 0.4, 'sawtooth', 0.18, 0.25); }
+  else { sfx(900 + Math.random() * 200, 0.08, 'square', 0.1, 0.15); sfx(140, 0.12, 'sawtooth', 0.08, 0.4); } // fusil
+}
 function reload() {
-  if (player.reloading || player.clip === CLIP_SIZE || !player.alive) return;
+  if (duelMode === 'loup' && !isWolf()) return; // les charges d'objet ne se rechargent pas
+  if (player.reloading || player.clip >= curWeapon.clip || !player.alive) return;
   player.reloading = true;
+  const w = curWeapon;
   sfx(300, 0.15, 'triangle', 0.12, 0.6);
   updateHud();
   setTimeout(() => {
-    player.clip = CLIP_SIZE;
+    if (curWeapon !== w) { player.reloading = false; return; } // arme changée entre-temps
+    player.clip = w.clip;
+    player.clips[weaponIdx] = w.clip;
     player.reloading = false;
     sfx(500, 0.1, 'triangle', 0.12, 1.4);
     updateHud();
-  }, 1100);
+  }, w.reload * 1000);
 }
+// Lunette du sniper : vignette noire + croix, zoom fort. Le tir est impossible
+// sans elle ; elle reste active après chaque tir tant qu'il reste des munitions.
+function setScoped(v) {
+  if (v && (curWeapon.snd !== 'sniper' || player.clip <= 0)) v = false;
+  if (scoped === v) return;
+  scoped = v;
+  document.getElementById('scope').classList.toggle('on', v);
+  $('crosshair').style.opacity = v ? 0 : 1;
+  sfx(v ? 500 : 380, 0.07, 'triangle', 0.08, 1.3);
+  const bs = document.getElementById('btn-scope');
+  if (bs) bs.classList.toggle('sel', v);
+}
+function switchWeapon(i) {
+  if (i === weaponIdx || i < 0 || i >= WEAPONS.length || player.reloading || !player.alive) return;
+  if (!isUnlocked(i)) { showMsg('🔒 ' + WEAPONS[i].name + ' — tue encore des bots pour la débloquer', 1300); return; }
+  setScoped(false);
+  player.clips[weaponIdx] = player.clip;
+  weaponIdx = i;
+  curWeapon = WEAPONS[i];
+  player.clip = player.clips[i];
+  sfx(400, 0.08, 'triangle', 0.1, 1.2);
+  showMsg('🔫 ' + curWeapon.name, 900);
+  updateHud();
+}
+const _shotDir = new THREE.Vector3(), _shotUp = new THREE.Vector3(), _shotRight = new THREE.Vector3();
 function shoot() {
-  if (player.clip <= 0) { reload(); return; }
+  if (player.clip <= 0) { // recharge MANUELLE uniquement : clic à vide
+    sfx(190, 0.05, 'square', 0.06, 0.9);
+    if (!shoot._t || performance.now() - shoot._t > 1500) {
+      shoot._t = performance.now();
+      showMsg('⟳ Chargeur vide — appuie sur R', 1000);
+    }
+    return;
+  }
+  if (duelMode === 'loup' && !isWolf()) { useItem(); return; } // survivant : le tir utilise l'objet
+  if (curWeapon.snd === 'sniper' && !scoped) { // sniper : il FAUT viser d'abord
+    if (!shoot._s || performance.now() - shoot._s > 1500) {
+      shoot._s = performance.now();
+      showMsg(IS_TOUCH ? '🎯 Appuie sur 🔭 pour viser d\'abord' : '🎯 Clic droit pour viser d\'abord', 1200);
+    }
+    return;
+  }
+  const w = curWeapon;
   player.clip--;
-  player.fireCd = 0.11;
+  if (weaponIdx >= 0) player.clips[weaponIdx] = player.clip;
+  if (w.snd === 'sniper' && player.clip <= 0) setScoped(false); // plus de munitions : retour normal
+  player.fireCd = w.fireCd;
   recoil = 1;
   aimT = 1.1; // reste en position de visée un moment après le dernier tir
-  // Recul : la caméra remonte et dévie légèrement — le spray monte en rafale
-  recoilPitch += 0.014 + Math.random() * 0.008;
-  recoilYaw += (Math.random() - 0.5) * 0.007;
+  // Recul proportionnel à l'arme
+  recoilPitch += (0.012 + Math.random() * 0.006) * w.recoil;
+  recoilYaw += (Math.random() - 0.5) * 0.006 * w.recoil;
   muzzle.intensity = 6;
   flashMesh.visible = true;
   flashMesh.rotation.z = Math.random() * Math.PI * 2;
-  flashMesh.scale.setScalar(0.8 + Math.random() * 0.5);
+  flashMesh.scale.setScalar((0.8 + Math.random() * 0.5) * (w.pellets > 1 ? 1.6 : 1));
   flashT = 0.045;
-  sfx(900 + Math.random() * 200, 0.08, 'square', 0.1, 0.15);
-  sfx(140, 0.12, 'sawtooth', 0.08, 0.4); // basse du coup de feu
+  gunSound(w.snd);
 
-  raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-  const targets = authority
-    ? enemies.filter(e => !e.dead).map(e => e.mesh)
-    : [...clientEnemies.values()].filter(v => !v.dead).map(v => v.mesh);
-  const hitsE = raycaster.intersectObjects(targets, true);
-  const hitsO = raycaster.intersectObjects([...obstacleMeshes, ...walls, floor], false);
-  const dE = hitsE.length ? hitsE[0].distance : Infinity;
-  const dO = hitsO.length ? hitsO[0].distance : Infinity;
-
-  // Traçante + douille depuis la bouche du canon
   const muzzleWorld = thirdPerson
     ? (playerModel.loaded
         ? (rifleOnAim
@@ -1073,28 +2585,65 @@ function shoot() {
             : camera.localToWorld(new THREE.Vector3(0.25, -0.2, -1.2)))
         : playerSm.gunPivot.children[0].localToWorld(new THREE.Vector3(0, 0.025, -0.62)))
     : gun.localToWorld(new THREE.Vector3(0, 0.03, -1.05));
-  const endDist = Math.min(dE, dO, 150);
-  const endPoint = raycaster.ray.origin.clone().addScaledVector(raycaster.ray.direction, endDist);
-  addTracer(muzzleWorld, endPoint);
-  netSend({ t: 'shot', a: muzzleWorld.toArray(), b: endPoint.toArray() });
-  const rightDir = new THREE.Vector3().crossVectors(raycaster.ray.direction, camera.up).normalize();
-  ejectShell(muzzleWorld.clone().addScaledVector(raycaster.ray.direction, -0.5), rightDir);
+  camera.getWorldDirection(_shotDir);
+  _shotRight.crossVectors(_shotDir, camera.up).normalize();
+  ejectShell(muzzleWorld.clone(), _shotRight);
 
-  if (dE < dO) {
-    const hit = hitsE[0];
-    if (authority) {
-      damageEnemy(hit.object.userData.enemy, hit.point);
-    } else {
-      // Client : effet local immédiat, dégâts validés par l'hôte
-      const eid = hit.object.userData.enemyId;
-      if (eid != null) {
-        burst(hit.point, 0xffaa33, 8);
-        sfx(200, 0.1, 'sawtooth', 0.1, 0.4);
-        netSend({ t: 'hit', id: eid });
-      }
+  let targets;
+  if (duelMode) { // duel : on vise les autres joueurs (jamais ses coéquipiers)
+    targets = [];
+    for (const [pid, r] of remotePlayers) {
+      if (!r.rig || duelElim.has(pid)) continue;
+      if (duelMode === '2v2' && teamOf(pid) === myTeam) continue;
+      targets.push(r.rig.model);
     }
-  } else if (dO < Infinity) {
-    burst(hitsO[0].point, 0x999999, 5);
+  } else {
+    targets = authority
+      ? enemies.filter(e => !e.dead).map(e => e.mesh)
+      : [...clientEnemies.values()].filter(v => !v.dead).map(v => v.mesh);
+  }
+  const obst = [...obstacleMeshes, ...walls, floor];
+  const spreadRad = w.spread * Math.PI / 180;
+
+  for (let p = 0; p < w.pellets; p++) {
+    const dir = _shotDir.clone();
+    if (spreadRad > 0) {
+      const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * spreadRad;
+      _shotUp.copy(camera.up);
+      dir.addScaledVector(_shotRight, Math.cos(a) * r).addScaledVector(_shotUp, Math.sin(a) * r).normalize();
+    }
+    raycaster.set(camera.position, dir);
+    const hitsE = raycaster.intersectObjects(targets, true);
+    const hitsO = raycaster.intersectObjects(obst, false);
+    const dE = hitsE.length ? hitsE[0].distance : Infinity;
+    const dO = hitsO.length ? hitsO[0].distance : Infinity;
+    const endDist = Math.min(dE, dO, w.range);
+    const endPoint = camera.position.clone().addScaledVector(dir, endDist);
+    if (p === 0 || w.pellets <= 3 || p % 2 === 0) { // limite le trafic réseau des gerbes
+      addTracer(muzzleWorld, endPoint);
+      netSend({ t: 'shot', a: muzzleWorld.toArray(), b: endPoint.toArray() });
+    }
+    if (dE < dO && dE <= w.range) {
+      const hit = hitsE[0];
+      if (duelMode) { // touche un joueur : dégâts envoyés à la victime
+        const pid = hit.object.userData.playerId;
+        if (pid) {
+          burst(hit.point, 0xff5555, 10);
+          sfx(1000, 0.06, 'square', 0.09, 0.3); // hitmarker
+          netSend({ t: 'pvp', to: pid, d: w.pdmg });
+        }
+      } else if (authority) {
+        const cible = hit.object.userData.enemy;
+        damageEnemy(cible, hit.point, w.dmg);
+        if (cible && cible.dead) onKill(); // mon kill : compte pour le déblocage
+      }
+      else {
+        const eid = hit.object.userData.enemyId;
+        if (eid != null) { burst(hit.point, 0xffaa33, 8); netSend({ t: 'hit', id: eid, d: w.dmg }); }
+      }
+    } else if (dO < Infinity && dO <= w.range) {
+      burst(hitsO[0].point, 0x999999, 5);
+    }
   }
   updateHud();
 }
@@ -1102,6 +2651,8 @@ function shoot() {
 // ---------- Dégâts au joueur ----------
 function hurt(dmg) {
   if (!player.alive) return;
+  if (player.invuln > 0) return; // invulnérable juste après un respawn (duel)
+  if (shieldUntil > Date.now()) { showMsg('🛡️ Bouclier !', 600); sfx(900, 0.1, 'triangle', 0.1, 1.4); return; }
   player.hp -= dmg;
   shakeT = 0.35;
   $('damage').style.opacity = 1;
@@ -1111,7 +2662,84 @@ function hurt(dmg) {
   if (player.hp <= 0) die();
   updateHud();
 }
+// Duel : réapparition avec un cœur en moins
+function respawnDuel() {
+  player.lives--;
+  player.hp = 100;
+  player.invuln = 2.5;
+  const a = Math.random() * Math.PI * 2, d = 25 + Math.random() * 60;
+  let [nx, nz] = collide(Math.cos(a) * d, Math.sin(a) * d, 0.7);
+  player.pos.set(nx, EYE, nz);
+  showMsg('💔 Vie perdue — ' + player.lives + (player.lives > 1 ? ' cœurs restants' : ' cœur restant'), 1800);
+  sfx(220, 0.3, 'sawtooth', 0.15, 0.4);
+  updateHud();
+}
+// Fin de duel : détecte la victoire/défaite (1v1 : adversaire à terre ; 2v2 : équipe entière)
+function checkDuelEnd() {
+  if (duelMode === 'loup') return; // le loup a sa propre logique de fin (loupCheck)
+  if (!duelMode || duelOver || !gameStarted) return;
+  const ids = [myId, ...remotePlayers.keys()];
+  const aliveByTeam = [0, 0];
+  let aliveOpp = 0, aliveMe = !duelElim.has(myId);
+  for (const id of ids) {
+    if (duelElim.has(id)) continue;
+    if (duelMode === '2v2') aliveByTeam[teamOf(id)]++;
+    else if (id !== myId) aliveOpp++;
+  }
+  if (duelMode === '1v1') {
+    if (!aliveMe) duelEnd(false);
+    else if (aliveOpp === 0 && remotePlayers.size > 0) duelEnd(true);
+  } else {
+    if (aliveByTeam[myTeam] === 0) duelEnd(false);
+    else if (aliveByTeam[1 - myTeam] === 0 && ids.length > 1) duelEnd(true);
+  }
+}
+function duelEnd(won) {
+  duelOver = true;
+  player.alive = false;
+  setScoped(false);
+  stopMusic();
+  if (IS_TOUCH) { touchPlaying = false; document.body.classList.remove('touch-playing'); shooting = false; $('crosshair').style.display = 'none'; }
+  else document.exitPointerLock();
+  overlay.style.display = 'flex';
+  const h1 = $('overlay').querySelector('h1');
+  h1.textContent = won ? '🏆 VICTOIRE !' : '💀 DÉFAITE';
+  h1.classList.toggle('dead', !won);
+  $('intro').innerHTML = won ? 'Tu as remporté le duel !' : 'Ton adversaire a gagné ce duel.';
+  $('go-label').textContent = 'Clique pour revenir au menu';
+  if (won) { gainXp(60); sfx(660, 0.5, 'triangle', 0.16, 2); }
+}
 function die() {
+  setScoped(false);
+  if (duelMode === 'loup') { // une seule vie par manche : on spectate jusqu'à la suivante
+    player.alive = false;
+    duelElim.add(myId);
+    netSend({ t: 'elim', id: myId });
+    if (!IS_TOUCH) document.exitPointerLock();
+    $('overlay').querySelector('h1').textContent = isWolf() ? '💀 Le loup est tombé ?!' : '🐺 Dévoré !';
+    $('intro').innerHTML = 'Manche ' + loupRound + ' — attends la suite…';
+    $('go-label').textContent = 'Clique pour quitter la partie';
+    overlay.style.display = 'flex';
+    updateHud();
+    return;
+  }
+  if (duelMode) {
+    if (player.lives > 1) { respawnDuel(); return; } // il reste des cœurs
+    player.lives = 0;
+    duelElim.add(myId);
+    netSend({ t: 'elim', id: myId });
+    updateHud();
+    checkDuelEnd();
+    if (!duelOver) { // 2v2 : mes coéquipiers jouent encore, j'attends
+      player.alive = false;
+      if (!IS_TOUCH) document.exitPointerLock();
+      $('overlay').querySelector('h1').textContent = '💀 Éliminé';
+      $('intro').innerHTML = 'Tes coéquipiers peuvent encore gagner…';
+      $('go-label').textContent = 'Clique pour quitter le duel';
+      overlay.style.display = 'flex';
+    }
+    return;
+  }
   player.alive = false;
   if (IS_TOUCH) {
     touchPlaying = false;
@@ -1120,9 +2748,13 @@ function die() {
     overlay.style.display = 'flex';
     $('crosshair').style.display = 'none';
   } else document.exitPointerLock();
+  stopMusic();
+  const record = score > profile.best;
+  if (record) { profile.best = score; saveProfile(); }
   $('overlay').querySelector('h1').textContent = '💀 TU ES TOMBÉ';
   $('overlay').querySelector('h1').classList.add('dead');
-  $('intro').innerHTML = `Score final : <b>${score}</b> · Vague atteinte : <b>${wave}</b>`;
+  $('intro').innerHTML = `Score : <b>${score}</b> · Vague <b>${wave}</b> · Niveau <b>${profile.level}</b>`
+    + `<br>Meilleur score : <b>${profile.best}</b>` + (record ? ' 🏆 Nouveau record !' : '');
   $('go-label').textContent = 'Clique pour rejouer';
 }
 
@@ -1131,28 +2763,88 @@ const clock = new THREE.Clock();
 const EYE = 1.8;
 let bobPhase = 0;
 
+// Panneau de diagnostic temporaire (affiché en jeu) : aide à comprendre pourquoi
+// les contrôles ne répondraient pas sans avoir besoin des outils développeur.
+const debugPanel = document.getElementById('debug-panel');
+let showFps = localStorage.getItem('zh-fps') === '1'; // case à cocher des paramètres
+let debugFrameCount = 0, debugLastT = performance.now(), debugRenderMs = 0;
+const gpuName = (() => {
+  try {
+    const gl = renderer.getContext();
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    return ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+  } catch (e) { return 'inconnu'; }
+})();
+function updateDebugPanel() {
+  if (!gameStarted || !showFps) { debugPanel.textContent = ''; return; }
+  debugFrameCount++;
+  const now = performance.now();
+  if (now - debugLastT > 500) {
+    debugPanel.dataset.fps = Math.round(debugFrameCount * 1000 / (now - debugLastT));
+    debugFrameCount = 0;
+    debugLastT = now;
+  }
+  const downKeys = Object.keys(keys).filter(k => keys[k]).join(',') || '(aucune)';
+  const gl = renderer.getContext();
+  debugPanel.textContent =
+    'FPS: ' + (debugPanel.dataset.fps || '…') + ' · rendu: ' + debugRenderMs.toFixed(1) + ' ms\n' +
+    'Travail/frame: ' + debugWorkMs.toFixed(1) + ' ms · intervalle: ' + debugIntervalMs.toFixed(0) + ' ms\n' +
+    'GPU: ' + String(gpuName).slice(0, 60) + '\n' +
+    'Résolution: ' + gl.drawingBufferWidth + 'x' + gl.drawingBufferHeight + ' · qualité: ' + quality + '\n' +
+    'Souris verrouillée: ' + (document.pointerLockElement === renderer.domElement) + '\n' +
+    'Mode tactile détecté: ' + IS_TOUCH + '\n' +
+    'Touches enfoncées: ' + downKeys + '\n' +
+    'Position joueur: ' + player.pos.x.toFixed(1) + ', ' + player.pos.z.toFixed(1);
+}
+
+// Garde-fou : si le jeu tourne sous ~22 FPS en partie, on descend d'un cran
+// de qualité automatiquement (haute → normale → basse), une fois toutes les 5 s.
+let fpsEma = 60, fpsCheckAt = 0;
+function autoQuality(dt, t) {
+  if (!gameStarted || dt <= 0) return;
+  fpsEma += ((1 / dt) - fpsEma) * 0.05;
+  if (t < fpsCheckAt) return;
+  fpsCheckAt = t + 5;
+  if (fpsEma < 22) {
+    const step = quality === 'haute' ? 'normale' : (quality === 'normale' ? 'basse' : null);
+    if (step) {
+      applyQuality(step);
+      showMsg('⚙ Qualité réduite (' + step + ') pour la fluidité');
+      fpsEma = 40; // laisse le temps de mesurer l'effet
+    }
+  }
+}
+
+let debugPrevFrame = 0, debugIntervalMs = 0, debugWorkMs = 0;
 function animate() {
   requestAnimationFrame(animate);
+  const _fStart = performance.now();
+  debugIntervalMs = debugPrevFrame ? _fStart - debugPrevFrame : 0;
+  debugPrevFrame = _fStart;
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
+  updateDebugPanel();
+  autoQuality(dt, t);
+  loupCheck(dt); // mode loup : stamina, chrono et arbitrage des manches
 
   // Zoom uniquement pendant le tir : dézoome immédiatement quand on relâche.
   // (aimT ne sert qu'au rangement de l'arme, qui garde un léger délai.)
   aimT = Math.max(0, aimT - dt);
   const firing = shooting && inputActive();
   if (firing) aimT = 1.1;
-  const fovTarget = firing ? FOV_AIM : FOV_IDLE;
+  // Lunette du sniper : zoom puissant, sinon zoom léger pendant le tir
+  const fovTarget = scoped ? 15 : (firing ? FOV_AIM : FOV_IDLE);
   if (Math.abs(camera.fov - fovTarget) > 0.05) {
-    camera.fov += (fovTarget - camera.fov) * Math.min(1, dt * (firing ? 7 : 12));
+    camera.fov += (fovTarget - camera.fov) * Math.min(1, dt * (scoped ? 10 : (firing ? 7 : 12)));
     camera.updateProjectionMatrix();
   }
 
   if (player.alive && inputActive()) {
     // Déplacement (clavier + joystick tactile)
-    const fwd = Math.max(-1, Math.min(1, (keys['KeyW'] ? 1 : 0) - (keys['KeyS'] ? 1 : 0) + mob.fwd));
-    const strafe = Math.max(-1, Math.min(1, (keys['KeyD'] ? 1 : 0) - (keys['KeyA'] ? 1 : 0) + mob.strafe));
+    const fwd = Math.max(-1, Math.min(1, (kd('forward') ? 1 : 0) - (kd('back') ? 1 : 0) + mob.fwd));
+    const strafe = Math.max(-1, Math.min(1, (kd('right') ? 1 : 0) - (kd('left') ? 1 : 0) + mob.strafe));
     // On ne peut pas courir en reculant : marche arrière lente, sprint vers l'avant uniquement
-    const sprint = ((keys['ShiftLeft'] || keys['ShiftRight']) || mob.sprint) && fwd > 0;
+    const sprint = (kd('sprint') || mob.sprint) && fwd > 0;
     const speed = fwd < 0 ? 5.5 : (sprint ? 13 : 8);
     const dirX = Math.sin(yaw), dirZ = Math.cos(yaw);
     let nx = player.pos.x + (-dirX * fwd + dirZ * strafe) * speed * dt;
@@ -1160,14 +2852,31 @@ function animate() {
     [nx, nz] = collide(nx, nz, 0.7);
     player.pos.x = nx; player.pos.z = nz;
 
-    if ((keys['Space'] || mob.jump) && player.onGround) { player.velY = 8.5; player.onGround = false; }
+    if ((kd('jump') || mob.jump) && player.onGround) { player.velY = 8.5; player.onGround = false; }
     player.velY -= 26 * dt;
     player.pos.y += player.velY * dt;
     if (player.pos.y <= EYE) { player.pos.y = EYE; player.velY = 0; player.onGround = true; }
 
-    // Tir
+    if (player.invuln > 0) player.invuln -= dt;
+    // Dash du loup : impulsion vers l'avant, freinée rapidement
+    if (dashVel > 0.5) {
+      const ddx = Math.sin(yaw), ddz = Math.cos(yaw);
+      let [dxp, dzp] = collide(player.pos.x - ddx * dashVel * dt, player.pos.z - ddz * dashVel * dt, 0.7);
+      player.pos.x = dxp; player.pos.z = dzp;
+      dashVel *= Math.exp(-6 * dt);
+    } else dashVel = 0;
+    // Joystick droit (mobile) : visée continue proportionnelle à l'inclinaison
+    if (IS_TOUCH && (mob.lookX || mob.lookY)) {
+      yaw -= mob.lookX * dt * 2.6;
+      pitch -= mob.lookY * dt * 2.0;
+      pitch = Math.max(-1.45, Math.min(1.45, pitch));
+    }
+    // Tir : automatique (maintien) ou semi-auto (un tir par pression)
     player.fireCd -= dt;
-    if (shooting && player.fireCd <= 0 && !player.reloading) shoot();
+    if (player.fireCd <= 0 && !player.reloading) {
+      if (curWeapon.auto ? shooting : wantFire) shoot();
+    }
+    wantFire = false;
   }
 
   // Retour élastique du recul + secousse de dégâts
@@ -1190,15 +2899,15 @@ function animate() {
       .addScaledVector(viewDir, -3.4)
       .addScaledVector(right, 1.15);
     camera.position.y = Math.max(camera.position.y + 0.35, 0.4);
-    const moving = keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['KeyD'];
+    const moving = kd('forward') || kd('left') || kd('back') || kd('right');
     if (playerModel.loaded) {
       // Soldat 3D animé
       playerModel.root.position.set(player.pos.x, player.pos.y - EYE, player.pos.z);
       playerModel.root.rotation.y = yaw; // le modèle Soldier regarde nativement vers -Z
       // Marche arrière : animation de marche jouée à l'envers, jamais de course
-      const back = keys['KeyS'] && !keys['KeyW'];
+      const back = kd('back') && !kd('forward');
       setAnim(!moving ? 'Idle'
-        : (back ? 'Walk' : ((keys['ShiftLeft'] || keys['ShiftRight']) ? 'Run' : 'Walk')));
+        : (back ? 'Walk' : (kd('sprint') ? 'Run' : 'Walk')));
       if (playerModel.actions.Walk) playerModel.actions.Walk.timeScale = back ? -1 : 1;
       // Sortie / rangement de l'arme en fondu ; bascule dos↔épaule à mi-transition
       aimBlend += ((aimT > 0 ? 1 : 0) - aimBlend) * Math.min(1, dt * 7);
@@ -1206,6 +2915,7 @@ function animate() {
         rifleOnAim = aimBlend > 0.5;
         playerModel.attachRifle(rifleOnAim);
       }
+      playerModel.aimBlend = aimBlend; // les bras suivent l'arme (IK) selon le fondu
       playerModel.aimGun.rotation.x = pitch + recoilPitch * 2;
       playerModel.mixer.update(dt);
       // Buste incliné vers la visée quand l'arme est épaulée (+ recul vers l'arrière)
@@ -1230,14 +2940,14 @@ function animate() {
   } else {
     camera.position.copy(player.pos);
     // Head-bob : léger balancement de la tête en marchant
-    if (player.onGround && (keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['KeyD'])) {
-      bobPhase += dt * ((keys['ShiftLeft'] || keys['ShiftRight']) ? 13 : 9);
+    if (player.onGround && (kd('forward') || kd('left') || kd('back') || kd('right'))) {
+      bobPhase += dt * (kd('sprint') ? 13 : 9);
       camera.position.y += Math.sin(bobPhase * 2) * 0.035;
       camera.position.x += Math.cos(bobPhase) * Math.cos(yaw) * 0.02;
       camera.position.z -= Math.cos(bobPhase) * Math.sin(yaw) * 0.02;
     }
   }
-  gun.visible = !thirdPerson;
+  gun.visible = !thirdPerson && !scoped; // dans la lunette, on ne voit pas l'arme
   playerSm.group.visible = thirdPerson && !playerModel.loaded;
   playerModel.root.visible = thirdPerson && playerModel.loaded;
 
@@ -1259,11 +2969,11 @@ function animate() {
   }
 
   // Vagues (autorité : hors ligne ou hôte)
-  if (gameStarted && authority && (player.alive || remotePlayers.size > 0)) {
+  if (gameStarted && authority && !duelMode && (player.alive || remotePlayers.size > 0)) {
     const aliveCount = enemies.filter(e => !e.dead).length;
     if (toSpawn > 0) {
       spawnTimer -= dt;
-      if (spawnTimer <= 0 && aliveCount < 14) {
+      if (spawnTimer <= 0 && aliveCount < 10) {
         spawnEnemy(wave);
         toSpawn--;
         spawnTimer = 0.7;
@@ -1291,9 +3001,15 @@ function animate() {
     const m = e.mesh;
     if (e.dead) {
       e.deathT += dt;
-      m.scale.setScalar(Math.max(0.01, 1 - e.deathT * 2.2));
-      m.rotation.x += dt * 5;
-      if (e.deathT > 0.5) { scene.remove(m); enemies.splice(i, 1); updateHud(); }
+      if (e.rig) { // humain : tombe à la renverse puis s'enfonce
+        m.rotation.x = -Math.min(1, e.deathT * 2.4) * (Math.PI / 2);
+        if (e.deathT > 0.8) m.position.y -= dt * 1.6;
+        if (e.deathT > 1.4) { scene.remove(m); enemies.splice(i, 1); updateHud(); }
+      } else {
+        m.scale.setScalar(Math.max(0.01, 1 - e.deathT * 2.2));
+        m.rotation.x += dt * 5;
+        if (e.deathT > 0.5) { scene.remove(m); enemies.splice(i, 1); updateHud(); }
+      }
       continue;
     }
     // Cible la plus proche
@@ -1326,11 +3042,19 @@ function animate() {
       m.position.x = ex; m.position.z = ez;
     }
     m.lookAt(tgtPos.x, m.position.y, tgtPos.z);
-    m.position.y = Math.max(0, Math.sin(t * 6 + e.phase)) * 0.08;
-    // Animation de marche : bras et jambes en balancier
-    const swing = Math.sin(t * e.speed * 2.2 + e.phase) * 0.6;
-    e.sm.armL.rotation.x = swing;  e.sm.armR.rotation.x = -swing;
-    e.sm.legL.rotation.x = -swing; e.sm.legR.rotation.x = swing;
+    if (e.rig) { // le soldat regarde vers -Z : demi-tour après lookAt
+      m.rotateY(Math.PI);
+      m.position.y = 0;
+      if (e.rig.actions.Run) e.rig.actions.Run.timeScale = e.speed / 5.5;
+      e.rig.mixer.update(dt);
+      for (const b of e.rig.aimPose) b.bone.quaternion.copy(b.q); // garde le fusil épaulé
+    } else {
+      m.position.y = Math.max(0, Math.sin(t * 6 + e.phase)) * 0.08;
+      // Animation de marche : bras et jambes en balancier
+      const swing = Math.sin(t * e.speed * 2.2 + e.phase) * 0.6;
+      e.sm.armL.rotation.x = swing;  e.sm.armR.rotation.x = -swing;
+      e.sm.legL.rotation.x = -swing; e.sm.legR.rotation.x = swing;
+    }
     // Attaque au corps à corps
     e.attackCd -= dt;
     if (tgt && dist < 2.1 && e.attackCd <= 0) {
@@ -1359,7 +3083,7 @@ function animate() {
         addTracer(from, to.clone().add(jitter));
         sfx(650 + rand() * 150, 0.07, 'square', 0.05, 0.2);
         broadcast({ t: 'shot', a: from.toArray(), b: to.toArray() });
-        if (rand() < 0.4) { // 40 % de chances de toucher — jouable
+        if (rand() < 0.3) { // 30 % de chances de toucher — jouable
           const dmg = e.tough ? 8 : 5;
           if (tgt.local) hurt(dmg);
           else if (tgt.conn) send(tgt.conn, { t: 'dmg', amount: dmg });
@@ -1367,13 +3091,13 @@ function animate() {
       }
     }
     // Flash de dégât
-    if (e.hitFlash > 0) {
-      e.hitFlash -= dt;
-      e.sm.skin.emissiveIntensity = 2.5;
-      e.sm.limb.emissiveIntensity = 2.5;
-    } else {
-      e.sm.skin.emissiveIntensity = 0.15;
-      e.sm.limb.emissiveIntensity = 0.1;
+    const flashing = e.hitFlash > 0;
+    if (flashing) e.hitFlash -= dt;
+    if (e.sm) {
+      e.sm.skin.emissiveIntensity = flashing ? 2.5 : 0.15;
+      e.sm.limb.emissiveIntensity = flashing ? 2.5 : 0.1;
+    } else if (e.mats) {
+      for (const mt of e.mats) mt.emissive.setHex(flashing ? 0x991111 : 0x000000);
     }
   }
   } else {
@@ -1381,27 +3105,54 @@ function animate() {
     for (const [id, v] of clientEnemies) {
       if (v.dead) {
         v.deathT += dt;
-        v.mesh.scale.setScalar(Math.max(0.01, (v.tough ? 1.25 : 1) * (1 - v.deathT * 2.2)));
-        v.mesh.rotation.x += dt * 5;
-        if (v.deathT > 0.5) { scene.remove(v.mesh); clientEnemies.delete(id); updateHud(); }
+        if (v.rig) {
+          v.mesh.rotation.x = -Math.min(1, v.deathT * 2.4) * (Math.PI / 2);
+          if (v.deathT > 0.8) v.mesh.position.y -= dt * 1.6;
+          if (v.deathT > 1.4) { scene.remove(v.mesh); clientEnemies.delete(id); updateHud(); }
+        } else {
+          v.mesh.scale.setScalar(Math.max(0.01, (v.tough ? 1.18 : 1) * (1 - v.deathT * 2.2)));
+          v.mesh.rotation.x += dt * 5;
+          if (v.deathT > 0.5) { scene.remove(v.mesh); clientEnemies.delete(id); updateHud(); }
+        }
         continue;
       }
       v.mesh.position.lerp(v.target, Math.min(1, dt * 8));
-      v.mesh.position.y = Math.max(0, Math.sin(t * 6 + v.phase)) * 0.08;
       v.mesh.lookAt(player.pos.x, v.mesh.position.y, player.pos.z);
-      const swing = Math.sin(t * 6 + v.phase) * 0.6;
-      v.sm.armL.rotation.x = swing;  v.sm.armR.rotation.x = -swing;
-      v.sm.legL.rotation.x = -swing; v.sm.legR.rotation.x = swing;
+      if (v.rig) {
+        v.mesh.rotateY(Math.PI);
+        v.mesh.position.y = 0;
+        v.rig.mixer.update(dt);
+        for (const b of v.rig.aimPose) b.bone.quaternion.copy(b.q);
+      } else {
+        v.mesh.position.y = Math.max(0, Math.sin(t * 6 + v.phase)) * 0.08;
+        const swing = Math.sin(t * 6 + v.phase) * 0.6;
+        v.sm.armL.rotation.x = swing;  v.sm.armR.rotation.x = -swing;
+        v.sm.legL.rotation.x = -swing; v.sm.legR.rotation.x = swing;
+      }
     }
   }
 
   // Joueurs distants : interpolation + animations + arme
-  for (const [, r] of remotePlayers) {
-    if (!r.rig) { if (soldierGltf) r.rig = makeRemoteRig(); continue; }
-    const rig = r.rig, tg = r.target;
-    if (!tg) continue;
-    rig.model.position.lerp(tg.p, Math.min(1, dt * 10));
-    rig.model.rotation.y = tg.yaw || 0;
+  for (const [rpId, r] of remotePlayers) {
+    if (!r.rig) {
+      r.rig = makeRemoteRig(r.lastState ? r.lastState.sk : 0);
+      markPlayerRig(r.rig, rpId);
+      continue;
+    }
+    const rig = r.rig;
+    if (!r.net) continue;
+    // Lissage exponentiel vers la dernière position réseau connue : converge
+    // toujours en douceur (~120 ms), quelle que soit l'irrégularité des paquets
+    // (rafales, pauses) — mathématiquement, ça ne peut jamais « sauter ».
+    const netP = r.net.p;
+    const k = 1 - Math.exp(-25 * dt); // quasi instantané, juste assez pour éviter un vrai saut
+    rig.model.position.x += (netP.x - rig.model.position.x) * k;
+    rig.model.position.y += (netP.y - rig.model.position.y) * k;
+    rig.model.position.z += (netP.z - rig.model.position.z) * k;
+    const tg = r.net;
+    // Rotation lissée (plus de tête qui claque à chaque paquet)
+    const dy = Math.atan2(Math.sin((tg.yaw || 0) - rig.model.rotation.y), Math.cos((tg.yaw || 0) - rig.model.rotation.y));
+    rig.model.rotation.y += dy * Math.min(1, dt * 14);
     rigSetAnim(rig, tg.anim || 'Idle');
     if (rig.actions.Walk) rig.actions.Walk.timeScale = tg.back ? -1 : 1;
     rig.mixer.update(dt);
@@ -1415,10 +3166,10 @@ function animate() {
   // Envoi réseau périodique (état du joueur / monde)
   if (gameStarted && gameMode !== 'offline') {
     netTimer += dt;
-    if (netTimer > 0.08) {
+    if (netTimer > 0.033) { // ~30 états/s : mouvement quasi en direct
       netTimer = 0;
       if (authority) broadcastWorld();
-      else if (conns[0]) send(conns[0], selfNetState());
+      else netSelf(selfNetState());
     }
   }
 
@@ -1440,7 +3191,10 @@ function animate() {
     $('health').style.width = player.hp + '%';
   }
 
+  const _rt0 = performance.now();
   renderer.render(scene, camera);
+  debugRenderMs = performance.now() - _rt0;
+  debugWorkMs = performance.now() - debugPrevFrame; // travail total de la frame
 }
 
 // ---------- Multijoueur P2P (PeerJS) & menus ----------
@@ -1449,18 +3203,91 @@ const conns = []; // hôte : toutes les connexions clients ; client : [connexion
 const myId = 'p' + Math.random().toString(36).slice(2, 8);
 let netTimer = 0, peer = null, isRoomHost = false, roomCode = null;
 
-function send(conn, msg) { try { if (conn && conn.open) conn.send(msg); } catch (err) {} }
-function broadcast(msg) { for (const c of conns) send(c, msg); }
-function broadcastExcept(conn, msg) { for (const c of conns) if (c !== conn) send(c, msg); }
+// ---------- Relais local (même Wi-Fi, via le serveur — aucun WebRTC) ----------
+// Détecte si la page est servie en local (donc un serveur-relais est disponible).
+const LAN_MODE = /^(localhost$|127\.|0\.0\.0\.0|192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(location.hostname);
+let relayRoom = null, relaySeq = 0, relayHbTimer = null, relayWelcomed = false;
+const relaySeen = new Map(); // hôte : dernier signe de vie par joueur
+function relayEmit(msg) {
+  if (!relayRoom) return;
+  const m = Object.assign({}, msg, { _f: myId });
+  fetch('/r/' + relayRoom + '/send', { method: 'POST', body: JSON.stringify(m) }).catch(() => {});
+}
+async function relayPoll() {
+  if (!relayRoom) return;
+  const room = relayRoom;
+  try {
+    const r = await fetch('/r/' + room + '/poll?since=' + relaySeq).then(x => x.json());
+    if (relayRoom === room && r) {
+      relaySeq = r.seq;
+      for (const m of r.msgs) {
+        if (m._f === myId) continue;                 // pas mes propres messages
+        if (m._to && m._to !== myId) continue;        // message destiné à un autre
+        const pc = { relayId: m._f, open: true };
+        if (isRoomHost) { // seul l'hôte gère la présence des clients
+          relaySeen.set(m._f, Date.now());
+          if (!conns.some(c => c.relayId === m._f)) { // nouveau client : bienvenue + lobby
+            conns.push(pc);
+            const left = lobbyEndsAt ? Math.max(0, Math.ceil((lobbyEndsAt - Date.now()) / 1000)) : 0;
+            relayEmit({ t: 'welcome', _to: m._f, started: gameStarted, left, duel: duelMode });
+            updateLobby();
+          }
+        }
+        onMsg(pc, m);
+      }
+    }
+  } catch (e) {}
+  if (relayRoom === room) setTimeout(relayPoll, 33);
+}
+function relayHeartbeat() {
+  if (!relayRoom) return;
+  if (!gameStarted) relayEmit({ t: 'hb' }); // présence dans le salon
+  if (isRoomHost) { // purge les clients disparus
+    const now = Date.now();
+    for (const [rid, seen] of [...relaySeen]) {
+      if (now - seen > 6000) {
+        relaySeen.delete(rid);
+        const i = conns.findIndex(c => c.relayId === rid);
+        if (i >= 0) conns.splice(i, 1);
+        removeRemote(rid);
+        updateLobby();
+      }
+    }
+  }
+  relayHbTimer = setTimeout(relayHeartbeat, 1200);
+}
+function startRelay(room, asHost) {
+  relayRoom = room; relaySeq = 0; isRoomHost = asHost;
+  relayPoll();
+  relayHeartbeat();
+}
+
+function send(conn, msg) {
+  if (relayRoom) { relayEmit(conn && conn.relayId ? Object.assign({ _to: conn.relayId }, msg) : msg); return; }
+  try { if (conn && conn.open) conn.send(msg); } catch (err) {}
+}
+function broadcast(msg) {
+  if (relayRoom) { relayEmit(msg); return; } // le serveur diffuse à tous les pollers
+  for (const c of conns) send(c, msg);
+}
+function broadcastExcept(conn, msg) {
+  if (relayRoom) return; // inutile en relais : chaque message atteint déjà tout le monde
+  for (const c of conns) if (c !== conn) send(c, msg);
+}
 function netSend(msg) {
   if (!gameStarted || gameMode === 'offline' || gameMode === null) return;
   if (authority) broadcast(msg);
+  else if (relayRoom) relayEmit(msg);
+  else if (conns[0]) send(conns[0], msg);
+}
+function netSelf(msg) { // client -> hôte (état périodique)
+  if (relayRoom) relayEmit(msg);
   else if (conns[0]) send(conns[0], msg);
 }
 
 function selfNetState() {
-  const fwdK = (keys['KeyW'] ? 1 : 0) - (keys['KeyS'] ? 1 : 0) + mob.fwd;
-  const moving = Math.abs(fwdK) > 0.1 || keys['KeyA'] || keys['KeyD'] || Math.abs(mob.strafe) > 0.1;
+  const fwdK = (kd('forward') ? 1 : 0) - (kd('back') ? 1 : 0) + mob.fwd;
+  const moving = Math.abs(fwdK) > 0.1 || kd('left') || kd('right') || Math.abs(mob.strafe) > 0.1;
   const back = fwdK < -0.1;
   const anim = (!player.alive || !moving) ? 'Idle'
     : (back ? 'Walk' : ((keys['ShiftLeft'] || keys['ShiftRight'] || mob.sprint) ? 'Run' : 'Walk'));
@@ -1468,7 +3295,8 @@ function selfNetState() {
     t: 'state', id: myId,
     p: [+player.pos.x.toFixed(2), +(player.pos.y - EYE).toFixed(2), +player.pos.z.toFixed(2)],
     yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3),
-    anim, back, aim: aimT > 0, hp: Math.round(player.hp)
+    anim, back, aim: aimT > 0, hp: Math.round(player.hp), sk: mySkin,
+    tm: myTeam, lv: player.lives
   };
 }
 
@@ -1486,18 +3314,23 @@ function updateRemote(d, conn) {
   if (d.id === myId) return;
   let r = remotePlayers.get(d.id);
   if (!r) {
-    r = { rig: soldierGltf ? makeRemoteRig() : null, target: null, lastState: null, conn: conn || null };
+    r = { rig: makeRemoteRig(typeof d.sk === 'number' ? d.sk : 0), net: null, lastState: null, conn: conn || null };
     remotePlayers.set(d.id, r);
+    markPlayerRig(r.rig, d.id);
     if (r.rig) r.rig.model.position.set(d.p[0], d.p[1], d.p[2]);
     updateHud();
     updateLobby();
   }
   if (conn) r.conn = conn;
   r.lastState = d;
-  if (!r.target) r.target = { p: new THREE.Vector3() };
-  r.target.p.set(d.p[0], d.p[1], d.p[2]);
-  r.target.yaw = d.yaw; r.target.pitch = d.pitch;
-  r.target.anim = d.anim; r.target.back = d.back; r.target.aim = d.aim;
+  if (r.rig && typeof d.sk === 'number' && r.rig.skinIdx !== d.sk) applySkinToRig(r.rig, d.sk);
+  // Dernière position réseau connue : le rendu s'en approche par lissage
+  // exponentiel (voir la boucle animate) — jamais de saut, quelle que soit
+  // l'irrégularité des paquets (rafales, pertes, pauses).
+  if (!r.net) r.net = { p: new THREE.Vector3(d.p[0], d.p[1], d.p[2]) };
+  else r.net.p.set(d.p[0], d.p[1], d.p[2]);
+  r.net.yaw = d.yaw; r.net.pitch = d.pitch;
+  r.net.anim = d.anim; r.net.back = d.back; r.net.aim = d.aim;
 }
 
 function removeRemote(id) {
@@ -1505,6 +3338,11 @@ function removeRemote(id) {
   if (!r) return;
   if (r.rig) scene.remove(r.rig.model);
   remotePlayers.delete(id);
+  if (duelMode && gameStarted && !duelOver) { // départ en plein duel = éliminé
+    duelElim.add(id);
+    showMsg('🚪 Un joueur a quitté le duel', 1500);
+    checkDuelEnd();
+  }
   updateHud();
   updateLobby();
 }
@@ -1526,7 +3364,10 @@ function onMsg(conn, d) {
     case 'hit': {
       if (!authority) break;
       const e = enemies.find(x => x.id === d.id);
-      if (e) damageEnemy(e, e.mesh.position.clone().setY(1.2));
+      if (e) {
+        damageEnemy(e, e.mesh.position.clone().setY(1.2), d.d || 1);
+        if (e.dead) send(conn, { t: 'ukill' }); // crédite le kill au tireur distant
+      }
       break;
     }
     case 'shot':
@@ -1535,17 +3376,58 @@ function onMsg(conn, d) {
       if (authority) broadcastExcept(conn, d);
       break;
     case 'dmg': hurt(d.amount); break;
+    case 'ukill': if (d._to === undefined || d._to === myId) onKill(); break; // mon kill validé par l'hôte
+    case 'pvp': // dégâts joueur-contre-joueur (duel)
+      if (d.to === myId && duelMode && !duelOver) {
+        if (duelMode === '2v2' && conn && conn.relayId && teamOf(conn.relayId) === myTeam) break; // anti tir allié
+        hurt(d.d || 10);
+      }
+      if (authority && d.to !== myId) broadcastExcept(conn, d); // hôte PeerJS : relaie à la cible
+      break;
+    case 'team': // choix d'équipe (lobby 2v2)
+      if (typeof d.tm === 'number' && d.id) { duelTeams.set(d.id, d.tm); updateTeamRow(); }
+      if (authority) broadcastExcept(conn, d); // hôte PeerJS : relaie aux autres
+      break;
+    case 'elim': // un joueur a perdu ses 3 cœurs (ou sa vie de la manche en loup)
+      if (d.id) { duelElim.add(d.id); checkDuelEnd(); updateHud(); }
+      if (authority) broadcastExcept(conn, d);
+      break;
+    case 'lp_wolf': // moi seul le reçois : je suis le loup
+      wolfId = myId;
+      break;
+    case 'lp_round': applyLoupRound(d); break;
+    case 'lp_score': applyLoupScore(d); break;
+    case 'lp_end': applyLoupEnd(d.wolfWon); break;
+    case 'lp_item': // guérison / bouclier reçu d'un allié
+      if (d.to === myId && duelMode === 'loup') {
+        if (d.kind === 'heal') { player.hp = 100; showMsg('❤️ Un allié t\'a soigné !', 1400); sfx(620, 0.2, 'triangle', 0.14, 1.5); }
+        else { shieldUntil = Date.now() + 15000; showMsg('🛡️ Un allié t\'a posé un bouclier (15 s) !', 1600); sfx(460, 0.2, 'triangle', 0.14, 1.5); }
+        updateHud();
+      }
+      if (authority && d.to !== myId) broadcastExcept(conn, d);
+      break;
     case 'start': if (!gameStarted) beginGame('client'); break;
     case 'welcome': {
+      relayWelcomed = true;
+      homeStatus('');
+      const retourAccueil = msg => {
+        document.getElementById('lobby').style.display = 'none';
+        document.getElementById('home').style.display = 'flex';
+        homeStatus(msg);
+        relayRoom = null;
+        try { peer && peer.destroy(); } catch (e) {}
+        conns.length = 0;
+      };
+      if (pendingMode === 'duel') {
+        if ((d.duel || null) !== duelMode) { retourAccueil('⚠ Ce code ne correspond pas à un duel ' + duelMode); break; }
+        if (d.started) { retourAccueil('⚠ Ce duel a déjà commencé'); break; }
+        // en attente : l'hôte lance quand tout le monde est là (pas de compte à rebours)
+        if (duelMode === '2v2') { sendTeam(); updateTeamRow(); }
+        break;
+      }
       if (d.started) {
-        if (pendingMode === 'private') {
-          // Code expiré : la partie privée a déjà commencé, on ne rejoint pas en cours
-          document.getElementById('lobby').style.display = 'none';
-          document.getElementById('home').style.display = 'flex';
-          homeStatus('⚠ Code expiré — la partie a déjà commencé');
-          try { peer.destroy(); } catch (e) {}
-          conns.length = 0;
-        } else if (!gameStarted) beginGame('client'); // public : on rejoint en cours
+        if (pendingMode === 'private') retourAccueil('⚠ Code expiré — la partie a déjà commencé');
+        else if (!gameStarted) beginGame('client'); // public : on rejoint en cours
       } else if (pendingMode === 'online') {
         openLobbyScreen({ title: 'PARTIE PUBLIQUE', code: null, info: 'Partie trouvée ! Préparez-vous…', startBtn: false });
         startLobbyCountdown(d.left || LOBBY_WAIT, null);
@@ -1567,7 +3449,7 @@ function setupConn(conn, asHost) {
     conns.push(conn);
     if (asHost) {
       const left = lobbyEndsAt ? Math.max(0, Math.ceil((lobbyEndsAt - Date.now()) / 1000)) : 0;
-      send(conn, { t: 'welcome', started: gameStarted, left });
+      send(conn, { t: 'welcome', started: gameStarted, left, duel: duelMode });
       updateLobby();
     }
     else send(conn, selfNetState());
@@ -1602,7 +3484,41 @@ function beginGame(mode) {
   document.getElementById('home').style.display = 'none';
   document.getElementById('lobby').style.display = 'none';
   overlay.style.display = 'flex';
-  if (authority) startWave();
+  // Arsenal de départ : pistolet seul (en duel : l'arme choisie sur les cartes)
+  killCount = 0;
+  setScoped(false);
+  player.clips = WEAPONS.map(w => w.clip);
+  unlockedWeapons = duelMode ? WEAPONS.length : 1;
+  weaponIdx = duelMode ? duelLoadout : 0;
+  curWeapon = WEAPONS[weaponIdx];
+  player.clip = player.clips[weaponIdx];
+  if (duelMode === 'loup') { // loup : rôle secret, objets, 3 manches
+    duelOver = false;
+    duelElim.clear();
+    player.loupCharges = 3;
+    wolfId = null; loupScoreW = 0; loupScoreS = 0; loupRound = 0;
+    document.querySelector('#topbar .wave').textContent = '🐺 LOUP';
+    if (authority) {
+      // désigne le loup au hasard ; seul le loup est prévenu à l'écran.
+      // (l'hôte garde l'id en interne pour arbitrer les manches, sans l'afficher)
+      const ids = [myId, ...remotePlayers.keys()];
+      wolfId = ids[Math.floor(Math.random() * ids.length)];
+      if (wolfId !== myId) {
+        const r = remotePlayers.get(wolfId);
+        if (relayRoom) relayEmit({ t: 'lp_wolf', _to: wolfId });
+        else if (r && r.conn) send(r.conn, { t: 'lp_wolf' });
+      }
+      setTimeout(() => startLoupRound(1), 700);
+    }
+  } else if (duelMode) { // duel : pas de vagues, 3 cœurs, positions opposées
+    player.lives = 3;
+    duelOver = false;
+    duelElim.clear();
+    document.querySelector('#topbar .wave').textContent = '⚔ DUEL ' + duelMode;
+    $('hearts').style.display = 'block';
+    const a = (isRoomHost ? 0 : Math.PI) + (myTeam ? Math.PI / 6 : 0);
+    player.pos.set(Math.cos(a) * 60, EYE, Math.sin(a) * 60);
+  } else if (authority) startWave();
   updateHud();
 }
 
@@ -1615,6 +3531,8 @@ let joinedHub = false;    // client public : connexion au hub établie
 function openLobbyScreen(opts) {
   document.getElementById('home').style.display = 'none';
   document.getElementById('lobby').style.display = 'flex';
+  document.getElementById('loadout-row').style.display = 'none'; // (réactivé par les duels)
+  document.getElementById('loup-row').style.display = 'none';
   document.getElementById('lobby-title').textContent = opts.title;
   document.getElementById('lobby-code').style.display = opts.code ? '' : 'none';
   if (opts.code) document.getElementById('lobby-code').textContent = opts.code;
@@ -1650,11 +3568,26 @@ function hasNet() {
 // strictes ou en 4G n'arrivent souvent pas à établir la connexion directe.
 const PEER_CFG = { config: { iceServers: [
   { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+  { urls: 'stun:stun1.l.google.com:19302' }
 ] } };
+// Récupère les relais TURN (Metered) via la fonction Netlify — la clé secrète
+// reste côté serveur, jamais dans ce code. En local (LAN) c'est inutile : on
+// utilise déjà le relais du serveur, donc on ne va pas les chercher.
+let icePromise = null;
+function loadIceServers() {
+  if (icePromise) return icePromise;
+  if (LAN_MODE) { icePromise = Promise.resolve(); return icePromise; }
+  icePromise = fetch('/.netlify/functions/get-turn')
+    .then(r => r.json())
+    .then(d => {
+      if (d && Array.isArray(d.iceServers) && d.iceServers.length) {
+        PEER_CFG.config.iceServers = PEER_CFG.config.iceServers.concat(d.iceServers);
+      }
+    })
+    .catch(() => {}); // pas de TURN dispo : on tente quand même en direct
+  return icePromise;
+}
+loadIceServers(); // démarre le chargement dès l'ouverture du site
 
 // 1. Jouer en ligne : le premier arrivé héberge (id public fixe), les suivants le rejoignent
 function playOnline(attempt) {
@@ -1709,6 +3642,16 @@ function createRoom() {
   roomCode = code6();
   isRoomHost = true;
   pendingMode = 'private';
+  // En local (même Wi-Fi) : relais via le serveur, aucun WebRTC/PeerJS
+  if (LAN_MODE) {
+    startRelay(roomCode, true);
+    homeStatus('');
+    lobbyEndsAt = Date.now() + LOBBY_WAIT * 1000;
+    openLobbyScreen({ title: 'PARTIE PRIVÉE', code: roomCode, info: 'Partage ce code — valable 1 minute', startBtn: true });
+    updateLobby();
+    startLobbyCountdown(LOBBY_WAIT, () => { broadcast({ t: 'start' }); beginGame('host'); });
+    return;
+  }
   homeStatus('Création de la partie…');
   const p = new Peer('nexus-arena-' + roomCode, PEER_CFG);
   p.on('open', () => {
@@ -1732,6 +3675,22 @@ function createRoom() {
 }
 function joinRoom(code) {
   pendingMode = 'private';
+  // En local (même Wi-Fi) : relais via le serveur
+  if (LAN_MODE) {
+    homeStatus('Connexion à la partie ' + code + '…');
+    relayWelcomed = false;
+    startRelay(code, false);
+    openLobbyScreen({ title: 'PARTIE PRIVÉE', code, info: "En attente du lancement par l'hôte…", startBtn: false });
+    // Si aucun hôte ne répond (code faux / partie fermée), on abandonne après 8 s
+    setTimeout(() => {
+      if (relayWelcomed || gameStarted) return;
+      relayRoom = null;
+      document.getElementById('lobby').style.display = 'none';
+      document.getElementById('home').style.display = 'flex';
+      homeStatus('⚠ Code introuvable — vérifie le code (l\'hôte doit avoir créé la partie)');
+    }, 8000);
+    return;
+  }
   homeStatus('Connexion à la partie ' + code + '…');
   const p = new Peer(PEER_CFG);
   peer = p;
@@ -1762,19 +3721,378 @@ function joinRoom(code) {
 }
 
 document.getElementById('btn-solo').onclick = () => beginGame('offline');
-document.getElementById('btn-online').onclick = () => { if (hasNet()) { homeStatus('Recherche d’une partie…'); playOnline(0); } };
-document.getElementById('btn-create').onclick = () => { if (hasNet()) createRoom(); };
-document.getElementById('btn-join').onclick = () => {
+
+// ---------- Mode Duel : panneau 1v1 / 2v2 avec son propre code ----------
+document.getElementById('btn-duel').onclick = () => {
+  document.getElementById('duel-panel').classList.toggle('open');
+  document.getElementById('loup-panel').classList.remove('open');
+};
+// Jeu du Loup : bouton séparé, réutilise la logique de duel avec le mode « loup »
+document.getElementById('btn-loup').onclick = () => {
+  document.getElementById('loup-panel').classList.toggle('open');
+  document.getElementById('duel-panel').classList.remove('open');
+};
+document.getElementById('btn-loup-create').onclick = () => {
+  duelSel = 'loup';
+  document.getElementById('btn-duel-create').onclick();
+};
+document.getElementById('btn-loup-join').onclick = () => {
+  duelSel = 'loup';
+  document.getElementById('duel-code').value = document.getElementById('loup-code').value;
+  document.getElementById('btn-duel-join').onclick();
+};
+document.querySelectorAll('[data-dmode]').forEach(b => b.onclick = () => {
+  duelSel = b.dataset.dmode;
+  document.querySelectorAll('[data-dmode]').forEach(c => c.classList.toggle('sel', c === b));
+  document.getElementById('btn-duel-create').textContent =
+    duelSel === 'loup' ? 'Créer une partie Loup 🐺' : 'Créer un duel ' + duelSel;
+});
+// Espace de code séparé par mode : un code 1v1 ne marche ni en 2v2 ni en Loup
+const duelNs = code => ({ '1v1': 'D1', '2v2': 'D2', loup: 'WF' }[duelSel]) + code;
+function openDuelLobby(code, host) {
+  openLobbyScreen({
+    title: duelSel === 'loup' ? '🐺 LOUP (2 à 10 joueurs)' : '⚔ DUEL ' + duelSel, code,
+    info: host ? 'Partage ce code (onglet ' + (duelSel === 'loup' ? 'Loup' : duelSel) + ' du menu Duel)'
+               : "En attente du lancement par l'hôte…",
+    startBtn: host
+  });
+  document.getElementById('lobby-timer').textContent = '';
+  document.getElementById('team-row').classList.toggle('on', duelSel === '2v2');
+  document.getElementById('loadout-row').style.display = duelSel === 'loup' ? 'none' : 'flex';
+  document.getElementById('loup-row').style.display = duelSel === 'loup' ? 'flex' : 'none';
+  updateTeamRow();
+}
+// Cartes Guérison / Bouclier du mode loup (le loup, lui, aura le fusil à pompe)
+const loupRow = document.getElementById('loup-row');
+for (const k of ['heal', 'shield']) {
+  const it = LOUP_ITEMS[k];
+  const card = document.createElement('button');
+  card.className = 'wcard' + (k === myItem ? ' sel' : '');
+  card.dataset.item = k;
+  card.innerHTML = '<div class="wimg">' + it.icon + '</div><div class="wname">' + it.name + '</div><div class="wdesc">' + it.desc + '</div>';
+  card.onclick = () => {
+    myItem = k;
+    loupRow.querySelectorAll('.wcard').forEach(c => c.classList.toggle('sel', c === card));
+    sfx(430, 0.06, 'triangle', 0.08, 1.3);
+  };
+  loupRow.appendChild(card);
+}
+document.getElementById('btn-duel-create').onclick = async () => {
+  duelMode = duelSel;
+  myTeam = 0;
+  duelTeams.clear(); duelElim.clear(); duelOver = false;
+  roomCode = code6();
+  isRoomHost = true;
+  pendingMode = 'duel';
+  if (LAN_MODE) {
+    startRelay(duelNs(roomCode), true);
+    openDuelLobby(roomCode, true);
+    return;
+  }
+  if (!hasNet()) return;
+  homeStatus('Création du duel…');
+  await loadIceServers();
+  const p = new Peer('nexus-duel-' + duelNs(roomCode), PEER_CFG);
+  p.on('open', () => {
+    peer = p;
+    p.on('connection', c => setupConn(c, true));
+    p.on('disconnected', () => { if (!p.destroyed) try { p.reconnect(); } catch (e) {} });
+    homeStatus('');
+    openDuelLobby(roomCode, true);
+  });
+  p.on('error', err => homeStatus('⚠ Réseau : ' + err.type));
+};
+document.getElementById('btn-duel-join').onclick = async () => {
+  const c = document.getElementById('duel-code').value.trim().toUpperCase();
+  if (c.length < 4) { homeStatus('Entre le code du duel (onglet ' + duelSel + ')'); return; }
+  duelMode = duelSel;
+  myTeam = 1; // le joueur qui rejoint arrive en face (modifiable en 2v2)
+  duelTeams.clear(); duelElim.clear(); duelOver = false;
+  isRoomHost = false;
+  pendingMode = 'duel';
+  if (LAN_MODE) {
+    homeStatus('Connexion au duel ' + c + '…');
+    relayWelcomed = false;
+    startRelay(duelNs(c), false);
+    openDuelLobby(c, false);
+    setTimeout(() => {
+      if (relayWelcomed || gameStarted) return;
+      relayRoom = null;
+      document.getElementById('lobby').style.display = 'none';
+      document.getElementById('home').style.display = 'flex';
+      homeStatus('⚠ Duel introuvable — vérifie le code et l\'onglet (1v1/2v2)');
+    }, 8000);
+    return;
+  }
+  if (!hasNet()) return;
+  homeStatus('Connexion au duel ' + c + '…');
+  await loadIceServers();
+  const p = new Peer(PEER_CFG);
+  peer = p;
+  p.on('open', () => {
+    const cn = p.connect('nexus-duel-' + duelNs(c), { reliable: true });
+    setupConn(cn, false);
+    cn.on('open', () => { homeStatus(''); openDuelLobby(c, false); });
+  });
+  p.on('error', err => homeStatus(err.type === 'peer-unavailable' ? '⚠ Duel introuvable — vérifie le code et l\'onglet' : '⚠ Réseau : ' + err.type));
+};
+// Cartes de choix d'arme (affichées dans le salon de duel) : image + nom + specs
+const loadoutRow = document.getElementById('loadout-row');
+WEAPONS.forEach((w, i) => {
+  const card = document.createElement('button');
+  card.className = 'wcard' + (i === duelLoadout ? ' sel' : '');
+  card.innerHTML = '<div class="wimg">' + w.icon + '</div><div class="wname">' + w.name + '</div><div class="wdesc">' + w.desc + '</div>';
+  card.onclick = () => {
+    duelLoadout = i;
+    loadoutRow.querySelectorAll('.wcard').forEach((c, j) => c.classList.toggle('sel', j === i));
+    sfx(430, 0.06, 'triangle', 0.08, 1.3);
+  };
+  loadoutRow.appendChild(card);
+});
+
+// Choix d'équipe (2v2)
+function sendTeam() { netSelf({ t: 'team', id: myId, tm: myTeam }); if (isRoomHost) broadcast({ t: 'team', id: myId, tm: myTeam }); }
+function updateTeamRow() {
+  const counts = [0, 0];
+  counts[myTeam]++;
+  for (const [, tm] of duelTeams) counts[tm]++;
+  const b0 = document.getElementById('btn-team-0'), b1 = document.getElementById('btn-team-1');
+  if (!b0) return;
+  b0.textContent = '🔵 Équipe Bleue (' + counts[0] + ')';
+  b1.textContent = '🔴 Équipe Rouge (' + counts[1] + ')';
+  b0.classList.toggle('sel', myTeam === 0);
+  b1.classList.toggle('sel', myTeam === 1);
+}
+document.getElementById('btn-team-0').onclick = () => { myTeam = 0; sendTeam(); updateTeamRow(); };
+document.getElementById('btn-team-1').onclick = () => { myTeam = 1; sendTeam(); updateTeamRow(); };
+
+document.getElementById('btn-create').onclick = async () => { await loadIceServers(); if (hasNet() || LAN_MODE) createRoom(); };
+document.getElementById('btn-join').onclick = async () => {
   const c = document.getElementById('join-code').value.trim().toUpperCase();
   if (c.length < 4) { homeStatus('Entre le code de la partie'); return; }
+  await loadIceServers();
   if (hasNet()) joinRoom(c);
 };
-document.getElementById('btn-start').onclick = () => { broadcast({ t: 'start' }); beginGame('host'); };
+document.getElementById('btn-start').onclick = () => {
+  if (duelMode && remotePlayers.size < 1 && conns.length < 1) {
+    showMsg('⏳ Attends au moins un adversaire !', 1500);
+    return;
+  }
+  broadcast({ t: 'start' });
+  beginGame('host');
+};
+
+// Nom du personnage sélectionné, affiché sous l'aperçu 3D
+const skinNameEl = document.getElementById('skin-name');
+const updateSkinName = () => { skinNameEl.textContent = (SKINS[mySkin] || {}).name || ''; };
+updateSkinName();
+
+// Choix du skin : pastille de la couleur du haut + nom, sélection mémorisée
+const skinRow = document.getElementById('skin-row');
+SKINS.forEach((s, i) => {
+  const b = document.createElement('button');
+  b.className = 'chip' + (i === mySkin ? ' sel' : '');
+  b.innerHTML = `<span class="dot" style="background:#${(s.chip !== undefined ? s.chip : s.zones.top).toString(16).padStart(6, '0')}"></span>${s.name}`;
+  b.onclick = () => {
+    mySkin = i;
+    localStorage.setItem('zh-skin', i);
+    skinRow.querySelectorAll('.chip').forEach((c, j) => c.classList.toggle('sel', j === i));
+    updateSkinName();
+    if (playerModel.loaded) applySkinToRig(playerModel, i);
+    if (pvRig) applySkinToRig(pvRig, i); // met à jour l'aperçu
+  };
+  skinRow.appendChild(b);
+});
+
+// Bouton plein écran (accueil) — bascule et adapte l'icône
+const btnFs = document.getElementById('btn-fullscreen');
+function toggleFullscreen() {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen().catch(() => {});
+}
+btnFs.onclick = toggleFullscreen;
+document.addEventListener('fullscreenchange', () => {
+  btnFs.textContent = document.fullscreenElement ? '⤢' : '⛶';
+  btnFs.title = document.fullscreenElement ? 'Quitter le plein écran' : 'Plein écran';
+});
+addEventListener('keydown', e => { if (e.code === 'KeyF' && !gameStarted) toggleFullscreen(); });
+// ---------- Bouton « retour » du navigateur : on reste DANS le jeu ----------
+// La flèche arrière ferme le panneau/salon/partie en cours au lieu de quitter le site.
+history.pushState({ zh: 1 }, '');
+// Un popstate « spontané » (geste iPad Safari, sortie de plein écran, etc. —
+// pas forcément un vrai appui sur retour) ne doit JAMAIS recharger la page en
+// pleine partie : ça coupait le duel brutalement. On ignore les événements
+// trop rapprochés, et on ferme proprement au lieu d'un rechargement brutal.
+let lastPopstate = 0;
+addEventListener('popstate', () => {
+  history.pushState({ zh: 1 }, ''); // ré-arme l'interception pour le prochain retour
+  const now = Date.now();
+  if (now - lastPopstate < 800) return; // anti-rebond (déclenchements en rafale)
+  lastPopstate = now;
+  if (gameStarted) {
+    // Sortie propre vers l'accueil, sans recharger la page (ne coupe jamais
+    // un duel/partie en cours à cause d'un événement involontaire)
+    if (!IS_TOUCH) { try { document.exitPointerLock(); } catch (e) {} }
+    stopMusic();
+    setScoped(false);
+    gameStarted = false;
+    duelMode = null; duelOver = true;
+    relayRoom = null;
+    try { peer && peer.destroy(); } catch (e) {}
+    conns.length = 0;
+    remotePlayers.forEach((r, id) => { if (r.rig) scene.remove(r.rig.model); });
+    remotePlayers.clear();
+    document.getElementById('overlay').style.display = 'none';
+    document.getElementById('lobby').style.display = 'none';
+    document.getElementById('home').style.display = 'flex';
+    document.getElementById('hearts').style.display = 'none';
+    homeStatus('');
+    return;
+  }
+  const lobby = document.getElementById('lobby');
+  if (getComputedStyle(lobby).display !== 'none') { // dans un salon : retour à l'accueil
+    relayRoom = null;
+    try { peer && peer.destroy(); } catch (e) {}
+    conns.length = 0;
+    lobby.style.display = 'none';
+    document.getElementById('home').style.display = 'flex';
+    homeStatus('');
+    return;
+  }
+  if (ctrlEditing) { closeCtrlEdit(false); return; } // éditeur de commandes : fermer sans garder
+  // panneaux de l'accueil (duel, paramètres, skins) : les refermer
+  for (const id of ['duel-panel', 'loup-panel', 'settings-panel', 'skin-panel'])
+    document.getElementById(id).classList.remove('open');
+});
+
+// Choix de la qualité graphique
+document.querySelectorAll('[data-quality]').forEach(b => b.onclick = () => applyQuality(b.dataset.quality));
+applyQuality(quality); // resurligne le bouton actif maintenant que le DOM est prêt
+
+// Panneaux ⚙ paramètres (haut droite) et 🎭 skin (bas gauche)
+const settingsPanel = document.getElementById('settings-panel');
+const skinPanel = document.getElementById('skin-panel');
+document.getElementById('btn-settings').onclick = () => {
+  settingsPanel.classList.toggle('open');
+  skinPanel.classList.remove('open');
+};
+document.getElementById('btn-skin').onclick = () => {
+  skinPanel.classList.toggle('open');
+  settingsPanel.classList.remove('open');
+};
+const chkFps = document.getElementById('chk-fps');
+chkFps.checked = showFps;
+chkFps.onchange = () => {
+  showFps = chkFps.checked;
+  localStorage.setItem('zh-fps', showFps ? '1' : '0');
+};
+// Éditeur de placement des commandes (page dédiée, glisser-déposer)
+document.getElementById('btn-ctrl-edit').onclick = openCtrlEdit;
+// Éditeur de touches PC : clique une action, puis presse la touche voulue
+const keyName = c => ({ Space: 'Espace', ShiftLeft: 'Maj G', ShiftRight: 'Maj D', ControlLeft: 'Ctrl G', ControlRight: 'Ctrl D', AltLeft: 'Alt', Tab: 'Tab', Enter: 'Entrée' }[c] || c.replace(/^(Key|Digit)/, ''));
+function refreshKeysRow() {
+  const row = document.getElementById('keys-row');
+  row.innerHTML = '';
+  for (const a in BIND_DEFAULTS) {
+    const line = document.createElement('div');
+    line.className = 'key-line';
+    const b = document.createElement('button');
+    b.textContent = bindWaiting === a ? '…touche ?' : keyName(BIND[a]);
+    b.className = bindWaiting === a ? 'waiting' : '';
+    b.onclick = () => { bindWaiting = bindWaiting === a ? null : a; refreshKeysRow(); };
+    line.append(BIND_LABELS[a], b);
+    row.appendChild(line);
+  }
+}
+refreshKeysRow();
+document.getElementById('keys-reset').onclick = () => {
+  BIND = Object.assign({}, BIND_DEFAULTS);
+  localStorage.setItem('zh-binds', JSON.stringify(BIND));
+  bindWaiting = null;
+  refreshKeysRow();
+};
+const chkMusic = document.getElementById('chk-music');
+chkMusic.checked = musicOn;
+chkMusic.onchange = () => {
+  musicOn = chkMusic.checked;
+  localStorage.setItem('zh-music', musicOn ? '1' : '0');
+  if (musicOn && gameStarted && audioCtx) startMusic(); else stopMusic();
+};
+
+// ---------- Aperçu 3D du personnage à l'accueil ----------
+// Petit rendu séparé : le soldat au skin choisi tourne sur lui-même
+const pvRenderer = new THREE.WebGLRenderer({ canvas: document.getElementById('skin-preview'), antialias: true, alpha: true });
+pvRenderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+pvRenderer.setSize(480, 640, false); // la taille affichée est gérée par le CSS
+pvRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+const pvScene = new THREE.Scene();
+const pvCam = new THREE.PerspectiveCamera(32, 480 / 640, 0.1, 10);
+pvCam.position.set(0.55, 1.1, 3.15); // léger 3/4 héroïque, corps quasi entier
+pvCam.lookAt(0, 0.95, 0);
+pvScene.add(new THREE.HemisphereLight(0xbdd4ff, 0x33291f, 1.2));
+const pvSun = new THREE.DirectionalLight(0xffffff, 2.4);
+pvSun.position.set(2.5, 3, 2.5);
+pvScene.add(pvSun);
+const pvRim = new THREE.DirectionalLight(0x88aaff, 1.1); // contre-jour : détache la silhouette
+pvRim.position.set(-2, 2, -3);
+pvScene.add(pvRim);
+let pvRig = null;
+// Posture prête au combat : arme tenue à deux mains (IK), léger de 3/4
+function poseReady(rig) {
+  rig.aimBlend = 1;              // les bras tiennent le fusil (résolu par l'IK)
+  if (rig.aimGun) rig.aimGun.rotation.x = -0.08; // canon très légèrement relevé
+  if (rig.ready && rig.attachRifle) rig.attachRifle(true);
+}
+function ensurePreviewRig() {
+  if (pvRig) return;
+  pvRig = makeCharacter(mySkin);
+  pvRig.model.scale.setScalar(1); // l'aperçu garde son cadrage d'origine
+  pvRig.model.rotation.y = Math.PI - 0.35; // 3/4 face, plus dynamique que de face plat
+  pvRig.model.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
+  pvRig.postBuild = poseReady;   // ré-appliqué à chaque (re)construction du corps
+  poseReady(pvRig);
+  pvScene.add(pvRig.model);
+}
+window.__pv = { pvRenderer, pvScene, pvCam, ensurePreviewRig, get rig() { return pvRig; } };
+// Rotation libre du personnage : glisser avec la souris ou le doigt
+const pvCanvasEl = document.getElementById('skin-preview');
+pvCanvasEl.style.cursor = 'grab';
+pvCanvasEl.style.touchAction = 'none';
+let pvDrag = null, pvAutoSpin = true, pvIdleT = 0;
+pvCanvasEl.addEventListener('pointerdown', e => {
+  if (!pvRig) return;
+  pvDrag = { x: e.clientX, rot: pvRig.model.rotation.y };
+  pvAutoSpin = false;
+  pvCanvasEl.style.cursor = 'grabbing';
+  pvCanvasEl.setPointerCapture(e.pointerId);
+});
+pvCanvasEl.addEventListener('pointermove', e => {
+  if (pvDrag && pvRig) pvRig.model.rotation.y = pvDrag.rot + (e.clientX - pvDrag.x) * 0.02;
+});
+const pvEndDrag = () => { pvDrag = null; pvIdleT = 0; pvCanvasEl.style.cursor = 'grab'; };
+pvCanvasEl.addEventListener('pointerup', pvEndDrag);
+pvCanvasEl.addEventListener('pointercancel', pvEndDrag);
+const pvClock = new THREE.Clock();
+(function pvLoop() {
+  requestAnimationFrame(pvLoop);
+  if (gameStarted || document.getElementById('home').style.display === 'none') return;
+  ensurePreviewRig();
+  if (!pvRig) return;
+  const pdt = Math.min(pvClock.getDelta(), 0.05);
+  pvRig.mixer.update(pdt);
+  if (!pvAutoSpin && !pvDrag) { // la rotation auto reprend après 6 s sans toucher
+    pvIdleT += pdt;
+    if (pvIdleT > 6) pvAutoSpin = true;
+  }
+  if (pvAutoSpin) pvRig.model.rotation.y += pdt * 0.7;
+  pvRenderer.render(pvScene, pvCam);
+})();
 
 // La partie démarre via le menu d'accueil (beginGame) ; la scène tourne en fond
 animate();
 updateHud();
-window.__game = { renderer, scene, camera, player, enemies, spawnEnemy, shoot, hurt, obstacles, collide, raycaster, THREE, playerSm, playerModel, gun, beginGame, remotePlayers, clientEnemies, updateRemote, applyEnemies, onMsg, selfNetState, damageEnemy, get thirdPerson() { return thirdPerson; }, get gameMode() { return gameMode; }, get authority() { return authority; }, get gameStarted() { return gameStarted; } };
+updateXpHud();
+window.__game = { renderer, scene, camera, player, enemies, spawnEnemy, shoot, hurt, obstacles, collide, raycaster, THREE, playerSm, playerModel, gun, beginGame, remotePlayers, clientEnemies, updateRemote, applyEnemies, onMsg, selfNetState, damageEnemy, switchWeapon, gainXp, WEAPONS, profile, onKill, isUnlocked, openCtrlEdit, setScoped, get scoped() { return scoped; }, get duelLoadout() { return duelLoadout; }, get duelMode() { return duelMode; }, get wolfId() { return wolfId; }, get loupRound() { return loupRound; }, tryDash, applyLoupRound, endLoupRound, get killCount() { return killCount; }, get unlockedWeapons() { return unlockedWeapons; }, get curWeapon() { return curWeapon; }, get weaponIdx() { return weaponIdx; }, get thirdPerson() { return thirdPerson; }, get gameMode() { return gameMode; }, get authority() { return authority; }, get gameStarted() { return gameStarted; } };
 
 addEventListener('resize', () => {
   if (innerHeight === 0) return;
