@@ -59,114 +59,135 @@ Write-Host "   ZONE HOSTILE - serveur reseau (meme Wi-Fi)" -ForegroundColor Cyan
 Write-Host "====================================================" -ForegroundColor Cyan
 Write-Host "  Sur CE PC              : http://localhost:$Port"
 foreach ($ip in $ips) {
-  Write-Host "  Adresse pour ton pote  : " -NoNewline
+  Write-Host "  Adresse pour tes potes : " -NoNewline
   Write-Host "http://$ip`:$Port" -ForegroundColor Green
 }
 Write-Host "----------------------------------------------------"
-Write-Host "  Donne l'adresse verte a ton ami (meme Wi-Fi)." -ForegroundColor Yellow
+Write-Host "  Donne l'adresse verte a tes amis (meme Wi-Fi, jusqu'a 10 joueurs)." -ForegroundColor Yellow
 Write-Host "  Gardez cette fenetre OUVERTE pendant la partie." -ForegroundColor Yellow
 Write-Host "====================================================" -ForegroundColor Cyan
 Write-Host ""
 
 # ---- Relais multijoueur en memoire (bus de messages par salle) ----
-$rooms = @{}
-$reqCount = 0
+# Table synchronisee : plusieurs clients (joueurs) sont maintenant traites
+# EN PARALLELE (voir pool de runspaces plus bas), donc l'acces aux salles doit
+# etre thread-safe. Avant, un seul client a la fois etait traite (boucle
+# bloquante), ce qui plafonnait le jeu a 2 joueurs des que 3+ appareils
+# pollaient en meme temps (la latence explosait et les connexions semblaient
+# ne jamais aboutir).
+$rooms = [hashtable]::Synchronized(@{})
 
-# Lit une requete HTTP complete (entetes + corps POST) sur le flux
-function Read-Request($stream) {
-  $ms = New-Object System.IO.MemoryStream
-  $buf = New-Object byte[] 8192
-  $headerEnd = -1
-  while ($headerEnd -lt 0) {
-    $n = $stream.Read($buf, 0, $buf.Length)
-    if ($n -le 0) { break }
-    $ms.Write($buf, 0, $n)
-    $arr = $ms.ToArray()
-    for ($i = 3; $i -lt $arr.Length; $i++) {
-      if ($arr[$i - 3] -eq 13 -and $arr[$i - 2] -eq 10 -and $arr[$i - 1] -eq 13 -and $arr[$i] -eq 10) { $headerEnd = $i; break }
+# Script execute par chaque connexion, dans son propre runspace (thread).
+$handler = {
+  param($client, $root, $mime, $rooms)
+
+  function Read-Request($stream) {
+    $ms = New-Object System.IO.MemoryStream
+    $buf = New-Object byte[] 8192
+    $headerEnd = -1
+    while ($headerEnd -lt 0) {
+      $n = $stream.Read($buf, 0, $buf.Length)
+      if ($n -le 0) { break }
+      $ms.Write($buf, 0, $n)
+      $arr = $ms.ToArray()
+      for ($i = 3; $i -lt $arr.Length; $i++) {
+        if ($arr[$i - 3] -eq 13 -and $arr[$i - 2] -eq 10 -and $arr[$i - 1] -eq 13 -and $arr[$i] -eq 10) { $headerEnd = $i; break }
+      }
     }
+    if ($headerEnd -lt 0) { return $null }
+    $all = $ms.ToArray()
+    $headerText = [System.Text.Encoding]::ASCII.GetString($all, 0, $headerEnd - 3)
+    $lines = $headerText -split "`r`n"
+    $clen = 0
+    foreach ($ln in $lines) { if ($ln -match '^(?i)content-length:\s*(\d+)') { $clen = [int]$matches[1] } }
+    $bodyStart = $headerEnd + 1
+    $bodyBytes = New-Object byte[] $clen
+    $have = $all.Length - $bodyStart
+    if ($have -gt 0) { [Array]::Copy($all, $bodyStart, $bodyBytes, 0, [Math]::Min($have, $clen)) }
+    $off = [Math]::Max(0, $have)
+    while ($off -lt $clen) {
+      $n = $stream.Read($bodyBytes, $off, $clen - $off)
+      if ($n -le 0) { break }
+      $off += $n
+    }
+    $body = if ($clen -gt 0) { [System.Text.Encoding]::UTF8.GetString($bodyBytes, 0, $clen) } else { '' }
+    return @{ line = $lines[0]; body = $body }
   }
-  if ($headerEnd -lt 0) { return $null }
-  $all = $ms.ToArray()
-  $headerText = [System.Text.Encoding]::ASCII.GetString($all, 0, $headerEnd - 3)
-  $lines = $headerText -split "`r`n"
-  $clen = 0
-  foreach ($ln in $lines) { if ($ln -match '^(?i)content-length:\s*(\d+)') { $clen = [int]$matches[1] } }
-  $bodyStart = $headerEnd + 1
-  $bodyBytes = New-Object byte[] $clen
-  $have = $all.Length - $bodyStart
-  if ($have -gt 0) { [Array]::Copy($all, $bodyStart, $bodyBytes, 0, [Math]::Min($have, $clen)) }
-  $off = [Math]::Max(0, $have)
-  while ($off -lt $clen) {
-    $n = $stream.Read($bodyBytes, $off, $clen - $off)
-    if ($n -le 0) { break }
-    $off += $n
+
+  function Send-Bytes($stream, $status, $ct, $bytes) {
+    $head = "HTTP/1.1 $status`r`nContent-Type: $ct`r`nContent-Length: $($bytes.Length)`r`nAccess-Control-Allow-Origin: *`r`nCache-Control: no-store`r`nConnection: close`r`n`r`n"
+    $hb = [System.Text.Encoding]::ASCII.GetBytes($head)
+    $stream.Write($hb, 0, $hb.Length)
+    $stream.Write($bytes, 0, $bytes.Length)
   }
-  $body = if ($clen -gt 0) { [System.Text.Encoding]::UTF8.GetString($bodyBytes, 0, $clen) } else { '' }
-  return @{ line = $lines[0]; body = $body }
-}
+  function Send-Json($stream, $json) { Send-Bytes $stream '200 OK' 'application/json' ([System.Text.Encoding]::UTF8.GetBytes($json)) }
 
-function Send-Bytes($stream, $status, $ct, $bytes) {
-  $head = "HTTP/1.1 $status`r`nContent-Type: $ct`r`nContent-Length: $($bytes.Length)`r`nAccess-Control-Allow-Origin: *`r`nCache-Control: no-store`r`nConnection: close`r`n`r`n"
-  $hb = [System.Text.Encoding]::ASCII.GetBytes($head)
-  $stream.Write($hb, 0, $hb.Length)
-  $stream.Write($bytes, 0, $bytes.Length)
-}
-function Send-Json($stream, $json) { Send-Bytes $stream '200 OK' 'application/json' ([System.Text.Encoding]::UTF8.GetBytes($json)) }
-
-while ($true) {
-  $client = $listener.AcceptTcpClient()
   try {
     $stream = $client.GetStream()
     $req = Read-Request $stream
-    if (-not $req) { $client.Close(); continue }
+    if (-not $req) { return }
 
     $parts = $req.line.Split(' ')
-    $method = $parts[0]
     $rawpath = $parts[1]
     $qs = ''
     if ($rawpath.Contains('?')) { $qs = $rawpath.Substring($rawpath.IndexOf('?') + 1); $rawpath = $rawpath.Substring(0, $rawpath.IndexOf('?')) }
-
-    # Purge periodique des salles inactives (> 5 min)
-    $reqCount++
-    if ($reqCount % 400 -eq 0) {
-      $cut = (Get-Date).AddMinutes(-5)
-      foreach ($k in @($rooms.Keys)) { if ($rooms[$k].touched -lt $cut) { $rooms.Remove($k) } }
-    }
 
     if ($rawpath -like '/r/*') {
       # ---- Endpoints du relais ----
       $seg = $rawpath.Trim('/').Split('/')   # r / <room> / <action>
       $room = if ($seg.Count -ge 2) { $seg[1] } else { '' }
       $action = if ($seg.Count -ge 3) { $seg[2] } else { '' }
+
+      # Creation de la salle : verrou global le temps de l'ajout (rapide, jamais bloquant longtemps)
       if (-not $rooms.ContainsKey($room)) {
-        $rooms[$room] = @{ seq = 0; list = (New-Object System.Collections.ArrayList); touched = (Get-Date) }
+        [System.Threading.Monitor]::Enter($rooms)
+        try {
+          if (-not $rooms.ContainsKey($room)) {
+            $rooms[$room] = @{ seq = 0; list = (New-Object System.Collections.ArrayList); touched = (Get-Date) }
+          }
+        } finally { [System.Threading.Monitor]::Exit($rooms) }
+
+        # Purge occasionnelle des salles inactives (> 5 min), a chaque nouvelle salle vue
+        if ((Get-Random -Maximum 50) -eq 0) {
+          [System.Threading.Monitor]::Enter($rooms)
+          try {
+            $cut = (Get-Date).AddMinutes(-5)
+            foreach ($k in @($rooms.Keys)) { if ($rooms[$k].touched -lt $cut) { $rooms.Remove($k) } }
+          } finally { [System.Threading.Monitor]::Exit($rooms) }
+        }
       }
       $r = $rooms[$room]
-      $r.touched = Get-Date
-      if ($action -eq 'send') {
-        $r.seq++
-        [void]$r.list.Add(@{ seq = $r.seq; data = $req.body })
-        if ($r.list.Count -gt 400) { $r.list.RemoveRange(0, $r.list.Count - 400) }
-        Send-Json $stream ('{"seq":' + $r.seq + '}')
-      } elseif ($action -eq 'poll') {
-        $since = 0
-        if ($qs -match 'since=(\d+)') { $since = [int]$matches[1] }
-        $sb = New-Object System.Text.StringBuilder
-        [void]$sb.Append('{"seq":').Append($r.seq).Append(',"msgs":[')
-        $first = $true
-        foreach ($m in $r.list) {
-          if ($m.seq -gt $since) {
-            if (-not $first) { [void]$sb.Append(',') }
-            [void]$sb.Append($m.data)
-            $first = $false
+
+      # Toute lecture/ecriture de l'etat d'UNE salle est verrouillee sur cette
+      # salle precise (pas sur $rooms entier) : plusieurs salles differentes
+      # continuent d'etre traitees en parallele sans se bloquer entre elles.
+      [System.Threading.Monitor]::Enter($r)
+      try {
+        $r.touched = Get-Date
+        if ($action -eq 'send') {
+          $r.seq++
+          [void]$r.list.Add(@{ seq = $r.seq; data = $req.body })
+          if ($r.list.Count -gt 400) { $r.list.RemoveRange(0, $r.list.Count - 400) }
+          Send-Json $stream ('{"seq":' + $r.seq + '}')
+        } elseif ($action -eq 'poll') {
+          $since = 0
+          if ($qs -match 'since=(\d+)') { $since = [int]$matches[1] }
+          $sb = New-Object System.Text.StringBuilder
+          [void]$sb.Append('{"seq":').Append($r.seq).Append(',"msgs":[')
+          $first = $true
+          foreach ($m in $r.list) {
+            if ($m.seq -gt $since) {
+              if (-not $first) { [void]$sb.Append(',') }
+              [void]$sb.Append($m.data)
+              $first = $false
+            }
           }
+          [void]$sb.Append(']}')
+          Send-Json $stream $sb.ToString()
+        } else {
+          Send-Json $stream '{"ok":true}'
         }
-        [void]$sb.Append(']}')
-        Send-Json $stream $sb.ToString()
-      } else {
-        Send-Json $stream '{"ok":true}'
-      }
+      } finally { [System.Threading.Monitor]::Exit($r) }
     } else {
       # ---- Fichiers statiques ----
       $path = $rawpath
@@ -183,4 +204,30 @@ while ($true) {
     $stream.Flush()
   } catch {}
   finally { $client.Close() }
+}
+
+# Pool de runspaces : jusqu'a 16 connexions traitees vraiment en parallele
+# (avant : une boucle bloquante traitait les clients un par un, ce qui
+# saturait des les polls simultanes de 3 appareils ou plus).
+$pool = [runspacefactory]::CreateRunspacePool(1, 16)
+$pool.Open()
+$active = New-Object System.Collections.ArrayList
+
+while ($true) {
+  $client = $listener.AcceptTcpClient()
+
+  $ps = [powershell]::Create()
+  $ps.RunspacePool = $pool
+  [void]$ps.AddScript($handler).AddArgument($client).AddArgument($root).AddArgument($mime).AddArgument($rooms)
+  $ar = $ps.BeginInvoke()
+  [void]$active.Add(@{ ps = $ps; ar = $ar })
+
+  # Nettoyage opportuniste des connexions terminees (evite une fuite de handles)
+  for ($i = $active.Count - 1; $i -ge 0; $i--) {
+    if ($active[$i].ar.IsCompleted) {
+      try { $active[$i].ps.EndInvoke($active[$i].ar) } catch {}
+      $active[$i].ps.Dispose()
+      $active.RemoveAt($i)
+    }
+  }
 }

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -25,8 +25,9 @@
   /* Niveau : décalé à gauche du bouton plein écran (plus aucun chevauchement) */
   #home-level { position: absolute; top: 34px; right: 170px; font-size: 17px; font-weight: 700; color: #ffe98a; text-shadow: 0 2px 6px rgba(0,0,0,.8); }
   /* Panneau Duel (1v1 / 2v2) avec son propre champ de code */
-  #duel-panel, #loup-panel { display: none; flex-direction: column; gap: 10px; padding: 12px; border: 2px solid rgba(127,212,255,.3); border-radius: 12px; background: rgba(127,212,255,.05); }
-  #duel-panel.open, #loup-panel.open { display: flex; }
+  #duel-panel, #loup-panel, #extinction-panel { display: none; flex-direction: column; gap: 10px; padding: 12px; border: 2px solid rgba(127,212,255,.3); border-radius: 12px; background: rgba(127,212,255,.05); }
+  #duel-panel.open, #loup-panel.open, #extinction-panel.open { display: flex; }
+  #btn-extinction { border-color: rgba(255,242,216,.5); }
   #duel-tabs { display: flex; gap: 8px; justify-content: center; }
   /* Équipes (lobby 2v2) */
   #team-row { display: none; gap: 10px; justify-content: center; }
@@ -67,6 +68,9 @@
   #stam { height: 100%; width: 100%; background: linear-gradient(90deg, #ffb84d, #ffe14d); transition: width .1s; }
   #btn-dash { right: 7vw; bottom: calc(6vh + 196px); width: 66px; height: 66px; font-size: 26px; border-color: rgba(255,209,77,.7); }
   body.ctrl-editing #btn-dash { display: flex !important; }
+  #btn-flash { right: 7vw; bottom: calc(6vh + 118px); width: 62px; height: 62px; font-size: 24px; }
+  #btn-flash.sel { background: rgba(255,242,216,.4); border-color: #fff2d8; }
+  body.ctrl-editing #btn-flash { display: flex !important; }
   #topbar {
     position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
     color: #fff; text-align: center; text-shadow: 0 2px 6px rgba(0,0,0,.9);
@@ -87,6 +91,18 @@
     background: radial-gradient(ellipse at center, transparent 40%, rgba(255,0,0,.55) 100%);
     transition: opacity .3s;
   }
+  /* Aveuglement du monstre (mode Extinction) : vision blanchie par la lampe */
+  #mblind { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: #fff; transition: opacity .15s; }
+  /* Mini-carte ronde du labyrinthe (mode Extinction), fog-of-war en live */
+  #minimap { position: absolute; top: 14px; left: 14px; border-radius: 50%; box-shadow: 0 0 12px rgba(0,0,0,.7); pointer-events: auto; }
+  /* Grande carte du labyrinthe (M / toucher la mini-carte) */
+  #bigmap { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(86vw, 86vh); height: min(86vw, 86vh);
+    border-radius: 14px; border: 2px solid rgba(106,255,158,.35); box-shadow: 0 0 30px rgba(0,0,0,.8); pointer-events: auto; z-index: 5; }
+  /* Pseudo (salon Extinction) */
+  #pseudo-row { display: none; gap: 8px; align-items: center; justify-content: center; }
+  #pseudo-row.on { display: flex; }
+  #pseudo-input { width: 200px; padding: 10px 14px; border-radius: 12px; border: 2px solid rgba(255,242,216,.4);
+    background: rgba(255,255,255,.06); color: #fff; font-family: inherit; font-size: 16px; text-align: center; }
   #msg {
     position: absolute; top: 30%; width: 100%; text-align: center; color: #ffe98a;
     font-size: 34px; font-weight: 800; text-shadow: 0 2px 8px rgba(0,0,0,.9);
@@ -221,6 +237,22 @@
   .tbtn:active { background: rgba(127,212,255,.4); }
   #btn-fire { right: 6vw; bottom: 6vh; width: 92px; height: 92px; font-size: 30px; border-color: rgba(255,107,107,.7); background: rgba(255,80,80,.18); }
   #btn-reload { right: 7vw; bottom: calc(6vh + 118px); width: 62px; height: 62px; font-size: 22px; }
+  /* Inventaire tactile (mobile) : colonne verticale à droite, changement d'arme
+     par simple appui — remplace les touches 1-4/molette indisponibles au tactile. */
+  #weapon-inv {
+    position: absolute; right: 3vw; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 10px; pointer-events: auto;
+  }
+  .wslot {
+    position: relative; width: 54px; height: 54px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center; font-size: 24px;
+    background: rgba(255,255,255,.1); border: 2px solid rgba(255,255,255,.4);
+    touch-action: none; user-select: none;
+  }
+  .wslot.sel { background: rgba(127,212,255,.4); border-color: #7fd4ff; }
+  .wslot.locked { opacity: .4; }
+  .wslot .wlock { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; font-size: 20px; background: rgba(0,0,0,.4); border-radius: 12px; }
+  .wslot.locked .wlock { display: flex; }
   /* Éditeur de placement des commandes (glisser-déposer) */
   #ctrl-edit { position: fixed; inset: 0; z-index: 40; background: rgba(5,8,18,.72); }
   #ctrl-edit-bar {
@@ -248,16 +280,19 @@
 <body>
 <div id="hud">
   <div id="damage"></div>
+  <div id="mblind"></div>
   <div id="topbar">
     <div class="wave">VAGUE <span id="wave">1</span></div>
     <div class="score">Score : <span id="score">0</span> · Ennemis restants : <span id="left">0</span></div>
   </div>
   <div id="crosshair" style="display:none"></div>
   <div id="health-wrap"><div id="health"></div></div>
-  <div id="ammo"><span id="weapon-name">Fusil d'assaut</span><br><span id="clip">30</span><small> / ∞</small></div>
+  <div id="ammo"><span id="weapon-name">Fusil d'assaut</span><br><span id="clip">30</span><small id="clip-max"> / ∞</small></div>
   <div id="hearts">❤️❤️❤️</div>
   <div id="scope"><div class="h"></div><div class="v"></div></div>
   <div id="stam-wrap" style="display:none"><div id="stam"></div></div>
+  <canvas id="minimap" width="180" height="180" style="display:none"></canvas>
+  <canvas id="bigmap" width="640" height="640" style="display:none"></canvas>
   <div id="xp-hud">
     <div id="xp-label">Niv. 1</div>
     <div id="xp-bar"><div id="xp-bar-fill"></div></div>
@@ -288,6 +323,14 @@
       <div class="join-row">
         <input id="loup-code" maxlength="6" placeholder="CODE LOUP" autocomplete="off">
         <button class="menu-btn small" id="btn-loup-join">Rejoindre</button>
+      </div>
+    </div>
+    <button class="menu-btn" id="btn-extinction">🔦 Extinction</button>
+    <div id="extinction-panel">
+      <button class="menu-btn small" id="btn-extinction-create">Créer une partie Extinction</button>
+      <div class="join-row">
+        <input id="extinction-code" maxlength="6" placeholder="CODE EXTINCTION" autocomplete="off">
+        <button class="menu-btn small" id="btn-extinction-join">Rejoindre</button>
       </div>
     </div>
     <button class="menu-btn" id="btn-create">👥 Créer une partie privée</button>
@@ -329,6 +372,10 @@
   <div class="code" id="lobby-code">······</div>
   <p id="lobby-info">Partage ce code avec tes amis</p>
   <div id="lobby-players">1 joueur connecté</div>
+  <div id="pseudo-row">
+    <span style="color:#fff2d8">Ton pseudo :</span>
+    <input id="pseudo-input" maxlength="14" placeholder="Ton pseudo" autocomplete="off">
+  </div>
   <div id="team-row">
     <button class="team-btn bleu" id="btn-team-0">🔵 Équipe Bleue</button>
     <button class="team-btn rouge" id="btn-team-1">🔴 Équipe Rouge</button>
@@ -349,6 +396,8 @@
   <div class="tbtn" id="btn-scope" style="display:none">🔭</div>
   <div class="tbtn" id="btn-view">👁</div>
   <div class="tbtn" id="btn-dash" style="display:none">⚡</div>
+  <div class="tbtn" id="btn-flash" style="display:none">🔦</div>
+  <div id="weapon-inv"></div>
 </div>
 <div id="ctrl-edit" style="display:none">
   <div id="ctrl-edit-bar">
@@ -460,7 +509,8 @@ moon.shadow.camera.far = 500;
 moon.shadow.bias = -0.0004;
 moon.shadow.normalBias = 0.02;
 scene.add(moon);
-scene.add(new THREE.AmbientLight(0x3d4a66, 0.5));
+const ambientL = new THREE.AmbientLight(0x3d4a66, 0.5);
+scene.add(ambientL);
 // ?test=lumieres|skins|bots : désactive un ajout récent pour isoler un problème
 // de performance propre à certaines cartes graphiques
 const PERF_TEST = new URLSearchParams(location.search).get('test') || '';
@@ -653,6 +703,45 @@ for (const [x, z, w, d] of [[0, -ARENA, ARENA * 2, 2], [0, ARENA, ARENA * 2, 2],
   walls.push(wall);
 }
 
+// Mur de la zone (mode Loup) : barrière visible qui se resserre en continu
+// pendant chaque manche (remplace l'ancien mur invisible + saut instantané).
+const zoneWallTex = canvasTex(256, (x, s) => {
+  x.fillStyle = '#160705'; x.fillRect(0, 0, s, s);
+  x.fillStyle = 'rgba(255,60,30,0.9)';
+  const bw = 46;
+  for (let i = -bw * 2; i < s + bw * 2; i += bw * 2) {
+    x.save(); x.translate(i, 0); x.rotate(Math.PI / 4);
+    x.fillRect(-bw / 2, -s, bw, s * 3);
+    x.restore();
+  }
+}, 10, 1);
+const zoneWallMat = new THREE.MeshStandardMaterial({
+  color: 0xff5030, map: zoneWallTex, emissive: 0x5a1408, emissiveIntensity: 0.9,
+  roughness: 0.55, metalness: 0.1, transparent: true, opacity: 0.88
+});
+const zoneWalls = [0, 1, 2, 3].map(() => {
+  const w = new THREE.Mesh(new THREE.BoxGeometry(1, 16, 1), zoneWallMat);
+  w.visible = false;
+  scene.add(w);
+  return w;
+});
+function setZoneWallsVisible(v) { for (const w of zoneWalls) if (w.visible !== v) w.visible = v; }
+// limit = demi-taille courante de la zone jouable
+function updateZoneWalls(limit) {
+  const t = 2.2; // épaisseur du mur
+  const specs = [
+    [0, -limit, limit * 2 + t, t],  // nord
+    [0, limit, limit * 2 + t, t],   // sud
+    [-limit, 0, t, limit * 2 + t],  // ouest
+    [limit, 0, t, limit * 2 + t],   // est
+  ];
+  for (let i = 0; i < 4; i++) {
+    const [x, z, w, d] = specs[i];
+    zoneWalls[i].position.set(x, 8, z);
+    zoneWalls[i].scale.set(w, 1, d);
+  }
+}
+
 // Lampadaires : poteaux avec halo de lumière chaude
 const lampPoleMat = new THREE.MeshStandardMaterial({ color: 0x22262e, roughness: 0.6, metalness: 0.5 });
 const lampBulbMat = new THREE.MeshBasicMaterial({ color: 0xffd9a0 });
@@ -667,11 +756,40 @@ for (const [lx, lz] of [[-75, -75], [75, -75], [-75, 75], [75, 75], [0, -100], [
   scene.add(pole, bulb, glow);
 }
 
+// Vraies textures photo (three.js CDN, figées sur r160 donc stables) : elles
+// remplacent les textures procédurales une fois chargées. Tant qu'elles ne
+// sont pas arrivées (ou si le CDN est indisponible), les textures procédurales
+// déjà posées ci-dessus restent affichées — jamais d'objet blanc/cassé.
+const REAL_TEX_BASE = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/textures/';
+const realTexLoader = new THREE.TextureLoader();
+function loadRealTex(name, rx, ry) {
+  const tex = realTexLoader.load(REAL_TEX_BASE + name, undefined, undefined, () => {}); // erreur silencieuse : on garde le procédural
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(rx, ry);
+  tex.anisotropy = 8;
+  return tex;
+}
+const realCrateTex = loadRealTex('crate.gif', 1, 1);
+const realBrickDiffuse = loadRealTex('brick_diffuse.jpg', 1, 1);
+const realBrickBump = loadRealTex('brick_bump.jpg', 1, 1);
+const realBrickRoughness = loadRealTex('brick_roughness.jpg', 1, 1);
+// Trois.js ne fournit pas d'event de chargement fiable et uniforme selon le
+// format (gif/jpg) : on détecte l'arrivée par un court sondage plutôt.
+function whenTexLoaded(tex, cb) {
+  if (tex.image && tex.image.complete !== false && (tex.image.width || tex.image.videoWidth)) { cb(); return; }
+  const check = setInterval(() => {
+    if (tex.image && (tex.image.width || tex.image.videoWidth)) { clearInterval(check); cb(); }
+  }, 150);
+  setTimeout(() => clearInterval(check), 20000); // abandon silencieux au bout de 20s (procédural déjà en place)
+}
+
 // Obstacles (caisses et piliers) — servent de couverture
 const rand = (() => { let s = 1337; return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }; })();
 const obstacles = []; // {x, z, hx, hz} AABB demi-tailles
 const obstacleMeshes = [];
 const crateMat = new THREE.MeshStandardMaterial({ color: 0xb99f7e, map: crateTex, roughness: 0.9 });
+whenTexLoaded(realCrateTex, () => { crateMat.map = realCrateTex; crateMat.color.set(0xffffff); crateMat.needsUpdate = true; });
+const brickObstacles = []; // {mesh, wlen, wh} — pour appliquer la vraie texture brique une fois chargée
 const barrelMat = new THREE.MeshStandardMaterial({ color: 0x9a5a2c, roughness: 0.55, metalness: 0.5 });
 const containerCols = [0x3a6b4a, 0x8a3b34, 0x3a5a7a, 0x8a7a34, 0x555b66];
 const containerMats = containerCols.map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.7, metalness: 0.35 }));
@@ -707,19 +825,36 @@ for (let i = 0; i < 60; i++) {
     const tex = brickTex.clone();
     tex.needsUpdate = true;
     tex.repeat.set(wlen / 2.6, wh / 2.6);
-    mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(horiz ? wlen : wd, wh, horiz ? wd : wlen),
-      new THREE.MeshStandardMaterial({ color: 0xd8d2c8, map: tex, roughness: 0.92 })
-    );
+    const brickMaterial = new THREE.MeshStandardMaterial({ color: 0xd8d2c8, map: tex, roughness: 0.92 });
+    mesh = new THREE.Mesh(new THREE.BoxGeometry(horiz ? wlen : wd, wh, horiz ? wd : wlen), brickMaterial);
     mesh.position.set(x, wh / 2, z);
     hx = (horiz ? wlen : wd) / 2 + 0.15;
     hz = (horiz ? wd : wlen) / 2 + 0.15;
+    brickObstacles.push({ material: brickMaterial, wlen, wh });
   }
   mesh.castShadow = mesh.receiveShadow = true;
   scene.add(mesh);
   obstacles.push({ x, z, hx, hz });
   obstacleMeshes.push(mesh);
 }
+// Bascule tous les murs de briques procéduraux vers la vraie photo une fois
+// chargée (diffuse + relief + rugosité) — chaque mur garde son propre tiling.
+whenTexLoaded(realBrickDiffuse, () => {
+  for (const b of brickObstacles) {
+    const d = realBrickDiffuse.clone(), bm = realBrickBump.clone(), ro = realBrickRoughness.clone();
+    for (const t of [d, bm, ro]) {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(b.wlen / 2.2, b.wh / 1.1);
+      t.needsUpdate = true;
+    }
+    b.material.map = d;
+    b.material.bumpMap = bm;
+    b.material.bumpScale = 0.6;
+    b.material.roughnessMap = ro;
+    b.material.color.set(0xffffff);
+    b.material.needsUpdate = true;
+  }
+});
 // Lampadaires d'ambiance. Halos lumineux visibles partout (mesh émissif, gratuit) ;
 // seules 3 émettent une vraie lumière dynamique (coûteux sur GPU faible).
 const lampCols = [0xff7a3c, 0x4db8ff, 0xff4d6a, 0x6affa0, 0xffd24d];
@@ -737,6 +872,262 @@ for (let i = 0; i < 6; i++) {
   scene.add(bulb);
 }
 
+// ---------- Mode Extinction : labyrinthe de haies ----------
+// Généré une fois par « graine » fixe : tout le monde (hôte + clients) obtient
+// exactement le même labyrinthe sans avoir à le transmettre par le réseau.
+const MAZE_N = 25;       // cellules par côté (impair : centre net pour la clairière)
+const MAZE_CELL = 9;     // taille d'une cellule (couloir + mur), en unités monde
+const MAZE_HEDGE_H = 3.4;
+const mazeWalls = [];       // {x,z,hx,hz} AABB demi-tailles (collision)
+const mazeWallMeshes = [];
+let mazeGroup = null, mazePointA = null, mazePointB = null, mazeReady = false;
+
+// Texture de haie taillée (type buis) : des milliers de petites feuilles
+// dessinées, avec reflet et nervure, raccord parfait quand elle se répète.
+const hedgeTexFallback = canvasTex(512, (x, s) => {
+  x.fillStyle = '#123a16'; x.fillRect(0, 0, s, s);
+  const leaf = (px, py, a, L, W, col, hi) => {
+    for (const ox of [-s, 0, s]) for (const oy of [-s, 0, s]) { // copies sur les bords : motif sans couture
+      const cx = px + ox, cy = py + oy;
+      if (cx < -L || cx > s + L || cy < -L || cy > s + L) continue;
+      x.save(); x.translate(cx, cy); x.rotate(a);
+      x.fillStyle = col;
+      x.beginPath(); x.moveTo(-L, 0); x.quadraticCurveTo(0, -W, L, 0); x.quadraticCurveTo(0, W, -L, 0); x.fill();
+      x.fillStyle = hi; // reflet sur une moitié de la feuille
+      x.beginPath(); x.moveTo(-L * 0.8, -W * 0.05); x.quadraticCurveTo(0, -W * 0.85, L * 0.8, -W * 0.05); x.closePath(); x.fill();
+      x.strokeStyle = 'rgba(10,40,12,0.55)'; x.lineWidth = 1; // nervure centrale
+      x.beginPath(); x.moveTo(-L * 0.85, 0); x.lineTo(L * 0.85, 0); x.stroke();
+      x.restore();
+    }
+  };
+  const NL = 1700;
+  for (let i = 0; i < NL; i++) {
+    const depth = i / NL; // les dernières feuilles (au-dessus) sont plus claires
+    const g = 70 + depth * 90 + Math.random() * 35 | 0;
+    const r = 20 + depth * 35 + Math.random() * 20 | 0, b = 18 + depth * 20 + Math.random() * 15 | 0;
+    const L = 11 + Math.random() * 7, W = L * (0.7 + Math.random() * 0.2); // feuilles rondes de buis
+    leaf(Math.random() * s, Math.random() * s, Math.random() * Math.PI * 2, L, W,
+      `rgb(${r},${g},${b})`, `rgba(${r + 40},${g + 45},${b + 25},0.55)`);
+  }
+}, 3, 1.5);
+const hedgeMat = new THREE.MeshStandardMaterial({
+  map: hedgeTexFallback, bumpMap: hedgeTexFallback, bumpScale: 2.5,
+  roughness: 0.85, vertexColors: true // couleurs par sommet : pied de la haie plus sombre
+});
+// Petit générateur pseudo-aléatoire déterministe, indépendant de `rand()`
+// (celui-ci reste dédié aux obstacles de l'arène classique).
+const mazeRand = (() => { let s = 90210; return () => { s = (s * 48271) % 2147483647; return (s - 1) / 2147483646; }; })();
+
+// Labyrinthe « parfait » (un seul chemin entre deux cellules quelconques,
+// donc plein de détours) par parcours en profondeur avec retour arrière.
+function generateMazeGrid(n) {
+  const cells = Array.from({ length: n }, () => Array.from({ length: n }, () => ({ n: true, s: true, e: true, w: true })));
+  const visited = Array.from({ length: n }, () => new Array(n).fill(false));
+  const stack = [[0, 0]];
+  visited[0][0] = true;
+  const dirs = [[0, -1, 'n', 's'], [0, 1, 's', 'n'], [1, 0, 'e', 'w'], [-1, 0, 'w', 'e']];
+  while (stack.length) {
+    const [cx, cy] = stack[stack.length - 1];
+    const options = [];
+    for (const [dx, dy, a, b] of dirs) {
+      const nx = cx + dx, ny = cy + dy;
+      if (nx >= 0 && nx < n && ny >= 0 && ny < n && !visited[ny][nx]) options.push([nx, ny, a, b]);
+    }
+    if (!options.length) { stack.pop(); continue; }
+    const [nx, ny, a, b] = options[(mazeRand() * options.length) | 0];
+    cells[cy][cx][a] = false;
+    cells[ny][nx][b] = false;
+    visited[ny][nx] = true;
+    stack.push([nx, ny]);
+  }
+  return cells;
+}
+
+// ---------- Haies organiques (bruit 3D déterministe) ----------
+// La déformation ne dépend que de la position monde : deux sommets au même
+// endroit bougent pareil, donc pas de trou entre faces ni entre murs voisins.
+function hHash(x, y, z) {
+  let h = (x * 374761393 + y * 668265263 + z * 1274126177) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+}
+function hNoise(x, y, z) {
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+  const sm = t => t * t * (3 - 2 * t);
+  const u = sm(x - xi), v = sm(y - yi), w = sm(z - zi);
+  const L = (a, b, t) => a + (b - a) * t;
+  const h = (i, j, k) => hHash(xi + i, yi + j, zi + k);
+  return L(L(L(h(0, 0, 0), h(1, 0, 0), u), L(h(0, 1, 0), h(1, 1, 0), u), v),
+           L(L(h(0, 0, 1), h(1, 0, 1), u), L(h(0, 1, 1), h(1, 1, 1), u), v), w);
+}
+const hFbm = (x, y, z) => hNoise(x, y, z) * 0.5 + hNoise(x * 2.4 + 17, y * 2.4 + 5, z * 2.4 + 11) * 0.3
+  + hNoise(x * 5.3 + 3, y * 5.3 + 23, z * 5.3 + 7) * 0.2 - 0.5; // ~[-0.5, 0.5], 3 octaves : grosses bosses + feuillage fin
+// UV en coordonnées monde (projection selon l'axe dominant de la normale) :
+// la texture garde la même échelle sur un mur court ou long, sans étirement.
+function hedgeWorldUV(g) {
+  const p = g.attributes.position, nm = g.attributes.normal, uv = new Float32Array(p.count * 2);
+  for (let i = 0; i < p.count; i++) {
+    const ax = Math.abs(nm.getX(i)), ay = Math.abs(nm.getY(i)), az = Math.abs(nm.getZ(i));
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+    const [a, b] = ay >= ax && ay >= az ? [x, z] : ax >= az ? [z, y] : [x, y];
+    uv[i * 2] = a / 12; uv[i * 2 + 1] = b / 6; // × répétition 3 / 1.5 de la texture = 1 motif tous les 4 m
+  }
+  g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+}
+// Un mur de haie = un bloc subdivisé, légèrement déformé, avec teinte par sommet
+function makeHedgeGeos(s, dens) {
+  const H = MAZE_HEDGE_H, w = s.hx * 2, d = s.hz * 2;
+  const out = [];
+  // Haie TAILLÉE (type buis) : un bloc droit aux arêtes du haut arrondies.
+  // Le détail vient surtout de la texture de feuilles ; la géométrie ne fait
+  // qu'un léger frisottis de feuillage sur la silhouette (surtout le dessus).
+  const body = new THREE.BoxGeometry(w, H, d,
+    Math.max(2, Math.round(w * 2.2 * dens)), Math.max(3, Math.round(6 * dens)), Math.max(2, Math.round(d * 2.2 * dens)));
+  const p = body.attributes.position;
+  const col = new Float32Array(p.count * 3);
+  const R = 0.45; // rayon d'arrondi des arêtes du haut
+  for (let i = 0; i < p.count; i++) {
+    const bx = p.getX(i), by = p.getY(i), bz = p.getZ(i);
+    let lx = bx, ly = by, lz = bz;
+    const wy = by + H / 2, ty = wy / H; // 0 au pied, 1 au sommet
+    // arêtes du haut arrondies : on rabat les sommets proches d'un bord du dessus
+    // (point intérieur le plus proche + direction × R, seulement dans la tranche du haut)
+    const cx = Math.max(-(s.hx - R), Math.min(s.hx - R, bx));
+    const cz = Math.max(-(s.hz - R), Math.min(s.hz - R, bz));
+    const cy = Math.min(H / 2 - R, by);
+    const dx = bx - cx, dy = by - cy, dz = bz - cz, k = Math.hypot(dx, dy, dz);
+    if (dy > 0 && k > 1e-6) {
+      lx = cx + dx / k * R; ly = cy + dy / k * R; lz = cz + dz / k * R;
+    }
+    // frisottis de feuillage, à l'échelle des feuilles (position monde : pas de trou)
+    const wx = s.x + lx, wz = s.z + lz, f = 2.1;
+    const a = 0.07 + 0.09 * ty;
+    lx += hFbm(wx * f, wy * f, wz * f) * a * 2;
+    lz += hFbm(wx * f + 83, wy * f + 29, wz * f + 61) * a * 2;
+    ly += hFbm(wx * f + 41, wy * f + 7, wz * f + 13) * 0.32 * ty * ty;
+    p.setXYZ(i, s.x + lx, ly + H / 2, s.z + lz);
+    // teinte : pied plus sombre (ombre sous la haie), dessus un peu plus clair
+    const v = 0.5 + 0.5 * Math.min(1, ty * 1.25) + hFbm(wx * 0.4, wy * 0.4, wz * 0.4) * 0.12;
+    col[i * 3] = v * 0.95; col[i * 3 + 1] = v; col[i * 3 + 2] = v * 0.9;
+  }
+  body.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  body.computeVertexNormals();
+  out.push(body);
+  return out;
+}
+// Fusionne des géométries (position/normale/uv) en une seule, non indexée
+function mergeHedgeGeos(parts) {
+  let total = 0;
+  const flat = parts.map(g => {
+    const gg = g.index ? g.toNonIndexed() : g;
+    hedgeWorldUV(gg);
+    total += gg.attributes.position.count;
+    return gg;
+  });
+  const pos = new Float32Array(total * 3), nor = new Float32Array(total * 3), uv = new Float32Array(total * 2);
+  const col = new Float32Array(total * 3).fill(1);
+  let o3 = 0, o2 = 0;
+  for (const gg of flat) {
+    pos.set(gg.attributes.position.array, o3);
+    nor.set(gg.attributes.normal.array, o3);
+    if (gg.attributes.color) col.set(gg.attributes.color.array, o3);
+    uv.set(gg.attributes.uv.array, o2);
+    o3 += gg.attributes.position.count * 3; o2 += gg.attributes.position.count * 2;
+    gg.dispose();
+  }
+  for (const g of parts) g.dispose();
+  const m = new THREE.BufferGeometry();
+  m.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  m.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  m.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  m.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  m.computeBoundingSphere();
+  return m;
+}
+
+// Construit le labyrinthe dans la scène (appelé au lancement d'une partie
+// Extinction) ; supprimé par clearExtinctionMaze() à la fin de la partie.
+function buildExtinctionMaze() {
+  if (mazeReady) return;
+  const n = MAZE_N, c = MAZE_CELL;
+  const cells = generateMazeGrid(n);
+  const half = (n * c) / 2;
+  const originX = -half, originZ = -half;
+  // Clairière centrale : aucun mur dont le centre tombe dans ce carré —
+  // c'est le seul endroit visible sans y être allé (spawn du/des monstres).
+  const clearingR = c * 1.6;
+  mazeGroup = new THREE.Group();
+  const segs = []; // {x, z, hx, hz} avant filtrage de la clairière
+  const wallThick = 1.8;
+  for (let gy = 0; gy < n; gy++) {
+    for (let gx = 0; gx < n; gx++) {
+      const cellX = originX + gx * c + c / 2, cellZ = originZ + gy * c + c / 2;
+      const cell = cells[gy][gx];
+      if (cell.n) segs.push({ x: cellX, z: cellZ - c / 2, hx: c / 2 + wallThick / 2, hz: wallThick / 2 });
+      if (cell.w) segs.push({ x: cellX - c / 2, z: cellZ, hx: wallThick / 2, hz: c / 2 + wallThick / 2 });
+      if (gy === n - 1 && cell.s) segs.push({ x: cellX, z: cellZ + c / 2, hx: c / 2 + wallThick / 2, hz: wallThick / 2 });
+      if (gx === n - 1 && cell.e) segs.push({ x: cellX + c / 2, z: cellZ, hx: wallThick / 2, hz: c / 2 + wallThick / 2 });
+    }
+  }
+  // Haies irrégulières : chaque mur devient un buisson déformé + des touffes,
+  // regroupés par zones (4×4) pour garder peu d'appels de dessin.
+  const dens = quality === 'basse' ? 0.55 : 1;
+  const chunks = new Map(); // clé de zone -> [géométries]
+  const chunkSz = (n * c) / 4;
+  for (const s of segs) {
+    if (Math.abs(s.x) < clearingR && Math.abs(s.z) < clearingR) continue; // dans la clairière : pas de mur
+    mazeWalls.push(s);
+    const key = Math.floor((s.x + half) / chunkSz) + ',' + Math.floor((s.z + half) / chunkSz);
+    if (!chunks.has(key)) chunks.set(key, []);
+    chunks.get(key).push(...makeHedgeGeos(s, dens));
+  }
+  for (const parts of chunks.values()) {
+    const mesh = new THREE.Mesh(mergeHedgeGeos(parts), hedgeMat);
+    mesh.castShadow = mesh.receiveShadow = true;
+    mazeGroup.add(mesh);
+    mazeWallMeshes.push(mesh);
+  }
+  scene.add(mazeGroup);
+  // Point A (départ, coin) / point B (zone sûre, coin opposé) — éloignés au
+  // maximum l'un de l'autre pour garantir un vrai parcours.
+  mazePointA = { x: originX + c / 2, z: originZ + c / 2 };
+  mazePointB = { x: originX + (n - 1) * c + c / 2, z: originZ + (n - 1) * c + c / 2 };
+  // Point B : dôme-barrière « magique » vert, visible de loin (colonne de lumière)
+  const barrier = new THREE.Mesh(
+    new THREE.CylinderGeometry(7, 7, 14, 24, 1, true),
+    new THREE.MeshBasicMaterial({ color: 0x4dff96, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false })
+  );
+  barrier.position.set(mazePointB.x, 7, mazePointB.z);
+  mazeGroup.add(barrier);
+  const beam = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.6, 0.6, 120, 10, 1, true),
+    new THREE.MeshBasicMaterial({ color: 0x6aff9e, transparent: true, opacity: 0.3, depthWrite: false })
+  );
+  beam.position.set(mazePointB.x, 60, mazePointB.z);
+  mazeGroup.add(beam);
+  const safeGlow = new THREE.PointLight(0x4dff96, 10, 24, 1.6);
+  safeGlow.position.set(mazePointB.x, 4, mazePointB.z);
+  mazeGroup.add(safeGlow);
+  // Point A : simple balise bleue au départ
+  const beaconA = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 5, 8),
+    new THREE.MeshBasicMaterial({ color: 0x7fd4ff, transparent: true, opacity: 0.5 }));
+  beaconA.position.set(mazePointA.x, 2.5, mazePointA.z);
+  mazeGroup.add(beaconA);
+  mazeReady = true;
+}
+function clearExtinctionMaze() {
+  if (!mazeReady) return;
+  scene.remove(mazeGroup);
+  for (const m of mazeWallMeshes) m.geometry.dispose();
+  mazeGroup = null;
+  mazeWalls.length = 0;
+  mazeWallMeshes.length = 0;
+  mazeReady = false;
+}
+window.__maze = { build: buildExtinctionMaze, clear: clearExtinctionMaze, walls: () => mazeWalls, a: () => mazePointA, b: () => mazePointB, ready: () => mazeReady };
+window.__ext = () => ({ duelMode, gameStarted, extOver, monsters: [...monsterIds], moon: moon.intensity, fog: [scene.fog.near, scene.fog.far], mapT: extMapT, revealed: extRevealed.size, remotes: remotePlayers.size, freeze: extFreezeUntil - Date.now() });
+window.__tick = n => { for (let i = 0; i < (n || 1); i++) animate(); }; // debug : force la boucle (le pane de test ne déclenche pas rAF)
+
 // Collision cercle vs AABB : renvoie la position corrigée
 function collide(px, pz, radius) {
   for (const o of obstacles) {
@@ -751,7 +1142,31 @@ function collide(px, pz, radius) {
       pz = o.z + cz + (ez / d) * radius;
     }
   }
-  const lim = (duelMode === 'loup' && loupLimit) ? loupLimit : ARENA - 1.8;
+  if (duelMode === 'extinction') {
+    for (const o of mazeWalls) {
+      const dx = px - o.x, dz = pz - o.z;
+      const cx = Math.max(-o.hx, Math.min(o.hx, dx)), cz = Math.max(-o.hz, Math.min(o.hz, dz));
+      const ex = dx - cx, ez = dz - cz;
+      const d2 = ex * ex + ez * ez;
+      if (d2 < radius * radius && d2 > 0.0001) {
+        const d = Math.sqrt(d2);
+        px = o.x + cx + (ex / d) * radius;
+        pz = o.z + cz + (ez / d) * radius;
+      }
+    }
+    // Barrière « magique » du point B : le monstre ne peut pas y entrer
+    if (isMonster() && mazePointB) {
+      const dx = px - mazePointB.x, dz = pz - mazePointB.z;
+      const d = Math.hypot(dx, dz);
+      if (d < EXT_SAFE_R + 0.5 && d > 0.001) {
+        px = mazePointB.x + (dx / d) * (EXT_SAFE_R + 0.5);
+        pz = mazePointB.z + (dz / d) * (EXT_SAFE_R + 0.5);
+      }
+    }
+  }
+  const lim = (duelMode === 'loup' && loupLimit) ? loupLimit
+    : (duelMode === 'extinction') ? (MAZE_N * MAZE_CELL) / 2 - 1
+    : ARENA - 1.8;
   px = Math.max(-lim, Math.min(lim, px));
   pz = Math.max(-lim, Math.min(lim, pz));
   return [px, pz];
@@ -808,7 +1223,277 @@ camera.add(gun);
 const muzzle = new THREE.PointLight(0xffcc66, 0, 8);
 muzzle.position.set(0.32, -0.2, -1.2);
 camera.add(muzzle);
+
+// ---------- Lampe torche (mode Extinction) ----------
+const BATTERY_DRAIN = 100 / 240; // 100% en 4 min d'utilisation continue
+const flashlight = new THREE.SpotLight(0xfff2d8, 0, 34, Math.PI / 8.5, 0.35, 1.4);
+flashlight.position.set(0, 0, 0.2);
+const flashTarget = new THREE.Object3D();
+flashTarget.position.set(0, 0, -1);
+camera.add(flashTarget);
+flashlight.target = flashTarget;
+camera.add(flashlight);
 scene.add(camera);
+function setFlashlight(v) {
+  if (duelMode !== 'extinction' || isMonster()) return;
+  if (v && (player.battery <= 0 || extHealT > 0)) v = false; // pas de lampe en soignant
+
+  player.flashOn = v;
+  flashlight.intensity = v ? 6.5 : 0;
+  const bf = $('btn-flash');
+  if (bf) bf.classList.toggle('sel', v);
+}
+function toggleFlashlight() { setFlashlight(!player.flashOn); }
+
+// ---------- Monstre (mode Extinction) : attaque, stamina, aveuglement ----------
+function tryMonsterAttack() {
+  if (monsterStamina < 100) return; // pas encore rechargée depuis le dernier coup
+  let target = null, bestD = MONSTER_ATTACK_RANGE;
+  for (const [pid, r] of remotePlayers) {
+    if (!r.lastState) continue;
+    const dx = r.lastState.p[0] - player.pos.x, dz = r.lastState.p[2] - player.pos.z;
+    const d = Math.hypot(dx, dz);
+    if (d < bestD) { bestD = d; target = pid; }
+  }
+  monsterStamina = 0; // le coup vide toute la barre, 2s pour la recharger
+  recoil = 0.5;
+  sfx(150, 0.25, 'sawtooth', 0.2, 0.4);
+  if (target) { netSend({ t: 'pvp', to: target, d: 40 }); showMsg('🩸 Attaque !', 500); }
+}
+function updateMonsterState(dt) {
+  if (duelMode !== 'extinction' || !gameStarted) return;
+  if (isMonster()) {
+    if (monsterStamina < 100) monsterStamina = Math.min(100, monsterStamina + (100 / MONSTER_ATTACK_RECHARGE) * dt);
+    const sw = $('stam-wrap');
+    if (sw) { sw.style.display = 'block'; $('stam').style.width = monsterStamina + '%'; }
+    // Aveuglement : quelqu'un doit éclairer le monstre de face ET que le
+    // monstre regarde vers cette lumière (sinon il ne la « voit » pas).
+    let lit = false;
+    for (const [, r] of remotePlayers) {
+      const s = r.lastState;
+      if (!s || !s.fl) continue;
+      const dx = player.pos.x - s.p[0], dz = player.pos.z - s.p[2];
+      const dist = Math.hypot(dx, dz);
+      if (dist > 30 || dist < 0.01) continue;
+      const toMonsterX = dx / dist, toMonsterZ = dz / dist;
+      const sFwdX = -Math.sin(s.yaw), sFwdZ = -Math.cos(s.yaw);
+      if (sFwdX * toMonsterX + sFwdZ * toMonsterZ < 0.93) continue; // hors du faisceau de la lampe
+      const mFwdX = -Math.sin(yaw), mFwdZ = -Math.cos(yaw);
+      if (mFwdX * -toMonsterX + mFwdZ * -toMonsterZ > 0.3) lit = true; // le monstre regarde vers la source
+    }
+    monsterBlindT = lit ? 2 : Math.max(0, monsterBlindT - dt);
+    const bl = $('mblind');
+    if (bl) bl.style.opacity = Math.min(1, monsterBlindT / 2) * 0.85;
+  } else {
+    const sw = $('stam-wrap');
+    if (sw && !isWolf()) sw.style.display = 'none';
+  }
+}
+
+// ---------- Extinction : soin, exploration, arrivée, fin de partie ----------
+// Pshit-pshit soin : 10 s de canalisation. Sur soi : marche très lente ; sur un
+// autre joueur visé de près : les deux totalement immobiles (lui garde sa lampe).
+function startExtHeal() {
+  if (extHealCharges <= 0) { showMsg('❌ Plus de soin !', 900); return; }
+  if (extHealT > 0) return;
+  // vise-t-on un joueur proche ? (soin sur lui, sinon sur soi)
+  let target = null;
+  raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+  const models = [];
+  for (const [pid, r] of remotePlayers) if (r.rig && !monsterIds.has(pid)) models.push(r.rig.model);
+  const hits = raycaster.intersectObjects(models, true);
+  if (hits.length && hits[0].distance < 4) target = hits[0].object.userData.playerId || null;
+  extHealT = 10; extHealTarget = target;
+  if (target) netSend({ t: 'ext_healing', to: target }); // le soigné doit rester immobile aussi
+  setFlashlight(false); // les mains sont prises : pas de lampe pour le soignant
+  showMsg(target ? '💉 Soin sur ' + extNameOf(target) + '… ne bougez plus (10 s)' : '💉 Soin en cours… marche lente (10 s)', 2000);
+  sfx(500, 0.15, 'triangle', 0.12, 1.3);
+}
+// Cellule du labyrinthe où se trouve une position monde
+function extCellOf(x, z) {
+  const half = (MAZE_N * MAZE_CELL) / 2;
+  const gx = Math.max(0, Math.min(MAZE_N - 1, Math.floor((x + half) / MAZE_CELL)));
+  const gy = Math.max(0, Math.min(MAZE_N - 1, Math.floor((z + half) / MAZE_CELL)));
+  return gx + ',' + gy;
+}
+let extMapT = 0; // cadence de redessin de la mini-carte
+function extCheck(dt) {
+  if (duelMode !== 'extinction' || !gameStarted || extOver) return;
+  // ── Canalisation du soin ──
+  if (extHealT > 0) {
+    extHealT -= dt;
+    if (extHealT <= 0) {
+      extHealCharges--;
+      if (extHealTarget) { netSend({ t: 'lp_item', kind: 'heal', to: extHealTarget }); showMsg('❤️ ' + extNameOf(extHealTarget) + ' est soigné !', 1400); }
+      else { player.hp = 100; showMsg('❤️ Tu es soigné !', 1400); }
+      sfx(620, 0.25, 'triangle', 0.15, 1.5);
+      extHealTarget = null;
+      updateHud();
+    }
+  }
+  if (player.alive && !isMonster()) {
+    // ── Exploration partagée : chaque cellule traversée se débloque en live ──
+    const cell = extCellOf(player.pos.x, player.pos.z);
+    if (cell !== extLastCell) {
+      extLastCell = cell;
+      if (!extRevealed.has(cell)) { extRevealed.add(cell); netSend({ t: 'ext_map', c: cell }); }
+    }
+    // ── Zone sûre du point B ──
+    const dB = Math.hypot(player.pos.x - mazePointB.x, player.pos.z - mazePointB.z);
+    if (dB < EXT_SAFE_R && !extArrived.has(myId)) {
+      extArrived.add(myId);
+      netSend({ t: 'ext_arrive', id: myId });
+      showMsg('🏁 Tu es à l\'abri ! (tu peux repartir aider… à tes risques)', 2500);
+      sfx(700, 0.3, 'triangle', 0.15, 1.6);
+      updateHud();
+    } else if (dB > EXT_SAFE_R + 1 && extArrived.has(myId)) {
+      extArrived.delete(myId);
+      netSend({ t: 'ext_leave', id: myId });
+      showMsg('⚠ Tu quittes la zone sûre !', 1500);
+      updateHud();
+    }
+  }
+  // ── Mini-carte (toutes les 0.25 s) ──
+  extMapT += dt;
+  if (extMapT > 0.04) { extMapT = 0; drawExtMinimap(); } // ~25 i/s : la mini-carte tourne avec le regard
+  // ── Fin de partie (décidée par l'hôte) ──
+  if (!authority) return;
+  if (Date.now() < extFreezeUntil + 10000) return; // grâce : le temps que les états réseau arrivent
+  const ids = [myId, ...remotePlayers.keys()];
+  const survivors = ids.filter(id => !monsterIds.has(id));
+  if (!survivors.length) return; // aucun survivant connu = états pas encore reçus, on ne conclut pas
+  const alive = survivors.filter(id => !duelElim.has(id));
+  const done = alive.length === 0 || alive.every(id => extArrived.has(id));
+  if (done) extEnd(survivors.length, alive.filter(id => extArrived.has(id)).length);
+}
+// Calcul FINAL : chaque survivant arrivé au point B inflige sa part de dégâts.
+// Le monstre meurt si les dégâts dépassent sa vie restante (manger l'a régénéré).
+function extEnd(totalSurv, arrived) {
+  const dmg = totalSurv > 0 ? Math.round((arrived / totalSurv) * 120) : 0;
+  const monsterDead = dmg >= monsterHp;
+  const d = { t: 'ext_end', arrived, total: totalSurv, dmg, hp: monsterHp, dead: monsterDead };
+  broadcast(d);
+  applyExtEnd(d);
+}
+function applyExtEnd(d) {
+  if (extOver) return;
+  extOver = true; duelOver = true;
+  player.alive = false;
+  setFlashlight(false);
+  stopMusic();
+  if (IS_TOUCH) { touchPlaying = false; document.body.classList.remove('touch-playing'); shooting = false; }
+  else { try { document.exitPointerLock(); } catch (e) {} }
+  const jaiGagne = isMonster() ? !d.dead : d.dead;
+  $('overlay').querySelector('h1').textContent = jaiGagne ? '🏆 VICTOIRE' : '💀 DÉFAITE';
+  $('overlay').querySelector('h1').classList.toggle('dead', !jaiGagne);
+  $('intro').innerHTML = (!monsterIds.size
+    ? '🔦 Tu as traversé le labyrinthe ! (partie solo, sans monstre)'
+    : d.dead
+    ? '🔦 Les survivants ont abattu le monstre !'
+    : '🐺 Le monstre a survécu à la nuit…')
+    + '<br>' + d.arrived + ' / ' + d.total + ' survivant' + (d.total > 1 ? 's' : '') + ' au point B'
+    + ' — dégâts infligés : ' + d.dmg + ' / ' + d.hp + ' PV restants';
+  $('go-label').textContent = 'Clique pour revenir à l\'accueil';
+  overlay.style.display = 'flex';
+}
+// ---------- Cartes du labyrinthe (fog-of-war en live) ----------
+// Mini-carte ronde : centrée sur soi et tournée avec le regard (devant = en
+// haut), zoomée sur les environs. Grande carte (M / toucher la mini-carte) :
+// tout le labyrinthe exploré, nord en haut, avec le point B.
+const MINIMAP_VIEW_R = 28; // rayon visible de la mini-carte, en unités monde (~3 cellules)
+let extBigMap = false;
+function toggleExtBigMap(v) {
+  extBigMap = v === undefined ? !extBigMap : v;
+  if (duelMode !== 'extinction' || !gameStarted) extBigMap = false;
+  const bm = document.getElementById('bigmap');
+  if (bm) bm.style.display = extBigMap ? 'block' : 'none';
+  if (extBigMap) drawExtMap(bm, true);
+}
+// Dessine le labyrinthe en coordonnées monde (le contexte est déjà transformé)
+function drawExtMapContent(x2, k, big) {
+  const half = (MAZE_N * MAZE_CELL) / 2;
+  const px = 1 / k; // 1 pixel écran, en unités monde
+  x2.fillStyle = isMonster() ? 'rgba(150,170,200,0.85)' : 'rgba(110,215,150,0.85)';
+  const clearingR = MAZE_CELL * 1.6;
+  for (const w of mazeWalls) {
+    if (!isMonster()) { // survivants : cellules explorées + la clairière ; le monstre voit tout
+      const inClairiere = Math.abs(w.x) < clearingR * 1.6 && Math.abs(w.z) < clearingR * 1.6;
+      // un mur est connu dès qu'une des deux cellules qu'il sépare a été explorée
+      const vert = w.hz > w.hx, o = 0.6;
+      const c1 = vert ? extCellOf(w.x - o, w.z) : extCellOf(w.x, w.z - o);
+      const c2 = vert ? extCellOf(w.x + o, w.z) : extCellOf(w.x, w.z + o);
+      if (!extRevealed.has(c1) && !extRevealed.has(c2) && !inClairiere) continue;
+    }
+    const ww = Math.max(w.hx * 2, 1.5 * px), wh = Math.max(w.hz * 2, 1.5 * px);
+    x2.fillRect(w.x - ww / 2, w.z - wh / 2, ww, wh);
+  }
+  if (big) { // contour du labyrinthe + départ A + objectif B (uniquement sur la grande carte)
+    x2.strokeStyle = 'rgba(255,255,255,0.18)'; x2.lineWidth = 2 * px;
+    x2.strokeRect(-half, -half, half * 2, half * 2);
+    x2.fillStyle = '#7fd4ff'; x2.beginPath(); x2.arc(mazePointA.x, mazePointA.z, 5 * px, 0, 7); x2.fill();
+    x2.fillStyle = '#6aff9e'; x2.beginPath(); x2.arc(mazePointB.x, mazePointB.z, 7 * px, 0, 7); x2.fill();
+    x2.strokeStyle = '#6aff9e'; x2.lineWidth = 2 * px;
+    x2.beginPath(); x2.arc(mazePointB.x, mazePointB.z, 12 * px, 0, 7); x2.stroke();
+    x2.font = `bold ${14 * px}px sans-serif`; x2.textAlign = 'center';
+    x2.fillText('B', mazePointB.x, mazePointB.z - 16 * px);
+    x2.fillStyle = '#7fd4ff'; x2.fillText('A', mazePointA.x, mazePointA.z - 10 * px);
+  }
+  // Joueurs : survivants → les autres survivants ; monstre → seulement les lampes allumées
+  for (const [pid, r] of remotePlayers) {
+    const s = r.lastState;
+    if (!s) continue;
+    if (isMonster()) {
+      if (!s.fl || monsterIds.has(pid)) continue; // il ne « voit » que les lampes
+      x2.fillStyle = '#ffd97a';
+    } else {
+      if (monsterIds.has(pid)) continue; // le monstre n'apparaît jamais sur la carte des survivants
+      x2.fillStyle = duelElim.has(pid) ? 'rgba(150,150,150,0.5)' : '#7fd4ff';
+    }
+    x2.beginPath(); x2.arc(s.p[0], s.p[2], 3.5 * px, 0, 7); x2.fill();
+  }
+}
+function drawExtMap(cv, big) {
+  const x2 = cv.getContext('2d'), S = cv.width;
+  const half = (MAZE_N * MAZE_CELL) / 2;
+  x2.setTransform(1, 0, 0, 1, 0, 0);
+  x2.clearRect(0, 0, S, S);
+  x2.save();
+  if (big) {
+    x2.fillStyle = 'rgba(4,6,12,0.94)'; x2.fillRect(0, 0, S, S);
+    const k = (S - 40) / (half * 2); // 20 px de marge
+    x2.translate(S / 2, S / 2); x2.scale(k, k);
+    drawExtMapContent(x2, k, true);
+    // Moi : flèche orientée selon le regard
+    x2.translate(player.pos.x, player.pos.z); x2.rotate(-yaw); x2.scale(1 / k, 1 / k);
+  } else {
+    x2.beginPath(); x2.arc(S / 2, S / 2, S / 2 - 1, 0, 7); x2.clip();
+    x2.fillStyle = 'rgba(4,6,12,0.92)'; x2.fillRect(0, 0, S, S);
+    const k = (S / 2) / MINIMAP_VIEW_R;
+    // centre = moi, et rotation de -regard : ce qui est devant moi s'affiche en haut
+    x2.translate(S / 2, S / 2); x2.rotate(yaw); x2.scale(k, k);
+    x2.translate(-player.pos.x, -player.pos.z);
+    drawExtMapContent(x2, k, false);
+    x2.setTransform(1, 0, 0, 1, S / 2, S / 2); // flèche fixe au centre, pointée vers le haut
+  }
+  x2.fillStyle = isMonster() ? '#ff6a5e' : '#ffffff';
+  x2.beginPath(); x2.moveTo(0, -7); x2.lineTo(5, 5); x2.lineTo(0, 2); x2.lineTo(-5, 5); x2.closePath(); x2.fill();
+  x2.restore();
+  if (!big) {
+    x2.strokeStyle = 'rgba(255,255,255,0.35)'; x2.lineWidth = 2;
+    x2.beginPath(); x2.arc(S / 2, S / 2, S / 2 - 1, 0, 7); x2.stroke();
+    x2.fillStyle = 'rgba(255,255,255,0.55)'; x2.font = 'bold 12px sans-serif'; x2.textAlign = 'center';
+    x2.fillText(IS_TOUCH ? '🗺️' : 'M', S / 2, S - 10); // rappel : ouvrir la grande carte
+  }
+}
+function drawExtMinimap() {
+  const cv = document.getElementById('minimap');
+  if (!cv) return;
+  const on = duelMode === 'extinction' && gameStarted;
+  cv.style.display = on && !extBigMap ? 'block' : 'none';
+  if (!on) { if (extBigMap) toggleExtBigMap(false); return; }
+  drawExtMap(cv, false);
+  if (extBigMap) drawExtMap(document.getElementById('bigmap'), true);
+}
 
 // ---------- Bonshommes (ennemis + joueur) ----------
 const enemies = [];
@@ -1955,6 +2640,45 @@ const SKINS = [
       }
       C.put(C.F.head, C.box(0.095, 0.04, 0.04, C.M(0x1b1206, 0.95)), 0, 0.02, -0.088);
       C.face({ iris: 0x2e1f14, brow: 0x15161a });
+    } },
+  { name: 'Monstre', hidden: true, h: 1.18, // rôle spécial (mode Extinction) : absent du sélecteur de skins
+    morph: { head: 1.05, torso: 1.6, arms: 1.5, legs: 1.2, hips: 0.85 },
+    zones: { furDark: 0x14100c, furMid: 0x2b2016, furLight: 0x453723, belly: 0x6e5b40 },
+    paint(ny, nx, z, Z) { // fourrure tachetée par bruit pseudo-aléatoire + ventre plus clair
+      const n = Math.sin(ny * 53.7 + nx * 19.3) * Math.sin(nx * 41.1 - z * 27.7) * Math.sin(z * 63.4 + ny * 11.2);
+      if (ny < 0.5 && z < -0.02 && nx < 0.4) return Z.belly;
+      if (n > 0.18) return Z.furLight;
+      if (n < -0.18) return Z.furDark;
+      return Z.furMid;
+    },
+    build(C) { // museau de loup, oreilles, crocs, crinière, queue, griffes
+      const rig = C.rig;
+      C.eyes(0xffa61f); // regard ambré luminescent
+      const snoutMat = C.M(0x1c150e, 0.85);
+      C.put(C.F.head, C.box(0.08, 0.065, 0.15, snoutMat), 0, 0.005, -0.15);
+      C.put(C.F.head, C.box(0.05, 0.045, 0.03, C.M(0x0a0806, 0.6)), 0, -0.01, -0.225);
+      for (const s of [-1, 1]) {
+        const ear = C.put(C.F.head, C.cone(0.045, 0.11, snoutMat), s * 0.075, 0.165, 0.015);
+        ear.rotation.z = s * 0.3; ear.rotation.x = -0.2;
+      }
+      const fangMat = C.M(0xf0ead8, 0.25, 0.05);
+      for (const s of [-1, 1]) {
+        const fang = C.put(C.F.head, C.cone(0.011, 0.05, fangMat), s * 0.028, -0.025, -0.205);
+        fang.rotation.x = Math.PI;
+      }
+      rig.chains.push(makeHairChain(rig.frames.head, new THREE.Vector3(0, 0.1, 0.06), new THREE.Vector3(0, 0.3, 1).normalize(), 0.06, 5, [0.045, 0.038, 0.03, 0.02, 0.01], C.M(0x14100c, 0.9)));
+      rig.chains.push(makeHairChain(rig.frames.hips, new THREE.Vector3(0, 0.02, 0.14), new THREE.Vector3(0, -0.2, 1).normalize(), 0.14, 6, [0.055, 0.048, 0.04, 0.03, 0.02, 0.01], C.M(0x2b2016, 0.88)));
+      const clawMat = C.M(0xe8e2d0, 0.3, 0.1);
+      for (const s of [-1, 0, 1]) {
+        const claw = C.put(C.F.lFore, C.cone(0.017, 0.115, clawMat), -0.33, 0.022 * s, 0.03 * s);
+        claw.rotation.z = Math.PI / 2;
+      }
+      for (const f of [C.F.footL, C.F.footR]) {
+        for (const s of [-1, 0, 1]) {
+          const claw = C.put(f, C.cone(0.015, 0.09, clawMat), 0.025 * s, -0.03, -0.19);
+          claw.rotation.x = -Math.PI / 2;
+        }
+      }
     } }
 ];
 const SKIN_BOT = 0; // les bots incarnent « Ombre »
@@ -2048,8 +2772,91 @@ const player = {
   hp: 100, clip: WEAPONS[0].clip, reloading: false, fireCd: 0, alive: true,
   lives: 3, invuln: 0, // duel : 3 cœurs + invulnérabilité brève au respawn
   loupCharges: 3, // mode loup : utilisations restantes de l'objet (par partie)
-  clips: WEAPONS.map(w => w.clip) // munitions chargées propres à chaque arme
+  clips: WEAPONS.map(w => w.clip), // munitions chargées propres à chaque arme
+  battery: 100, batteries: 2, flashOn: false // mode Extinction : lampe torche (survivants)
 };
+// ---------- Mode Extinction 🔦 ----------
+// Rôle PUBLIC (contrairement au Loup) : tout le monde sait qui est le/les
+// monstre(s) dès le lancement de la partie.
+let monsterIds = new Set(); // ids des joueurs-monstres cette partie
+const isMonster = () => monsterIds.has(myId);
+let monsterStamina = 100;   // barre pleine = peut attaquer ; l'attaque la vide entièrement (2s pour se recharger)
+let monsterBlindT = 0;      // >0 : aveuglé par une lampe (ralenti + vision blanchie), décompte en secondes
+const MONSTER_ATTACK_RANGE = 3; // quasi corps-à-corps
+const MONSTER_ATTACK_RECHARGE = 2; // secondes
+// État complet d'une partie Extinction
+let myPseudo = localStorage.getItem('zh-pseudo') || '';
+const extNames = new Map();   // id -> pseudo (échangés dans le salon)
+let extFreezeUntil = 0;       // compte à rebours de 5 s : personne ne bouge
+let extOver = false;
+let monsterHp = 100;          // vie du monstre (dégâts au calcul final ; manger régénère)
+let extHealCharges = 1;       // 1 pshit-pshit soin par partie
+let extHealT = 0;             // >0 : canalisation du soin en cours (10 s)
+let extHealTarget = null;     // id du joueur soigné (null = soi-même)
+let extBeingHealedUntil = 0;  // quelqu'un me soigne : je suis immobile (mais je garde ma lampe)
+let extItemSel = 0;           // inventaire survivant : 0 = lampe, 1 = soin
+const extArrived = new Set(); // joueurs actuellement à l'abri au point B
+const extRevealed = new Set();// cellules "gx,gy" du labyrinthe déjà explorées (PARTAGÉ entre survivants)
+let extLastCell = '';         // dernière cellule où j'étais (évite de re-diffuser)
+const EXT_SAFE_R = 7;         // rayon de la zone sûre (barrière magique) au point B
+const MONSTER_SKIN = SKINS.findIndex(s => s.name === 'Monstre'); // skin caché du loup-garou
+
+// Éclairage : la nuit tombe vraiment pour les survivants (noir quasi total,
+// brouillard très court) ; le monstre voit presque tout, coins sombres gardés.
+function applyExtinctionLights(on) {
+  if (on && !isMonster()) {
+    moon.intensity = 0.06; hemi.intensity = 0.04; rim.intensity = 0; ambientL.intensity = 0.05;
+    scene.fog.near = 3; scene.fog.far = 30;
+    scene.background.setHex(0x02030a); scene.fog.color.setHex(0x02030a);
+  } else if (on) { // monstre : vision nocturne, ambiance lugubre conservée
+    moon.intensity = 0.7; hemi.intensity = 0.35; rim.intensity = 0.2; ambientL.intensity = 0.3;
+    scene.fog.near = 25; scene.fog.far = 190;
+    scene.background.setHex(0x070a14); scene.fog.color.setHex(0x070a14);
+  } else { // restauration des réglages normaux du jeu
+    moon.intensity = 1.5; hemi.intensity = 0.7; rim.intensity = 0.5; ambientL.intensity = 0.5;
+    scene.fog.near = 45; scene.fog.far = 250;
+    scene.background.setHex(0x0d1220); scene.fog.color.setHex(0x0d1220);
+  }
+}
+function extPseudo() { return (myPseudo || '').trim() || 'Agent-' + myId.slice(-3).toUpperCase(); }
+function extNameOf(id, nms) {
+  if (id === myId) return extPseudo();
+  return (nms && nms[id]) || extNames.get(id) || 'Joueur-' + id.slice(-3).toUpperCase();
+}
+// Annonce publique du/des monstre(s) + compte à rebours 5 s où personne ne bouge,
+// puis chacun est téléporté à son point de départ (clairière ou point A).
+function extStartCountdown(nms) {
+  buildExtinctionMaze(); // idempotent : garantit points A/B même si l'ordre réseau varie
+  extFreezeUntil = Date.now() + 5000;
+  applyExtinctionLights(true);
+  // le monstre prend son vrai corps de loup-garou, visible par tous
+  if (isMonster() && MONSTER_SKIN >= 0 && playerModel) applySkinToRig(playerModel, MONSTER_SKIN);
+  const names = [...monsterIds].map(id => extNameOf(id, nms)).join(' et ');
+  if (isMonster()) {
+    player.pos.set(0, EYE, 0); // clairière centrale
+    curWeapon = { name: 'Griffes 🐺', clip: 0, snd: 'none' };
+    player.clip = 0;
+  } else {
+    player.pos.set(mazePointA.x, EYE, mazePointA.z);
+    extSelectItem(0); // lampe en main au départ
+  }
+  let left = 5;
+  const tick = () => {
+    if (duelMode !== 'extinction' || !gameStarted) return;
+    if (left > 0) {
+      showMsg((!monsterIds.size ? '🔦 SOLO (sans monstre)' : isMonster() ? '🐺 TU ES LE MONSTRE, ' + names : '🐺 MONSTRE : ' + names)
+        + ' — début dans ' + left + ' s', 1100);
+      sfx(220 + left * 30, 0.1, 'square', 0.1, 0.8);
+      left--; setTimeout(tick, 1000);
+    } else {
+      showMsg(isMonster() ? '🩸 CHASSE-LES TOUS !' : '🏃 COURS AU POINT B !', 2500);
+      sfx(120, 0.5, 'sawtooth', 0.2, 1.5);
+    }
+  };
+  tick();
+  updateHud();
+}
+
 // ---------- État du mode Duel ----------
 let duelMode = null;   // null | '1v1' | '2v2'
 let duelSel = '1v1';   // onglet sélectionné dans le panneau Duel
@@ -2069,6 +2876,8 @@ function teamOf(id) {
 // équipés d'une guérison ou d'un bouclier (3 charges). 3 manches de 90 s,
 // l'arène rétrécit et les murs s'éclaircissent à chaque manche.
 let wolfId = null, loupRound = 0, loupLimit = 0, loupEndsAt = 0;
+let loupFromLimit = 0, loupToLimit = 0, loupRoundStart = 0; // rétrécissement continu de la zone
+const LOUP_LIMITS = [95, 60, 35]; // paliers atteints en fin de manche 1/2/3
 let loupScoreW = 0, loupScoreS = 0, loupRoundOver = false, loupHudT = 0;
 let myItem = 'heal';        // objet choisi dans le salon
 let shieldUntil = 0;        // bouclier actif jusqu'à cet instant
@@ -2124,9 +2933,13 @@ function tryDash() {
   dashVel = 26;
   sfx(300, 0.15, 'sawtooth', 0.12, 2.2);
 }
-// Rétrécissement : limite de déplacement + murs éclaircis (mais on peut se cacher)
+// Rétrécissement : limite de déplacement + murs visibles + obstacles éclaircis
+// (mais on peut toujours se cacher). Appelée à chaque frame avec la limite du
+// moment, calculée en continu par updateLoupZone() — la zone se resserre
+// donc progressivement, jamais par saut brutal.
 function applyLoupShrink(limit, n) {
   loupLimit = limit;
+  updateZoneWalls(limit);
   let restants = 0;
   for (let i = 0; i < obstacleMeshes.length; i++) {
     const o = obstacles[i], m = obstacleMeshes[i];
@@ -2146,11 +2959,29 @@ function applyLoupShrink(limit, n) {
     }
   }
 }
+// Calcule la limite courante par interpolation lissée entre le palier de
+// départ de la manche (celui où la précédente s'est arrêtée) et son palier
+// cible, sur toute sa durée (90s) — c'est ce qui donne l'effet de mur qui
+// se resserre en continu plutôt qu'un téléport entre 3 tailles fixes.
+function updateLoupZone() {
+  const dur = 90000;
+  const elapsed = Math.max(0, Math.min(dur, dur - (loupEndsAt - Date.now())));
+  const tt = elapsed / dur;
+  const eased = tt * tt * (3 - 2 * tt); // smootherstep
+  const limit = loupFromLimit + (loupToLimit - loupFromLimit) * eased;
+  applyLoupShrink(limit, loupRound);
+}
 // Début de manche (host décide, tout le monde applique)
 function applyLoupRound(d) {
   loupRound = d.n; loupEndsAt = d.ends; loupRoundOver = false;
   duelElim.clear();
-  applyLoupShrink(d.limit, d.n);
+  // Départ du rétrécissement : le palier où la manche précédente s'est arrêtée
+  // (ou la carte quasi entière pour la manche 1) jusqu'au palier cible de cette manche.
+  loupFromLimit = d.n === 1 ? ARENA - 5 : LOUP_LIMITS[d.n - 2];
+  loupToLimit = d.limit;
+  loupRoundStart = d.ends - 90000;
+  setZoneWallsVisible(true);
+  applyLoupShrink(loupFromLimit, d.n); // pose immédiatement la zone à sa taille de départ (pas de saut)
   player.hp = 100; player.alive = true; shieldUntil = 0; wolfStamina = 100;
   const l = d.limit - 10;
   player.pos.set((Math.random() - 0.5) * 2 * l, EYE, (Math.random() - 0.5) * 2 * l);
@@ -2164,13 +2995,17 @@ function applyLoupRound(d) {
   updateHud();
 }
 function startLoupRound(n) { // host uniquement
-  const d = { t: 'lp_round', n, limit: [95, 60, 35][n - 1], ends: Date.now() + 90000 };
+  const d = { t: 'lp_round', n, limit: LOUP_LIMITS[n - 1], ends: Date.now() + 90000 };
   broadcast(d);
   applyLoupRound(d);
 }
 // Fin de manche / de partie (host)
 function loupCheck(dt) {
+  // Zone visible : active seulement pendant une manche en cours ; sinon on la cache.
+  const zoneOn = duelMode === 'loup' && gameStarted && loupRound > 0 && !duelOver;
+  setZoneWallsVisible(zoneOn);
   if (duelMode !== 'loup' || !gameStarted || duelOver) return;
+  if (loupRound > 0) updateLoupZone();
   // régénération stamina + dash + bouclier visuel côté local
   if (isWolf()) {
     wolfStamina = Math.min(100, wolfStamina + dt * 14);
@@ -2228,6 +3063,7 @@ function updateHud() {
   $('clip').textContent = player.reloading ? '…' : player.clip;
   const wn = $('weapon-name');
   if (wn) wn.textContent = curWeapon.name + '  [' + (weaponIdx + 1) + ']';
+  updateWeaponInv();
   const bs = $('btn-scope'); // bouton visée : seulement avec le sniper en main
   if (bs) bs.style.display = (IS_TOUCH && gameStarted && curWeapon.snd === 'sniper') ? 'flex' : 'none';
   $('score').textContent = score;
@@ -2243,6 +3079,23 @@ function updateHud() {
     if (bd) bd.style.display = (IS_TOUCH && gameStarted && isWolf()) ? 'flex' : 'none';
     return;
   }
+  if (duelMode === 'extinction') {
+    const bf = $('btn-flash');
+    const showFlash = gameStarted && !isMonster();
+    if (bf) bf.style.display = (IS_TOUCH && showFlash) ? 'flex' : 'none';
+    $('hearts').style.display = 'none';
+    if (wn) wn.textContent = curWeapon.name; // pas de numéro d'arme dans ce mode
+    const ids = [myId, ...remotePlayers.keys()];
+    const surv = ids.filter(id => !monsterIds.has(id) && !duelElim.has(id)).length;
+    $('left').textContent = '🔦 Survivants : ' + surv + ' · 🏁 À l\'abri : ' + extArrived.size
+      + (isMonster() ? ' · 🩸 Ta vie : ' + Math.round(monsterHp) : ' · 💉 Soin : ' + extHealCharges);
+    if (!isMonster()) player.clip = extItemSel === 0 ? Math.round(player.battery) : extHealCharges;
+    $('clip').textContent = player.clip;
+    // lampe : « % batterie / batteries restantes » ; soin : charges seules
+    $('clip-max').textContent = isMonster() ? '' : extItemSel === 0 ? ' / ' + player.batteries : '';
+    return;
+  }
+  $('clip-max').textContent = ' / ∞';
   if (duelMode) {
     $('hearts').textContent = '❤️'.repeat(Math.max(0, player.lives)) + '🖤'.repeat(Math.max(0, 3 - player.lives));
     const opps = [...remotePlayers.keys()].filter(id => !duelElim.has(id)
@@ -2366,6 +3219,7 @@ if (IS_TOUCH) {
   hold('btn-scope', () => setScoped(!scoped)); // sniper : bouton visée
   hold('btn-view', () => thirdPerson = !thirdPerson); // 👁 vue 1ʳᵉ/3ᵉ personne
   hold('btn-dash', () => tryDash()); // ⚡ dash du loup
+  hold('btn-flash', () => toggleFlashlight()); // 🔦 lampe torche (mode Extinction)
   // Instructions adaptées au tactile
   $('intro').innerHTML = 'Survis aux vagues ou remporte ton duel.<br>' +
     'Joystick : bouger (à fond = courir) · Glisse l\'écran : viser · 🔥 tirer · R recharger';
@@ -2373,7 +3227,7 @@ if (IS_TOUCH) {
 }
 
 // ---------- Placement libre des commandes tactiles (éditeur glisser-déposer) ----------
-const CTRL_IDS = ['joy', 'btn-fire', 'btn-reload', 'btn-scope', 'btn-view', 'btn-dash'];
+const CTRL_IDS = ['joy', 'btn-fire', 'btn-reload', 'btn-scope', 'btn-view', 'btn-dash', 'btn-flash'];
 function applyCtrlLayout() {
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem('zh-ctrl-pos') || 'null'); } catch (e) {}
@@ -2474,12 +3328,29 @@ addEventListener('contextmenu', e => { if (gameStarted) e.preventDefault(); });
 addEventListener('mouseup', e => { if (e.button === 0) shooting = false; });
 let shooting = false, wantFire = false; // wantFire = front de pression (armes semi-auto)
 
-// Changement d'arme : touches 1-4 et molette
+// Changement d'arme : touches 1-4, flèches haut/bas et molette
 addEventListener('keydown', e => {
   if (!gameStarted) return;
   const m = e.code.match(/^Digit([1-4])$/);
   if (m) switchWeapon(+m[1] - 1);
+  if (e.code === 'ArrowUp' || e.code === 'ArrowDown') {
+    e.preventDefault();
+    let i = weaponIdx;
+    for (let k = 0; k < WEAPONS.length; k++) {
+      i = (i + (e.code === 'ArrowDown' ? 1 : -1) + WEAPONS.length) % WEAPONS.length;
+      if (isUnlocked(i)) break;
+    }
+    switchWeapon(i);
+  }
+  if (e.code === 'KeyF') toggleFlashlight(); // lampe torche (mode Extinction)
+  if (e.code === 'KeyM') toggleExtBigMap(); // grande carte du labyrinthe (mode Extinction)
 });
+// Mobile : toucher la mini-carte ouvre la grande carte, toucher la grande carte la ferme
+for (const [id, v] of [['minimap', true], ['bigmap', false]]) {
+  document.getElementById(id).addEventListener('touchstart', e => {
+    e.preventDefault(); e.stopPropagation(); toggleExtBigMap(v);
+  }, { passive: false });
+}
 addEventListener('wheel', e => {
   if (!inputActive()) return;
   let i = weaponIdx; // molette : passe à l'arme débloquée suivante
@@ -2504,6 +3375,7 @@ function gunSound(kind) {
   else { sfx(900 + Math.random() * 200, 0.08, 'square', 0.1, 0.15); sfx(140, 0.12, 'sawtooth', 0.08, 0.4); } // fusil
 }
 function reload() {
+  if (duelMode === 'extinction') return; // pas d'arme à recharger dans ce mode
   if (duelMode === 'loup' && !isWolf()) return; // les charges d'objet ne se rechargent pas
   if (player.reloading || player.clip >= curWeapon.clip || !player.alive) return;
   player.reloading = true;
@@ -2531,7 +3403,72 @@ function setScoped(v) {
   const bs = document.getElementById('btn-scope');
   if (bs) bs.classList.toggle('sel', v);
 }
+// Inventaire tactile (mobile) : une case verticale par arme, appui = changement
+// direct. N'existe pas en mode Loup (rôle à arme fixe, cf. loupMyWeapon()).
+const weaponInvEl = document.getElementById('weapon-inv');
+WEAPONS.forEach((w, i) => {
+  const slot = document.createElement('div');
+  slot.className = 'wslot';
+  slot.innerHTML = w.icon + '<div class="wlock">🔒</div>';
+  slot.addEventListener('touchstart', e => { e.preventDefault(); switchWeapon(i); }, { passive: false });
+  weaponInvEl.appendChild(slot);
+});
+let weaponInvMode = 'guns'; // contenu actuel de l'inventaire : armes ou objets Extinction
+function rebuildWeaponInv(mode) {
+  weaponInvMode = mode;
+  weaponInvEl.innerHTML = '';
+  if (mode === 'ext') { // Extinction (survivant) : lampe OU soin en main
+    [['🔦', 'Lampe'], ['💉', 'Soin']].forEach(([icon], i) => {
+      const slot = document.createElement('div');
+      slot.className = 'wslot';
+      slot.innerHTML = icon + '<div class="wlock">🔒</div>';
+      const pick = e => { if (e && e.preventDefault) e.preventDefault(); extSelectItem(i); };
+      slot.addEventListener('touchstart', pick, { passive: false });
+      slot.addEventListener('mousedown', pick);
+      weaponInvEl.appendChild(slot);
+    });
+  } else {
+    WEAPONS.forEach((w, i) => {
+      const slot = document.createElement('div');
+      slot.className = 'wslot';
+      slot.innerHTML = w.icon + '<div class="wlock">🔒</div>';
+      slot.addEventListener('touchstart', e => { e.preventDefault(); switchWeapon(i); }, { passive: false });
+      weaponInvEl.appendChild(slot);
+    });
+  }
+}
+function extSelectItem(i) {
+  if (duelMode !== 'extinction' || isMonster() || extHealT > 0) return;
+  extItemSel = i;
+  if (i === 1) setFlashlight(false); // le soin en main : la lampe s'éteint
+  curWeapon = i === 0 ? { name: 'Lampe torche 🔦', clip: 0, snd: 'none' }
+                      : { name: 'Pshit-pshit soin 💉', clip: extHealCharges, snd: 'none' };
+  player.clip = i === 0 ? Math.round(player.battery) : extHealCharges;
+  sfx(430, 0.06, 'triangle', 0.08, 1.3);
+  updateHud();
+}
+function updateWeaponInv() {
+  if (duelMode === 'extinction') {
+    const want = isMonster() ? 'none' : 'ext';
+    if (want === 'none') { weaponInvEl.style.display = 'none'; return; }
+    if (weaponInvMode !== 'ext') rebuildWeaponInv('ext');
+    weaponInvEl.style.display = 'flex';
+    weaponInvEl.querySelectorAll('.wslot').forEach((slot, i) => {
+      slot.classList.toggle('sel', i === extItemSel);
+      slot.classList.toggle('locked', i === 1 && extHealCharges <= 0);
+    });
+    return;
+  }
+  if (weaponInvMode !== 'guns') rebuildWeaponInv('guns');
+  weaponInvEl.style.display = duelMode === 'loup' ? 'none' : 'flex';
+  weaponInvEl.querySelectorAll('.wslot').forEach((slot, i) => {
+    slot.classList.toggle('sel', i === weaponIdx);
+    slot.classList.toggle('locked', !isUnlocked(i));
+  });
+}
 function switchWeapon(i) {
+  if (duelMode === 'loup') return; // rôle fixe : le loup garde son fusil, le survivant son objet
+  if (duelMode === 'extinction') { extSelectItem(i); return; } // flèches/touches : bascule lampe/soin
   if (i === weaponIdx || i < 0 || i >= WEAPONS.length || player.reloading || !player.alive) return;
   if (!isUnlocked(i)) { showMsg('🔒 ' + WEAPONS[i].name + ' — tue encore des bots pour la débloquer', 1300); return; }
   setScoped(false);
@@ -2677,6 +3614,7 @@ function respawnDuel() {
 // Fin de duel : détecte la victoire/défaite (1v1 : adversaire à terre ; 2v2 : équipe entière)
 function checkDuelEnd() {
   if (duelMode === 'loup') return; // le loup a sa propre logique de fin (loupCheck)
+  if (duelMode === 'extinction') return; // l'Extinction a la sienne (extCheck)
   if (!duelMode || duelOver || !gameStarted) return;
   const ids = [myId, ...remotePlayers.keys()];
   const aliveByTeam = [0, 0];
@@ -2711,6 +3649,22 @@ function duelEnd(won) {
 }
 function die() {
   setScoped(false);
+  if (duelMode === 'extinction') { // dévoré : une seule vie, on spectate
+    player.alive = false;
+    setFlashlight(false);
+    duelElim.add(myId);
+    extArrived.delete(myId);
+    netSend({ t: 'elim', id: myId });
+    netSend({ t: 'ext_leave', id: myId });
+    netSend({ t: 'ext_eat' }); // le monstre se régénère en mangeant
+    if (!IS_TOUCH) document.exitPointerLock();
+    $('overlay').querySelector('h1').textContent = '🩸 Dévoré !';
+    $('intro').innerHTML = 'Le monstre t\'a eu… attends la fin de la partie.';
+    $('go-label').textContent = 'Clique pour quitter la partie';
+    overlay.style.display = 'flex';
+    updateHud();
+    return;
+  }
   if (duelMode === 'loup') { // une seule vie par manche : on spectate jusqu'à la suivante
     player.alive = false;
     duelElim.add(myId);
@@ -2826,6 +3780,8 @@ function animate() {
   updateDebugPanel();
   autoQuality(dt, t);
   loupCheck(dt); // mode loup : stamina, chrono et arbitrage des manches
+  updateMonsterState(dt); // mode Extinction : stamina du monstre, aveuglement
+  extCheck(dt); // mode Extinction : soin, exploration, arrivée, fin de partie
 
   // Zoom uniquement pendant le tir : dézoome immédiatement quand on relâche.
   // (aimT ne sert qu'au rangement de l'arme, qui garde un léger délai.)
@@ -2845,7 +3801,14 @@ function animate() {
     const strafe = Math.max(-1, Math.min(1, (kd('right') ? 1 : 0) - (kd('left') ? 1 : 0) + mob.strafe));
     // On ne peut pas courir en reculant : marche arrière lente, sprint vers l'avant uniquement
     const sprint = (kd('sprint') || mob.sprint) && fwd > 0;
-    const speed = fwd < 0 ? 5.5 : (sprint ? 13 : 8);
+    let speed = fwd < 0 ? 5.5 : (sprint ? 13 : 8);
+    if (duelMode === 'extinction') {
+      if (isMonster()) speed *= 1.3;              // le monstre est plus rapide
+      if (monsterBlindT > 0) speed *= 0.35;       // aveuglé : ralenti
+      if (Date.now() < extFreezeUntil) speed = 0; // compte à rebours de départ
+      if (extHealT > 0) speed = extHealTarget ? 0 : 1.4; // soin : immobile (autre) ou marche très lente (soi)
+      if (Date.now() < extBeingHealedUntil) speed = 0;   // on me soigne : vraiment aucun mouvement
+    }
     const dirX = Math.sin(yaw), dirZ = Math.cos(yaw);
     let nx = player.pos.x + (-dirX * fwd + dirZ * strafe) * speed * dt;
     let nz = player.pos.z + (-dirZ * fwd - dirX * strafe) * speed * dt;
@@ -2872,11 +3835,36 @@ function animate() {
       pitch = Math.max(-1.45, Math.min(1.45, pitch));
     }
     // Tir : automatique (maintien) ou semi-auto (un tir par pression)
-    player.fireCd -= dt;
-    if (player.fireCd <= 0 && !player.reloading) {
-      if (curWeapon.auto ? shooting : wantFire) shoot();
+    if (duelMode === 'extinction') {
+      if (wantFire) {
+        if (isMonster()) tryMonsterAttack();
+        else if (extItemSel === 1) startExtHeal(); // soin sélectionné dans l'inventaire
+        else toggleFlashlight();                   // lampe sélectionnée : le clic l'allume/éteint
+      }
+    } else {
+      player.fireCd -= dt;
+      if (player.fireCd <= 0 && !player.reloading) {
+        if (curWeapon.auto ? shooting : wantFire) shoot();
+      }
     }
     wantFire = false;
+  }
+
+  // Lampe torche : ne se vide que si allumée, jamais au repos
+  if (duelMode === 'extinction' && player.flashOn) {
+    const prevPct = Math.round(player.battery);
+    player.battery = Math.max(0, player.battery - BATTERY_DRAIN * dt);
+    if (player.battery <= 0) {
+      if (player.batteries > 1) { // batterie de rechange : on la met et la lampe reste allumée
+        player.batteries--;
+        player.battery = 100;
+        showMsg('🔋 Batterie de rechange !', 1400);
+        sfx(520, 0.12, 'triangle', 0.12, 1.4);
+      } else { player.batteries = 0; setFlashlight(false); showMsg('🪫 Plus de batterie !', 1400); }
+      updateHud();
+    } else if (Math.round(player.battery) !== prevPct && extItemSel === 0) {
+      $('clip').textContent = player.clip = Math.round(player.battery);
+    }
   }
 
   // Retour élastique du recul + secousse de dégâts
@@ -2947,7 +3935,7 @@ function animate() {
       camera.position.z -= Math.cos(bobPhase) * Math.sin(yaw) * 0.02;
     }
   }
-  gun.visible = !thirdPerson && !scoped; // dans la lunette, on ne voit pas l'arme
+  gun.visible = !thirdPerson && !scoped && duelMode !== 'extinction'; // lunette : pas d'arme ; Extinction : lampe/soin, pas de fusil
   playerSm.group.visible = thirdPerson && !playerModel.loaded;
   playerModel.root.visible = thirdPerson && playerModel.loaded;
 
@@ -3160,6 +4148,15 @@ function animate() {
     if ((rig.aimBlend > 0.5) !== rig.onAim) { rig.onAim = rig.aimBlend > 0.5; rig.attachRifle(rig.onAim); }
     rig.aimGun.rotation.x = tg.pitch || 0;
     if (rig.spine) rig.spine.rotation.x -= (tg.pitch || 0) * 0.6 * rig.aimBlend;
+    // Extinction : la lampe des autres joueurs éclaire vraiment dans la nuit
+    if (duelMode === 'extinction') {
+      if (!r.lampLight) {
+        r.lampLight = new THREE.PointLight(0xfff2d8, 0, 16, 1.6);
+        r.lampLight.position.y = 1.6;
+        rig.model.add(r.lampLight);
+      }
+      r.lampLight.intensity = (r.lastState && r.lastState.fl) ? 3.5 : 0;
+    } else if (r.lampLight) r.lampLight.intensity = 0;
     if (rig.aimBlend > 0.02) for (const b of rig.aimPose) b.bone.quaternion.slerp(b.q, rig.aimBlend);
   }
 
@@ -3233,10 +4230,10 @@ async function relayPoll() {
             updateLobby();
           }
         }
-        onMsg(pc, m);
+        try { onMsg(pc, m); } catch (e) { window.__errs.push('onMsg(' + m.t + '): ' + e.message); }
       }
     }
-  } catch (e) {}
+  } catch (e) { if (!/fetch|network/i.test(e.message)) window.__errs.push('relayPoll: ' + e.message); }
   if (relayRoom === room) setTimeout(relayPoll, 33);
 }
 function relayHeartbeat() {
@@ -3295,8 +4292,9 @@ function selfNetState() {
     t: 'state', id: myId,
     p: [+player.pos.x.toFixed(2), +(player.pos.y - EYE).toFixed(2), +player.pos.z.toFixed(2)],
     yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3),
-    anim, back, aim: aimT > 0, hp: Math.round(player.hp), sk: mySkin,
-    tm: myTeam, lv: player.lives
+    anim, back, aim: aimT > 0, hp: Math.round(player.hp),
+    sk: (duelMode === 'extinction' && isMonster() && MONSTER_SKIN >= 0) ? MONSTER_SKIN : mySkin,
+    tm: myTeam, lv: player.lives, fl: player.flashOn, nm: extPseudo()
   };
 }
 
@@ -3323,6 +4321,7 @@ function updateRemote(d, conn) {
   }
   if (conn) r.conn = conn;
   r.lastState = d;
+  if (d.nm) extNames.set(d.id, d.nm); // pseudo le plus récent (Extinction)
   if (r.rig && typeof d.sk === 'number' && r.rig.skinIdx !== d.sk) applySkinToRig(r.rig, d.sk);
   // Dernière position réseau connue : le rendu s'en approche par lissage
   // exponentiel (voir la boucle animate) — jamais de saut, quelle que soit
@@ -3395,11 +4394,41 @@ function onMsg(conn, d) {
     case 'lp_wolf': // moi seul le reçois : je suis le loup
       wolfId = myId;
       break;
+    case 'ext_role': // mode Extinction : rôle public, tout le monde le reçoit
+      monsterIds = new Set(d.ids);
+      if (d.nms) for (const k in d.nms) if (k !== myId) extNames.set(k, d.nms[k]);
+      extStartCountdown(d.nms);
+      break;
+    case 'name': // pseudo échangé dans le salon Extinction
+      if (d.id && d.id !== myId) { extNames.set(d.id, d.nm); }
+      if (authority) broadcastExcept(conn, d);
+      break;
+    case 'ext_map': // une cellule du labyrinthe vient d'être explorée (partagé)
+      if (d.c) extRevealed.add(d.c);
+      if (authority) broadcastExcept(conn, d);
+      break;
+    case 'ext_arrive': // un survivant entre dans la zone sûre du point B
+      if (d.id) { extArrived.add(d.id); showMsg('🏁 ' + extNameOf(d.id) + ' est à l\'abri !', 1500); updateHud(); }
+      if (authority) broadcastExcept(conn, d);
+      break;
+    case 'ext_leave': // il en ressort (au risque de tout perdre)
+      if (d.id) { extArrived.delete(d.id); updateHud(); }
+      if (authority) broadcastExcept(conn, d);
+      break;
+    case 'ext_eat': // le monstre a dévoré quelqu'un : il se régénère
+      monsterHp = Math.min(100, monsterHp + 20);
+      if (authority) broadcastExcept(conn, d);
+      break;
+    case 'ext_healing': // on me soigne : immobile 10 s (je peux garder ma lampe)
+      if (d.to === myId) { extBeingHealedUntil = Date.now() + 10000; showMsg('💉 On te soigne — ne bouge plus (10 s) !', 2500); }
+      if (authority && d.to !== myId) broadcastExcept(conn, d);
+      break;
+    case 'ext_end': applyExtEnd(d); break;
     case 'lp_round': applyLoupRound(d); break;
     case 'lp_score': applyLoupScore(d); break;
     case 'lp_end': applyLoupEnd(d.wolfWon); break;
-    case 'lp_item': // guérison / bouclier reçu d'un allié
-      if (d.to === myId && duelMode === 'loup') {
+    case 'lp_item': // guérison / bouclier reçu d'un allié (Loup et Extinction)
+      if (d.to === myId && (duelMode === 'loup' || duelMode === 'extinction')) {
         if (d.kind === 'heal') { player.hp = 100; showMsg('❤️ Un allié t\'a soigné !', 1400); sfx(620, 0.2, 'triangle', 0.14, 1.5); }
         else { shieldUntil = Date.now() + 15000; showMsg('🛡️ Un allié t\'a posé un bouclier (15 s) !', 1600); sfx(460, 0.2, 'triangle', 0.14, 1.5); }
         updateHud();
@@ -3509,6 +4538,32 @@ function beginGame(mode) {
         else if (r && r.conn) send(r.conn, { t: 'lp_wolf' });
       }
       setTimeout(() => startLoupRound(1), 700);
+    }
+  } else if (duelMode === 'extinction') { // 🔦 labyrinthe, lampe torche, rôle public
+    duelOver = false; extOver = false;
+    duelElim.clear(); extArrived.clear(); extRevealed.clear(); extLastCell = '';
+    player.battery = 100; player.batteries = 2; extHealCharges = 1; extHealT = 0; extItemSel = 0;
+    monsterHp = 100; monsterStamina = 100; monsterBlindT = 0;
+    setFlashlight(false);
+    buildExtinctionMaze();
+    gun.visible = false; // pas de fusil dans ce mode : lampe/soin ou griffes
+    document.querySelector('#topbar .wave').textContent = '🔦 EXTINCTION';
+    if (authority) {
+      // Désignation PUBLIQUE (contrairement au Loup) : tout le monde connaît
+      // le(s) monstre(s) dès le départ — diffusée à tous, pas de secret.
+      const ids = [myId, ...remotePlayers.keys()];
+      // 6+ joueurs : 2 monstres pour garder l'équilibre
+      // seul : aucun monstre, on explore le labyrinthe en survivant
+      const nM = ids.length >= 6 ? 2 : ids.length >= 2 ? 1 : 0;
+      const pool = [...ids];
+      monsterIds = new Set();
+      for (let i = 0; i < nM && pool.length; i++)
+        monsterIds.add(pool.splice((Math.random() * pool.length) | 0, 1)[0]);
+      const nms = {}; // pseudos connus, envoyés avec les rôles pour l'annonce
+      nms[myId] = extPseudo();
+      for (const [pid] of remotePlayers) if (extNames.has(pid)) nms[pid] = extNames.get(pid);
+      broadcast({ t: 'ext_role', ids: [...monsterIds], nms });
+      extStartCountdown();
     }
   } else if (duelMode) { // duel : pas de vagues, 3 cœurs, positions opposées
     player.lives = 3;
@@ -3726,11 +4781,13 @@ document.getElementById('btn-solo').onclick = () => beginGame('offline');
 document.getElementById('btn-duel').onclick = () => {
   document.getElementById('duel-panel').classList.toggle('open');
   document.getElementById('loup-panel').classList.remove('open');
+  document.getElementById('extinction-panel').classList.remove('open');
 };
 // Jeu du Loup : bouton séparé, réutilise la logique de duel avec le mode « loup »
 document.getElementById('btn-loup').onclick = () => {
   document.getElementById('loup-panel').classList.toggle('open');
   document.getElementById('duel-panel').classList.remove('open');
+  document.getElementById('extinction-panel').classList.remove('open');
 };
 document.getElementById('btn-loup-create').onclick = () => {
   duelSel = 'loup';
@@ -3741,27 +4798,59 @@ document.getElementById('btn-loup-join').onclick = () => {
   document.getElementById('duel-code').value = document.getElementById('loup-code').value;
   document.getElementById('btn-duel-join').onclick();
 };
+// Extinction : même logique, bouton et code séparés
+document.getElementById('btn-extinction').onclick = () => {
+  document.getElementById('extinction-panel').classList.toggle('open');
+  document.getElementById('duel-panel').classList.remove('open');
+  document.getElementById('loup-panel').classList.remove('open');
+};
+document.getElementById('btn-extinction-create').onclick = () => {
+  duelSel = 'extinction';
+  document.getElementById('btn-duel-create').onclick();
+};
+document.getElementById('btn-extinction-join').onclick = () => {
+  duelSel = 'extinction';
+  document.getElementById('duel-code').value = document.getElementById('extinction-code').value;
+  document.getElementById('btn-duel-join').onclick();
+};
 document.querySelectorAll('[data-dmode]').forEach(b => b.onclick = () => {
   duelSel = b.dataset.dmode;
   document.querySelectorAll('[data-dmode]').forEach(c => c.classList.toggle('sel', c === b));
   document.getElementById('btn-duel-create').textContent =
     duelSel === 'loup' ? 'Créer une partie Loup 🐺' : 'Créer un duel ' + duelSel;
 });
-// Espace de code séparé par mode : un code 1v1 ne marche ni en 2v2 ni en Loup
-const duelNs = code => ({ '1v1': 'D1', '2v2': 'D2', loup: 'WF' }[duelSel]) + code;
+// Espace de code séparé par mode : un code 1v1 ne marche ni en 2v2, Loup ou Extinction
+const duelNs = code => ({ '1v1': 'D1', '2v2': 'D2', loup: 'WF', extinction: 'EX' }[duelSel]) + code;
 function openDuelLobby(code, host) {
+  const label = duelSel === 'loup' ? 'Loup' : duelSel === 'extinction' ? 'Extinction' : duelSel;
   openLobbyScreen({
-    title: duelSel === 'loup' ? '🐺 LOUP (2 à 10 joueurs)' : '⚔ DUEL ' + duelSel, code,
-    info: host ? 'Partage ce code (onglet ' + (duelSel === 'loup' ? 'Loup' : duelSel) + ' du menu Duel)'
+    title: duelSel === 'loup' ? '🐺 LOUP (2 à 10 joueurs)'
+         : duelSel === 'extinction' ? '🔦 EXTINCTION (1 à 10 joueurs)'
+         : '⚔ DUEL ' + duelSel, code,
+    info: host ? 'Partage ce code (onglet ' + label + ' du menu Duel)'
                : "En attente du lancement par l'hôte…",
     startBtn: host
   });
   document.getElementById('lobby-timer').textContent = '';
   document.getElementById('team-row').classList.toggle('on', duelSel === '2v2');
-  document.getElementById('loadout-row').style.display = duelSel === 'loup' ? 'none' : 'flex';
+  document.getElementById('loadout-row').style.display = (duelSel === 'loup' || duelSel === 'extinction') ? 'none' : 'flex';
   document.getElementById('loup-row').style.display = duelSel === 'loup' ? 'flex' : 'none';
+  // Extinction : choix du pseudo dans le salon, diffusé aux autres joueurs
+  document.getElementById('pseudo-row').classList.toggle('on', duelSel === 'extinction');
+  if (duelSel === 'extinction') {
+    const pi = document.getElementById('pseudo-input');
+    pi.value = myPseudo;
+    netSelf({ t: 'name', id: myId, nm: extPseudo() });
+    if (isRoomHost) broadcast({ t: 'name', id: myId, nm: extPseudo() });
+  }
   updateTeamRow();
 }
+document.getElementById('pseudo-input').addEventListener('input', e => {
+  myPseudo = e.target.value;
+  localStorage.setItem('zh-pseudo', myPseudo);
+  netSelf({ t: 'name', id: myId, nm: extPseudo() });
+  if (isRoomHost) broadcast({ t: 'name', id: myId, nm: extPseudo() });
+});
 // Cartes Guérison / Bouclier du mode loup (le loup, lui, aura le fusil à pompe)
 const loupRow = document.getElementById('loup-row');
 for (const k of ['heal', 'shield']) {
@@ -3874,7 +4963,8 @@ document.getElementById('btn-join').onclick = async () => {
   if (hasNet()) joinRoom(c);
 };
 document.getElementById('btn-start').onclick = () => {
-  if (duelMode && remotePlayers.size < 1 && conns.length < 1) {
+  // Extinction : lancement solo autorisé (exploration du labyrinthe, sans monstre)
+  if (duelMode && duelMode !== 'extinction' && remotePlayers.size < 1 && conns.length < 1) {
     showMsg('⏳ Attends au moins un adversaire !', 1500);
     return;
   }
@@ -3890,6 +4980,7 @@ updateSkinName();
 // Choix du skin : pastille de la couleur du haut + nom, sélection mémorisée
 const skinRow = document.getElementById('skin-row');
 SKINS.forEach((s, i) => {
+  if (s.hidden) return; // rôles spéciaux (ex: Monstre) absents du sélecteur normal
   const b = document.createElement('button');
   b.className = 'chip' + (i === mySkin ? ' sel' : '');
   b.innerHTML = `<span class="dot" style="background:#${(s.chip !== undefined ? s.chip : s.zones.top).toString(16).padStart(6, '0')}"></span>${s.name}`;
@@ -3937,6 +5028,16 @@ addEventListener('popstate', () => {
     setScoped(false);
     gameStarted = false;
     duelMode = null; duelOver = true;
+    clearExtinctionMaze();
+    // Extinction : tout remettre en état pour les autres modes
+    applyExtinctionLights(false);
+    gun.visible = true;
+    flashlight.intensity = 0; player.flashOn = false;
+    monsterIds.clear(); extNames.clear(); extOver = false; extHealT = 0;
+    const mm = document.getElementById('minimap'); if (mm) mm.style.display = 'none';
+    toggleExtBigMap(false);
+    const mb = document.getElementById('mblind'); if (mb) mb.style.opacity = 0;
+    if (playerModel && playerModel.skinIdx === MONSTER_SKIN) applySkinToRig(playerModel, mySkin);
     relayRoom = null;
     try { peer && peer.destroy(); } catch (e) {}
     conns.length = 0;
@@ -4053,7 +5154,10 @@ function ensurePreviewRig() {
   poseReady(pvRig);
   pvScene.add(pvRig.model);
 }
-window.__pv = { pvRenderer, pvScene, pvCam, ensurePreviewRig, get rig() { return pvRig; } };
+window.__pv = {
+  pvRenderer, pvScene, pvCam, ensurePreviewRig, get rig() { return pvRig; },
+  setSkin(idx) { ensurePreviewRig(); applySkinToRig(pvRig, idx); } // debug : prévisualisation d'un skin caché (ex: Monstre)
+};
 // Rotation libre du personnage : glisser avec la souris ou le doigt
 const pvCanvasEl = document.getElementById('skin-preview');
 pvCanvasEl.style.cursor = 'grab';
