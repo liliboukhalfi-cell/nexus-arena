@@ -184,6 +184,7 @@
     animation: zhflicker 7s infinite; cursor: default; white-space: nowrap;
   }
   @keyframes zhflicker { 0%, 94%, 100% { opacity: 1; } 95% { opacity: .55; } 96% { opacity: 1; } 97% { opacity: .75; } 98% { opacity: 1; } }
+  #lobby h1 { font-size: clamp(26px, 5.4vw, 54px); letter-spacing: 3px; text-align: center; }
   /* Salon : défile si le contenu dépasse l'écran ; « Lancer / Quitter » restent collés en bas */
   #lobby { overflow-y: auto; justify-content: flex-start; box-sizing: border-box; gap: 0;
     padding: calc(var(--sat) + 10px) calc(var(--sar) + 12px) 0 calc(var(--sal) + 12px); -webkit-overflow-scrolling: touch; }
@@ -361,6 +362,32 @@
     #health-wrap { width: 40vw; left: 12px; bottom: auto; top: 64px; }
   }
 
+  /* ---------- Transitions « signal perdu » (glitch) ---------- */
+  #glitch { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 200; pointer-events: none; display: none; image-rendering: pixelated; }
+  body.glitching #home, body.glitching #lobby, body.glitching #hud, body.glitching #overlay, body.glitching #duel-choice {
+    animation: gjit .22s steps(1) infinite; }
+  @keyframes gjit {
+    0%   { transform: translate(0, 0); filter: none; }
+    18%  { transform: translate(-7px, 1px) skewX(-2deg); filter: drop-shadow(5px 0 0 rgba(255,40,70,.6)) drop-shadow(-5px 0 0 rgba(40,220,255,.6)); }
+    36%  { transform: translate(5px, -1px); filter: drop-shadow(-4px 0 0 rgba(255,40,70,.55)) drop-shadow(4px 0 0 rgba(40,220,255,.55)); }
+    54%  { transform: translate(0, 2px) skewX(3deg); filter: hue-rotate(35deg); }
+    72%  { transform: translate(-4px, 0); filter: drop-shadow(3px 0 0 rgba(255,40,70,.5)) drop-shadow(-3px 0 0 rgba(40,220,255,.5)); }
+    90%  { transform: translate(3px, -1px) skewX(-1deg); filter: none; }
+  }
+  /* Panneaux et fenêtres : apparition courte avec petit tremblement */
+  .panel.open, #duel-choice[style*="flex"] .box { animation: panelin .26s ease-out; }
+  @keyframes panelin {
+    0% { opacity: 0; transform: translateY(8px) scale(.97); filter: drop-shadow(6px 0 0 rgba(255,40,70,.5)) drop-shadow(-6px 0 0 rgba(40,220,255,.5)); }
+    55% { opacity: 1; transform: translateX(-3px); }
+    100% { opacity: 1; transform: none; filter: none; }
+  }
+  #bigmap { animation: mapin .3s ease-out; }
+  @keyframes mapin { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.9) skewX(4deg); } 60% { opacity: 1; transform: translate(-50%, -50%) scale(1.02) skewX(-2deg); } 100% { opacity: 1; transform: translate(-50%, -50%); } }
+  @media (prefers-reduced-motion: reduce) {
+    body.glitching #home, body.glitching #lobby, body.glitching #hud, body.glitching #overlay, body.glitching #duel-choice { animation: none; }
+    .panel.open, #duel-choice[style*="flex"] .box, #bigmap { animation: none; }
+  }
+
   /* ---------- Mobile : message de rotation, HUD compact, accueil/salon en paysage bas ---------- */
   #debug-panel:empty { display: none; } /* vide = invisible (sinon une pastille noire reste sur la barre de vie) */
   #rotate-hint { position: fixed; inset: 0; z-index: 90; background: #05080f; color: #fff; flex-direction: column;
@@ -439,7 +466,7 @@
     .icon-btn { width: 64px; height: 64px; font-size: 30px; }
     #btn-settings { top: 26px; right: 36px; } #btn-fullscreen { top: 26px; right: 112px; } #btn-skin { bottom: 34px; left: 36px; }
     #skin-name { font-size: 30px; }
-    #lobby h1 { font-size: 72px; }
+    #lobby h1 { font-size: 58px; }
     #lobby .code { font-size: 72px; }
     #lobby-players { font-size: 26px; } #lobby-timer { font-size: 26px; } #lobby-info { font-size: 20px; }
     #duel-choice .box { padding: 24px 30px; gap: 18px; } #duel-choice .opt-label { font-size: 20px; }
@@ -558,6 +585,7 @@
     <button class="menu-btn small" id="btn-lobby-leave">↩ Quitter</button>
   </div>
 </div>
+<canvas id="glitch"></canvas>
 <div id="rotate-hint" style="display:none">
   <div class="ico">📱↻</div>
   <div>Tourne ton téléphone en <b>paysage</b> pour jouer</div>
@@ -608,6 +636,73 @@ function sfx(freq, dur, type = 'square', vol = 0.15, slide = 0.5) {
   g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
   o.connect(g).connect(audioCtx.destination);
   o.start(); o.stop(audioCtx.currentTime + dur);
+}
+
+// Le navigateur n'autorise le son qu'après un geste de l'utilisateur : on crée / réveille le contexte au 1er clic ou touche
+function ensureAudio() {
+  if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+// Rafale de bruit filtré (grésillement, signal perdu) : le filtre balaie de f0 à f1
+function sfxNoise(dur = 0.25, vol = 0.12, f0 = 800, f1 = 3000) {
+  if (!audioCtx) return;
+  const n = Math.max(1, Math.floor(audioCtx.sampleRate * dur)), buf = audioCtx.createBuffer(1, n, audioCtx.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  const src = audioCtx.createBufferSource(); src.buffer = buf;
+  const bp = audioCtx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.1;
+  const t = audioCtx.currentTime;
+  bp.frequency.setValueAtTime(f0, t); bp.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t + dur);
+  const g = audioCtx.createGain(); g.gain.value = vol;
+  src.connect(bp).connect(g).connect(audioCtx.destination); src.start();
+}
+const sfxGlitch = short => {            // transition « signal perdu » : bruit blanc + descente de ton, puis retour
+  sfxNoise(short ? 0.14 : 0.34, short ? 0.07 : 0.14, 600, 4200);
+  sfx(short ? 230 : 170, short ? 0.1 : 0.3, 'sawtooth', 0.05, 0.3);
+  if (!short) setTimeout(() => sfxNoise(0.2, 0.08, 3200, 500), 360);
+};
+const uiHover = () => sfx(1900, 0.03, 'square', 0.022, 0.7);
+const uiClick = () => { sfx(560, 0.06, 'square', 0.05, 0.5); sfx(1250, 0.04, 'triangle', 0.035, 0.6); };
+
+// ---------- Musique d'accueil : nappe sombre, cœur lent, cloche lointaine (tout synthétisé) ----------
+let menuMusic = null;
+function startMenuMusic() {
+  if (!audioCtx || !musicOn || menuMusic || gameStarted) return;
+  const ctx = audioCtx, t0 = ctx.currentTime;
+  const master = ctx.createGain(); master.gain.value = 0;
+  master.gain.linearRampToValueAtTime(0.12, t0 + 3);
+  master.connect(ctx.destination);
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 280;
+  const lfo = ctx.createOscillator(), lfoG = ctx.createGain(); lfo.frequency.value = 0.07; lfoG.gain.value = 130; // le filtre « respire »
+  lfo.connect(lfoG).connect(lp.frequency); lfo.start();
+  const oscs = [lfo];
+  for (const [type, f, v] of [['sawtooth', 43.65, 0.5], ['sawtooth', 44.3, 0.45], ['sine', 87.3, 0.35], ['triangle', 65.4, 0.2]]) {
+    const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.value = f; g.gain.value = v;
+    o.connect(g).connect(lp); o.start(); oscs.push(o);
+  }
+  lp.connect(master);
+  const mm = { master, oscs, timers: [] };
+  const beat = () => { // cœur lent : deux battements sourds
+    if (menuMusic !== mm) return;
+    sfx(58, 0.18, 'sine', 0.09, 0.5); setTimeout(() => menuMusic === mm && sfx(50, 0.2, 'sine', 0.07, 0.5), 260);
+    mm.timers.push(setTimeout(beat, 2600));
+  };
+  const bell = () => { // cloche très lointaine, désaccordée
+    if (menuMusic !== mm) return;
+    const f = [196, 233, 174.6, 130.8][(Math.random() * 4) | 0];
+    sfx(f, 3.6, 'sine', 0.03, 0.96); sfx(f * 2.76, 2.4, 'sine', 0.012, 0.97);
+    mm.timers.push(setTimeout(bell, 6500 + Math.random() * 7000));
+  };
+  mm.timers.push(setTimeout(beat, 1800), setTimeout(bell, 4000));
+  menuMusic = mm;
+}
+function stopMenuMusic() {
+  const mm = menuMusic;
+  if (!mm) return;
+  menuMusic = null;
+  mm.timers.forEach(clearTimeout);
+  try { mm.master.gain.cancelScheduledValues(audioCtx.currentTime); mm.master.gain.setValueAtTime(mm.master.gain.value, audioCtx.currentTime); mm.master.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.7); } catch (e) {}
+  setTimeout(() => { for (const o of mm.oscs) { try { o.stop(); } catch (e) {} } }, 800);
 }
 
 // ---------- Musique de fond (synthèse, ambiance de combat, désactivable) ----------
@@ -1634,6 +1729,7 @@ function applyExtEnd(d) {
   if (extOver) return;
   extOver = true; duelOver = true;
   player.alive = false;
+  glitchPulse();
   setFlashlight(false);
   stopMusic();
   if (IS_TOUCH) { touchPlaying = false; document.body.classList.remove('touch-playing'); shooting = false; }
@@ -1658,11 +1754,14 @@ function applyExtEnd(d) {
 const MINIMAP_VIEW_R = 50; // rayon visible de la mini-carte, en unités monde (~5 cellules)
 let extBigMap = false;
 function toggleExtBigMap(v) {
+  const was = extBigMap;
   extBigMap = v === undefined ? !extBigMap : v;
   if (duelMode !== 'extinction' || !gameStarted) extBigMap = false;
   const bm = document.getElementById('bigmap');
-  if (bm) bm.style.display = extBigMap ? 'block' : 'none';
-  if (extBigMap) drawExtMap(bm, true);
+  const apply = () => { if (bm) bm.style.display = extBigMap ? 'block' : 'none'; if (extBigMap) drawExtMap(bm, true); };
+  if (extBigMap === was) return apply();
+  apply();                                       // la carte apparaît / disparaît tout de suite…
+  transition(null, { short: true });             // …avec un bref éclair de signal perdu par-dessus
 }
 // Dessine le labyrinthe en coordonnées monde (le contexte est déjà transformé)
 function drawExtMapContent(x2, k, big) {
@@ -3789,6 +3888,62 @@ let score = 0, wave = 0, toSpawn = 0, spawnTimer = 0, betweenWaves = 0;
 
 const $ = id => document.getElementById(id);
 const topScoreEl = document.querySelector('#topbar .score');
+
+// ---------- Transitions « signal perdu » ----------
+// transition(fn) : l'écran se brouille (bruit, barres rouge/cyan, décalage RVB, coupure noire) ; au plus fort du
+// brouillage (écran couvert) on exécute `fn` qui change réellement l'écran, puis le signal revient. Les étapes sont
+// pilotées par des minuteries (pas par l'animation) : même si la fenêtre est cachée, `fn` s'exécute toujours.
+// Une transition plus récente annule la précédente (jamais d'écran fantôme). `opts.short` = simple flash (carte).
+const glitchCv = $('glitch'), glitchCtx = glitchCv.getContext('2d');
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let glitchToken = 0, glitchRaf = 0, glitchT0 = 0, glitchCfg = null;
+function drawGlitch(now) {
+  const c = glitchCfg;
+  if (!c || c.token !== glitchToken) return;
+  const t = now - glitchT0;
+  let cover, inten;
+  if (t < c.out) { const k = t / c.out; cover = c.maxCover * Math.pow(k, 1.5); inten = 0.35 + 0.65 * k; }
+  else if (t < c.out + c.hold) { cover = c.maxCover; inten = 1; }
+  else { const k = Math.min(1, (t - c.out - c.hold) / c.inn); cover = c.maxCover * Math.pow(1 - k, 1.3); inten = 1 - 0.85 * k; }
+  const w = glitchCv.width, h = glitchCv.height, g = glitchCtx;
+  g.clearRect(0, 0, w, h);
+  g.fillStyle = `rgba(2,4,10,${cover})`; g.fillRect(0, 0, w, h);
+  if (!reduceMotion) {
+    const img = g.createImageData(w, h), d = img.data, a = Math.floor(255 * Math.min(0.5, inten * 0.34 + cover * 0.14));
+    for (let i = 0; i < d.length; i += 4) { const v = (Math.random() * 255) | 0; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = Math.random() < 0.55 ? a : 0; }
+    g.putImageData(img, 0, 0);
+    g.globalCompositeOperation = 'lighter';
+    const bars = 3 + Math.floor(inten * 11);
+    for (let i = 0; i < bars; i++) { // barres horizontales décalées, rouge / cyan / blanc doux
+      const y = Math.random() * h, bh = 1 + Math.random() * (h * 0.045), r = Math.random();
+      g.fillStyle = r < 0.34 ? `rgba(255,50,80,${0.25 + 0.45 * Math.random()})` : r < 0.68 ? `rgba(60,220,255,${0.25 + 0.45 * Math.random()})` : `rgba(200,210,220,${0.12 + 0.25 * Math.random()})`;
+      g.fillRect((Math.random() - 0.5) * w * 0.12 * inten, y, w, bh);
+    }
+    g.globalCompositeOperation = 'source-over';
+    g.fillStyle = 'rgba(0,0,0,0.16)'; for (let y = 0; y < h; y += 2) g.fillRect(0, y, w, 1); // lignes de balayage
+  }
+  if (t < c.out + c.hold + c.inn) glitchRaf = requestAnimationFrame(drawGlitch);
+}
+function transition(fn, opts = {}) {
+  const c = { token: ++glitchToken, out: opts.short ? 110 : 230, hold: opts.short ? 40 : 110, inn: opts.short ? 170 : 330, maxCover: opts.short ? 0.35 : 1 };
+  const skip = opts.intro ? c.out : 0;   // intro : on part de l'écran noir et on ne fait que le retour du signal
+  const total = c.out + c.hold + c.inn - skip;
+  glitchCfg = c;
+  cancelAnimationFrame(glitchRaf);
+  glitchCv.width = Math.max(64, Math.ceil(innerWidth / 3)); glitchCv.height = Math.max(36, Math.ceil(innerHeight / 3));
+  glitchCv.style.display = 'block';
+  document.body.classList.add('glitching');
+  glitchT0 = performance.now() - skip;
+  glitchRaf = requestAnimationFrame(drawGlitch);
+  if (audioCtx && !opts.silent) sfxGlitch(!!opts.short);
+  if (!opts.intro) setTimeout(() => { if (c.token === glitchToken && fn) fn(); }, c.out + c.hold * 0.5); // au plus fort du brouillage
+  setTimeout(() => {
+    if (c.token !== glitchToken) return;
+    cancelAnimationFrame(glitchRaf); glitchCv.style.display = 'none'; document.body.classList.remove('glitching');
+  }, total + 60);
+}
+// Impulsion de brouillage sans changer d'écran (mort, fin de partie)
+const glitchPulse = () => transition(null, { short: true });
 function showMsg(text, ms = 2200) {
   const el = $('msg');
   el.textContent = text;
@@ -4420,6 +4575,7 @@ function checkDuelEnd() {
 function duelEnd(won) {
   duelOver = true;
   player.alive = false;
+  glitchPulse();
   setScoped(false);
   stopMusic();
   if (IS_TOUCH) { touchPlaying = false; document.body.classList.remove('touch-playing'); shooting = false; $('crosshair').style.display = 'none'; }
@@ -4435,6 +4591,7 @@ function duelEnd(won) {
 function die() {
   setScoped(false);
   buzz([90, 50, 220]);
+  glitchPulse(); // le signal se brouille à la mort
   if (duelMode === 'extinction') { // dévoré : une seule vie, on spectate
     player.alive = false;
     setFlashlight(false);
@@ -5174,8 +5331,10 @@ function removeRemote(id) {
 
 // Retour à l'accueil depuis un salon (refus, code erroné, salon fermé, bouton Quitter)
 function retourAccueil(msg) {
-  document.getElementById('lobby').style.display = 'none';
-  document.getElementById('home').style.display = 'flex';
+  transition(() => {
+    document.getElementById('lobby').style.display = 'none';
+    document.getElementById('home').style.display = 'flex';
+  });
   homeStatus(msg || '');
   relayRoom = null;
   try { peer && peer.destroy(); } catch (e) {}
@@ -5371,9 +5530,12 @@ function beginGame(mode) {
   gameMode = mode;
   authority = mode !== 'client';
   gameStarted = true;
-  document.getElementById('home').style.display = 'none';
-  document.getElementById('lobby').style.display = 'none';
-  overlay.style.display = 'flex';
+  stopMenuMusic(); // la musique d'accueil s'éteint, l'ambiance de jeu prend le relais
+  transition(() => { // le salon se brouille, puis la partie apparaît
+    document.getElementById('home').style.display = 'none';
+    document.getElementById('lobby').style.display = 'none';
+    overlay.style.display = 'flex';
+  });
   // Arsenal de départ : pistolet seul (en duel : l'arme choisie sur les cartes)
   killCount = 0;
   setScoped(false);
@@ -5449,8 +5611,12 @@ let lobbyEndsAt = null;   // hôte : heure de démarrage automatique
 let joinedHub = false;    // client public : connexion au hub établie
 
 function openLobbyScreen(opts) {
-  document.getElementById('home').style.display = 'none';
-  document.getElementById('lobby').style.display = 'flex';
+  // le changement d'écran se fait au plus fort du brouillage (le contenu, lui, est prêt tout de suite)
+  transition(() => {
+    document.getElementById('home').style.display = 'none';
+    document.getElementById('lobby').style.display = 'flex';
+    $('lobby').scrollTop = 0;
+  });
   document.getElementById('loadout-row').style.display = 'none'; // (réactivé par les duels)
   document.getElementById('loup-row').style.display = 'none';
   document.getElementById('lobby-title').textContent = opts.title;
@@ -5991,7 +6157,29 @@ chkMusic.onchange = () => {
   musicOn = chkMusic.checked;
   localStorage.setItem('zh-music', musicOn ? '1' : '0');
   if (musicOn && gameStarted && audioCtx) startMusic(); else stopMusic();
+  if (!gameStarted) { if (musicOn) { ensureAudio(); startMenuMusic(); } else stopMenuMusic(); } // musique d'accueil
 };
+
+// ---------- Sons d'interface + musique d'accueil + arrivée du signal au chargement ----------
+// Le son démarre au 1er geste (règle des navigateurs) ; survol et clic des boutons de menu ont leur petit bruit.
+const UI_SEL = '.menu-btn, .chip, .icon-btn, .team-btn, .wcard, #btn-skin';
+let uiLastHover = null;
+const uiMenuVisible = el => !gameStarted || !!el.closest('#home, #lobby, #duel-choice, .panel, #ctrl-edit');
+addEventListener('pointerdown', () => { ensureAudio(); if (!gameStarted) startMenuMusic(); }, true);
+addEventListener('keydown', () => { ensureAudio(); if (!gameStarted) startMenuMusic(); }, true);
+document.addEventListener('pointerover', e => {
+  if (e.pointerType !== 'mouse') return;
+  const el = e.target.closest && e.target.closest(UI_SEL);
+  if (!el || el === uiLastHover) return;
+  uiLastHover = el;
+  if (uiMenuVisible(el)) uiHover();
+});
+document.addEventListener('pointerout', e => { if (e.target.closest && e.target.closest(UI_SEL) === uiLastHover) uiLastHover = null; });
+document.addEventListener('click', e => {
+  const el = e.target.closest && e.target.closest(UI_SEL);
+  if (el && uiMenuVisible(el)) uiClick();
+}, true);
+transition(null, { intro: true, silent: true }); // au chargement : l'écran noir se brouille puis le signal arrive
 
 // ---------- Aperçu 3D du personnage à l'accueil ----------
 // Petit rendu séparé : le soldat au skin choisi tourne sur lui-même
