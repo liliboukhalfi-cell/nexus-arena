@@ -157,6 +157,13 @@
     text-shadow: 0 0 34px rgba(255,50,30,.8), 0 4px 0 #300, 0 0 60px rgba(0,0,0,.9); }
   #ext-count.pop { animation: extpop 1s ease-out; }
   @keyframes extpop { 0% { opacity: 0; transform: translateY(-50%) scale(1.7); } 18% { opacity: 1; transform: translateY(-50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-50%) scale(.85); } }
+  /* Cœur qui bat : bords rouge sombre qui pulsent quand le monstre approche */
+  #heartbeat { position: absolute; inset: 0; pointer-events: none; opacity: 0;
+    background: radial-gradient(ellipse 72% 74% at 50% 50%, rgba(120,0,10,0) 42%, rgba(150,0,14,.5) 78%, rgba(80,0,6,.92) 100%); }
+  /* Sang sur l'écran : éclaboussures qui coulent puis s'estompent */
+  #blood { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity 2.6s ease-in; }
+  #ammo.low .clip-n, #ammo.low #clip { color: #ff6a5e; animation: lowblink .7s steps(1) infinite; }
+  @keyframes lowblink { 50% { opacity: .35; } }
   /* Vision « tunnel » des survivants en Extinction : l'horreur vient de ce qu'on ne voit pas sur les côtés */
   #vignette { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 1.2s;
     background: radial-gradient(ellipse 62% 66% at 50% 50%, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 38%, rgba(0,0,0,.55) 66%, rgba(0,0,0,.94) 100%); }
@@ -478,6 +485,8 @@
 <div id="hud">
   <div id="damage"></div>
   <div id="vignette"></div>
+  <div id="heartbeat"></div>
+  <canvas id="blood" style="display:none"></canvas>
   <div id="mblind"></div>
   <div id="topbar">
     <div class="wave">VAGUE <span id="wave">1</span></div>
@@ -1536,6 +1545,58 @@ const muzzle = new THREE.PointLight(0xffcc66, 0, 8);
 muzzle.position.set(0.32, -0.2, -1.2);
 camera.add(muzzle);
 
+// ---------- Brume animée du labyrinthe ----------
+// Nuage de particules molles qui dérive autour du joueur (réparties dans un cube qui le suit, avec rebouclage).
+// Dans le noir elles sont presque invisibles ; la lampe les éclaire dans son faisceau : on voit la brume bouger
+// dans la lumière. Le brouillard lui-même « respire » lentement (distance de vue qui varie).
+const MIST_N = 260, MIST_R = 14;
+let mist = null, lampFlicker = 1; const mistVel = [];
+function ensureMist() {
+  if (mist) return mist;
+  const tex = canvasTex(128, (x, s) => {
+    const g = x.createRadialGradient(s / 2, s / 2, 2, s / 2, s / 2, s / 2);
+    g.addColorStop(0, 'rgba(255,255,255,0.6)'); g.addColorStop(0.5, 'rgba(255,255,255,0.22)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = g; x.fillRect(0, 0, s, s);
+  }, 1, 1);
+  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+  const pos = new Float32Array(MIST_N * 3), col = new Float32Array(MIST_N * 3);
+  for (let i = 0; i < MIST_N; i++) {
+    pos[i * 3] = (Math.random() * 2 - 1) * MIST_R; pos[i * 3 + 1] = 0.4 + Math.random() * 2.8; pos[i * 3 + 2] = (Math.random() * 2 - 1) * MIST_R;
+    mistVel.push([0.18 + (Math.random() - 0.5) * 0.5, (Math.random() - 0.5) * 0.06, 0.1 + (Math.random() - 0.5) * 0.5]); // léger vent commun + dérive propre
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  mist = new THREE.Points(g, new THREE.PointsMaterial({ size: 5.5, map: tex, vertexColors: true, transparent: true, depthWrite: false, sizeAttenuation: true }));
+  mist.frustumCulled = false; mist.visible = false;
+  scene.add(mist);
+  return mist;
+}
+const _mistV = new THREE.Vector3(), _mistF = new THREE.Vector3();
+function updateMist(dt, lampF) {
+  const on = duelMode === 'extinction' && gameStarted && !extOver;
+  if (!on) { if (mist) mist.visible = false; return; }
+  const m = ensureMist(); m.visible = true;
+  const p = m.geometry.attributes.position, c = m.geometry.attributes.color, tt = performance.now() / 1000;
+  camera.getWorldDirection(_mistF);
+  const lit = player.flashOn ? lampF : 0, base = isMonster() ? 0.2 : 0.035; // le monstre voit mieux dans le noir
+  for (let i = 0; i < MIST_N; i++) {
+    const v = mistVel[i];
+    let x = p.getX(i) + (v[0] + Math.sin(tt * 0.31 + i) * 0.12) * dt, y = p.getY(i) + v[1] * dt, z = p.getZ(i) + (v[2] + Math.cos(tt * 0.27 + i * 1.3) * 0.12) * dt;
+    if (y < 0.3 || y > 3.4) v[1] = -v[1];
+    const dx = x - player.pos.x, dz = z - player.pos.z;       // rebouclage autour du joueur
+    if (dx > MIST_R) x -= 2 * MIST_R; else if (dx < -MIST_R) x += 2 * MIST_R;
+    if (dz > MIST_R) z -= 2 * MIST_R; else if (dz < -MIST_R) z += 2 * MIST_R;
+    p.setXYZ(i, x, y, z);
+    _mistV.set(x - camera.position.x, y - camera.position.y, z - camera.position.z);
+    const dist = _mistV.length(), dot = _mistV.divideScalar(dist || 1).dot(_mistF);
+    const inBeam = lit * monSmooth(0.88, 0.975, dot) * Math.max(0, 1 - dist / 24);   // éclairée seulement dans le faisceau
+    const b = (base + 0.8 * inBeam) * monSmooth(0.8, 3.2, dist);                    // jamais de gros voile collé à la caméra
+    c.setXYZ(i, b * 0.78, b * 0.86, b);
+  }
+  p.needsUpdate = true; c.needsUpdate = true;
+  if (!isMonster()) { scene.fog.near = 3 + 0.9 * Math.sin(tt * 0.5 + 1); scene.fog.far = 30 + 4 * Math.sin(tt * 0.33); } // le brouillard respire
+}
+
 // ---------- Lampe torche (mode Extinction) ----------
 const BATTERY_DRAIN = 100 / 240; // 100% en 4 min d'utilisation continue
 const flashlight = new THREE.SpotLight(0xfff2d8, 0, 34, Math.PI / 8.5, 0.35, 1.4);
@@ -1631,8 +1692,10 @@ function extCellOf(x, z) {
 let extMapT = 0; // cadence de redessin de la mini-carte
 // ── Ambiance sonore : pas, battement de cœur et grognements quand le monstre approche ──
 let extStepT = 0, extBeatT = 0, extGrowlT = 5, extLastX = 0, extLastZ = 0;
+// Battement de cœur visuel : la vignette rouge pulse au rythme des battements, de plus en plus fort quand le monstre approche
+let extPulse = 0, extNear = 0;
 function extAudio(dt) {
-  if (!audioCtx || !player.alive) return;
+  if (!player.alive) { $('heartbeat').style.opacity = 0; return; }
   const sp = Math.hypot(player.pos.x - extLastX, player.pos.z - extLastZ) / Math.max(dt, 1e-3);
   extLastX = player.pos.x; extLastZ = player.pos.z;
   if (Date.now() < extFreezeUntil) return; // compte à rebours : tout le monde immobile et silencieux
@@ -1644,20 +1707,25 @@ function extAudio(dt) {
       else sfx(105 + Math.random() * 35, 0.07, 'sine', 0.05, 0.5);
     }
   } else extStepT = Math.min(extStepT, 0.1);
-  if (isMonster()) return;
+  if (isMonster()) { $('heartbeat').style.opacity = 0; return; }
   let dMin = 1e9; // distance au monstre le plus proche
   for (const pid of monsterIds) {
     const r = remotePlayers.get(pid);
     if (r && r.lastState) dMin = Math.min(dMin, Math.hypot(r.lastState.p[0] - player.pos.x, r.lastState.p[2] - player.pos.z));
   }
+  const nearNow = dMin < 32 ? 1 - dMin / 32 : 0;
+  extNear += (nearNow - extNear) * Math.min(1, dt * 1.5);   // lissé : la tension monte et retombe doucement
+  extPulse *= Math.exp(-dt * 6);                            // chaque battement s'éteint vite
+  $('heartbeat').style.opacity = Math.min(1, extPulse * (0.35 + 0.65 * extNear) + 0.32 * extNear * extNear);
   if (dMin < 32) {
     const near = 1 - dMin / 32; // 0 = loin, 1 = sur toi
     extBeatT -= dt;
     if (extBeatT <= 0) { // battement de cœur de plus en plus rapide et fort
       extBeatT = 1.1 - near * 0.65;
       sfx(52, 0.14, 'sine', 0.10 + near * 0.3, 0.6);
+      extPulse = 1; if (near > 0.45) shakeT = Math.max(shakeT, 0.05 + 0.1 * near); // le cœur bat : l'écran palpite et tremble un peu
       buzz(near > 0.5 ? [40, 90, 40] : 25, 500); // le cœur bat dans la main quand le monstre approche
-      setTimeout(() => sfx(46, 0.16, 'sine', 0.08 + near * 0.25, 0.6), 170);
+      setTimeout(() => { sfx(46, 0.16, 'sine', 0.08 + near * 0.25, 0.6); extPulse = Math.max(extPulse, 0.65); }, 170);
     }
     extGrowlT -= dt;
     if (extGrowlT <= 0 && dMin < 24) {
@@ -1730,6 +1798,7 @@ function applyExtEnd(d) {
   extOver = true; duelOver = true;
   player.alive = false;
   glitchPulse();
+  $('heartbeat').style.opacity = 0;
   setFlashlight(false);
   stopMusic();
   if (IS_TOUCH) { touchPlaying = false; document.body.classList.remove('touch-playing'); shooting = false; }
@@ -4536,6 +4605,7 @@ function hurt(dmg) {
   clearTimeout($('damage')._t);
   $('damage')._t = setTimeout(() => $('damage').style.opacity = 0, 350);
   sfx(90, 0.25, 'sawtooth', 0.2, 0.5);
+  bloodSplat(Math.min(1.2, dmg / 40));
   if (player.hp <= 0) die();
   updateHud();
 }
@@ -4588,10 +4658,67 @@ function duelEnd(won) {
   $('go-label').textContent = 'Clique pour revenir au menu';
   if (won) { gainXp(60); sfx(660, 0.5, 'triangle', 0.16, 2); }
 }
+// ---------- Sang à l'écran + jump scare ----------
+const bloodCv = $('blood'), bloodCtx = bloodCv.getContext('2d');
+let bloodTimer = 0, deathCam = null;
+const scareLight = new THREE.PointLight(0xff3a22, 0, 16, 1.3); scene.add(scareLight);
+function bloodSplat(amount = 1) {            // éclaboussures qui coulent, puis s'estompent en quelques secondes
+  if (duelMode !== 'extinction' && duelMode !== 'loup') return;
+  const W = Math.ceil(innerWidth / 2), H = Math.ceil(innerHeight / 2);
+  if (bloodCv.width !== W || bloodCv.height !== H) { bloodCv.width = W; bloodCv.height = H; }
+  const g = bloodCtx;
+  clearTimeout(bloodTimer);
+  bloodCv.style.transition = 'none'; bloodCv.style.opacity = 1; bloodCv.style.display = 'block';
+  const n = 2 + Math.round(amount * 4);
+  for (let k = 0; k < n; k++) {
+    const side = Math.random();                                       // plutôt vers les bords de l'écran
+    const x = side < 0.5 ? (Math.random() < 0.5 ? Math.random() * W * 0.28 : W - Math.random() * W * 0.28) : Math.random() * W;
+    const y = side < 0.5 ? Math.random() * H * 0.9 : (Math.random() < 0.5 ? Math.random() * H * 0.25 : H * 0.75 + Math.random() * H * 0.25);
+    const R = (14 + Math.random() * 34) * (0.7 + amount * 0.5);
+    for (let b = 0; b < 7; b++) {                                      // la tache : plusieurs disques mous
+      const bx = x + (Math.random() - 0.5) * R * 0.9, by = y + (Math.random() - 0.5) * R * 0.9, br = R * (0.35 + Math.random() * 0.55);
+      const gr = g.createRadialGradient(bx, by, 1, bx, by, br);
+      gr.addColorStop(0, 'rgba(150,6,14,0.92)'); gr.addColorStop(0.7, 'rgba(96,2,8,0.85)'); gr.addColorStop(1, 'rgba(60,0,4,0)');
+      g.fillStyle = gr; g.beginPath(); g.arc(bx, by, br, 0, 7); g.fill();
+    }
+    for (let d = 0; d < 9; d++) {                                      // gouttelettes projetées
+      const a = Math.random() * 6.28, dd = R * (0.9 + Math.random() * 1.6), r = 1 + Math.random() * 4;
+      g.fillStyle = 'rgba(110,2,10,0.9)'; g.beginPath(); g.arc(x + Math.cos(a) * dd, y + Math.sin(a) * dd, r, 0, 7); g.fill();
+    }
+    for (let d = 0; d < 3; d++) {                                      // coulures vers le bas
+      const dx = x + (Math.random() - 0.5) * R, len = 25 + Math.random() * 90, w = 2 + Math.random() * 4;
+      const gr = g.createLinearGradient(0, y, 0, y + len); gr.addColorStop(0, 'rgba(110,2,10,0.9)'); gr.addColorStop(1, 'rgba(70,0,6,0.6)');
+      g.strokeStyle = gr; g.lineWidth = w; g.lineCap = 'round'; g.beginPath(); g.moveTo(dx, y); g.lineTo(dx + (Math.random() - 0.5) * 6, y + len); g.stroke();
+    }
+  }
+  bloodTimer = setTimeout(() => {                                      // après 1,2 s, fondu lent puis nettoyage
+    bloodCv.style.transition = 'opacity 2.6s ease-in'; bloodCv.style.opacity = 0;
+    bloodTimer = setTimeout(() => { g.clearRect(0, 0, bloodCv.width, bloodCv.height); bloodCv.style.display = 'none'; }, 2800);
+  }, 1200);
+}
+function sfxScream() {                        // cri du monstre : harmoniques qui montent + bruit déchiré (volume borné)
+  if (!audioCtx) return;
+  sfxNoise(0.55, 0.15, 900, 5200);
+  sfx(420, 0.9, 'sawtooth', 0.085, 3); sfx(610, 0.9, 'sawtooth', 0.065, 2.7); sfx(180, 0.9, 'sawtooth', 0.11, 0.5);
+  setTimeout(() => sfxNoise(0.4, 0.09, 4200, 600), 520);
+}
+function startJumpScare() {                   // la caméra se retourne vers le monstre le plus proche, en gros plan
+  let best = null, bd = 1e9;
+  for (const pid of monsterIds) {
+    const r = remotePlayers.get(pid);
+    if (!r || !r.rig) continue;
+    const dx = r.rig.model.position.x - player.pos.x, dz = r.rig.model.position.z - player.pos.z, d = Math.hypot(dx, dz);
+    if (d < bd) { bd = d; best = { dx, dz, d }; }
+  }
+  if (!best) return false;
+  deathCam = { t: 0, dur: 1.5, yawT: Math.atan2(-best.dx, -best.dz), pitchT: Math.atan2(1.5, Math.max(1.2, best.d)) };
+  sfxScream(); bloodSplat(1.3);
+  return true;
+}
 function die() {
   setScoped(false);
   buzz([90, 50, 220]);
-  glitchPulse(); // le signal se brouille à la mort
+  if (duelMode !== 'extinction') glitchPulse(); // le signal se brouille à la mort
   if (duelMode === 'extinction') { // dévoré : une seule vie, on spectate
     player.alive = false;
     setFlashlight(false);
@@ -4604,7 +4731,8 @@ function die() {
     $('overlay').querySelector('h1').textContent = '🩸 Dévoré !';
     $('intro').innerHTML = 'Le monstre t\'a eu… attends la fin de la partie.';
     $('go-label').textContent = 'Clique pour quitter la partie';
-    overlay.style.display = 'flex';
+    const scare = startJumpScare();   // 1,5 s de jump scare AVANT l'écran de fin
+    setTimeout(() => { glitchPulse(); overlay.style.display = 'flex'; }, scare ? 1500 : 0);
     updateHud();
     return;
   }
@@ -4734,7 +4862,7 @@ function animate() {
   // Lunette du sniper : zoom puissant, sinon zoom léger pendant le tir
   // Extinction : survivants = champ resserré (vision de tunnel, plus d'angoisse) ; monstre = champ très large (chasse)
   const baseFov = duelMode === 'extinction' ? (isMonster() ? 104 : 58) : FOV_IDLE;
-  const fovTarget = scoped ? 15 : ((firing && duelMode !== 'extinction') ? FOV_AIM : baseFov);
+  const fovTarget = deathCam ? 34 : scoped ? 15 : ((firing && duelMode !== 'extinction') ? FOV_AIM : baseFov);
   if (Math.abs(camera.fov - fovTarget) > 0.05) {
     camera.fov += (fovTarget - camera.fov) * Math.min(1, dt * (scoped ? 10 : (firing ? 7 : 12)));
     camera.updateProjectionMatrix();
@@ -4810,12 +4938,38 @@ function animate() {
     } else if (Math.round(player.battery) !== prevPct && extItemSel === 0) {
       $('clip').textContent = player.clip = Math.round(player.battery);
     }
+    // Batterie faible : la lampe grésille, clignote et s'éteint par à-coups (de plus en plus en dessous de 30 %)
+    const low = monSmooth(30, 4, player.battery);                       // 0 au-dessus de 30 %, 1 vers 4 %
+    let f = 1;
+    if (low > 0) {
+      const tt = performance.now() / 1000, n = hNoise(tt * 11, 3, 7), m = hNoise(tt * 29 + 9, 1, 2);
+      if (n < 0.14 + 0.4 * low) f = 0.04 + 0.4 * m;                     // coupure presque totale
+      else if (m < 0.25 * low) f = 0.55;                                // baisse de tension
+      if (f < 0.25 && !flashlight._dip) { flashlight._dip = true; sfxNoise(0.06, 0.05, 2600, 6500); } // crépitement à chaque coupure
+      if (f >= 0.25) flashlight._dip = false;
+    } else flashlight._dip = false;
+    flashlight.intensity = 6.5 * f;
+    lampFlicker = f;
+  }
+  updateMist(dt, player.flashOn ? lampFlicker : 0);
+  { // chiffre de batterie qui clignote en rouge sous 20 %
+    const lowNow = duelMode === 'extinction' && !isMonster() && extItemSel === 0 && player.battery < 20 && player.flashOn;
+    $('ammo').classList.toggle('low', lowNow);
   }
 
   // Retour élastique du recul + secousse de dégâts
   recoilPitch *= Math.exp(-9 * dt);
   recoilYaw *= Math.exp(-9 * dt);
   shakeT = Math.max(0, shakeT - dt);
+  if (deathCam) { // jump scare : la caméra se jette sur le monstre, tremble, et une lumière rouge l'éclaire
+    deathCam.t += dt;
+    const k = Math.min(1, dt * 9), dy = Math.atan2(Math.sin(deathCam.yawT - yaw), Math.cos(deathCam.yawT - yaw));
+    yaw += dy * k; pitch += (deathCam.pitchT - pitch) * k;
+    shakeT = 0.55;
+    scareLight.position.copy(camera.position);
+    scareLight.intensity = 9 * Math.max(0, 1 - deathCam.t / deathCam.dur) * (0.7 + 0.3 * Math.sin(deathCam.t * 40));
+    if (deathCam.t >= deathCam.dur) { deathCam = null; scareLight.intensity = 0; }
+  }
   camera.rotation.set(0, 0, 0);
   camera.rotateY(yaw + recoilYaw);
   camera.rotateX(pitch + recoilPitch);
