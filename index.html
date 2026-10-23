@@ -669,6 +669,7 @@ let audioPaused = false;
 function setAudioPaused(p) {
   if (p === audioPaused) return;
   audioPaused = p;
+  if (menuMusic && menuMusic.el) { if (p) menuMusic.el.pause(); else menuMusic.el.play().catch(() => {}); } // la musique d'accueil est un flux <audio>
   if (!audioCtx) return;
   if (p) audioCtx.suspend().catch(() => {}); else audioCtx.resume().catch(() => {});
 }
@@ -729,10 +730,25 @@ const sfxGlitch = (short, vol = 1) => {  // transition « signal perdu »
 const uiHover = () => sfx(1900, 0.035, 'square', 0.04, 0.7);
 const uiClick = () => { sfx(560, 0.07, 'square', 0.08, 0.5); sfx(1250, 0.05, 'triangle', 0.06, 0.6); };
 
-// ---------- Musique d'accueil : nappe sombre, cœur lent, cloche lointaine (tout synthétisé) ----------
+// ---------- Musique d'accueil : « Paranoid Truth » de Tsorthan Grove (CC0, opengameart.org/content/paranoid-truth) ----------
+// Lue en flux par un élément <audio> (2 min 50 : on ne décode pas tout en mémoire), en boucle, branchée sur le bus général.
+// Si le fichier ne charge pas, repli sur l'ancienne nappe synthétisée.
+const LOBBY_FILE = 'sounds/lobby.mp3', MENU_VOL = 0.8;
 let menuMusic = null;
 function startMenuMusic() {
   if (!audioCtx || !musicOn || menuMusic || gameStarted || introActive) return;
+  const ctx = audioCtx, el = new Audio(LOBBY_FILE);
+  el.loop = true; el.preload = 'auto';
+  let node; try { node = ctx.createMediaElementSource(el); } catch (e) { menuMusic = menuSynth(); return; }
+  const master = ctx.createGain(); master.gain.value = 0; master.gain.linearRampToValueAtTime(MENU_VOL, ctx.currentTime + 3);
+  node.connect(master); master.connect(bus());
+  const mm = { master, oscs: [], timers: [], el };
+  const fallback = () => { if (menuMusic === mm) { stopMenuMusic(); menuMusic = menuSynth(); } };
+  el.addEventListener('error', fallback);
+  if (!audioPaused) el.play().catch(fallback);
+  menuMusic = mm;
+}
+function menuSynth() { // nappe sombre, cœur lent, cloche lointaine (secours, tout synthétisé)
   const ctx = audioCtx, t0 = ctx.currentTime;
   const master = ctx.createGain(); master.gain.value = 0;
   master.gain.linearRampToValueAtTime(0.12, t0 + 3);
@@ -759,7 +775,7 @@ function startMenuMusic() {
     mm.timers.push(setTimeout(bell, 6500 + Math.random() * 7000));
   };
   mm.timers.push(setTimeout(beat, 1800), setTimeout(bell, 4000));
-  menuMusic = mm;
+  return mm;
 }
 function stopMenuMusic() {
   const mm = menuMusic;
@@ -767,7 +783,10 @@ function stopMenuMusic() {
   menuMusic = null;
   mm.timers.forEach(clearTimeout);
   try { mm.master.gain.cancelScheduledValues(audioCtx.currentTime); mm.master.gain.setValueAtTime(mm.master.gain.value, audioCtx.currentTime); mm.master.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.7); } catch (e) {}
-  setTimeout(() => { for (const o of mm.oscs) { try { o.stop(); } catch (e) {} } }, 800);
+  setTimeout(() => {
+    for (const o of mm.oscs) { try { o.stop(); } catch (e) {} }
+    if (mm.el) { try { mm.el.pause(); mm.el.removeAttribute('src'); mm.el.load(); } catch (e) {} }
+  }, 800);
 }
 
 // ---------- Musique de fond (synthèse, ambiance de combat, désactivable) ----------
