@@ -359,6 +359,94 @@
   #lobby-players { font-size: 18px; color: #7fd4ff; }
   #lobby-timer { min-height: 26px; font-size: 20px; font-weight: 700; color: #ffe98a; }
 
+  /* ---------- Boutons plus satisfaisants : reflet qui glisse, relief au survol, enfoncement net, onde au clic ---------- */
+  .menu-btn, .chip, .team-btn, .wcard { position: relative; overflow: hidden; -webkit-tap-highlight-color: transparent;
+    transition: background .18s, transform .16s cubic-bezier(.2, .9, .3, 1.35), box-shadow .22s, border-color .2s, opacity .2s; }
+  .icon-btn { overflow: hidden; -webkit-tap-highlight-color: transparent; transition: background .18s, transform .16s cubic-bezier(.2, .9, .3, 1.35), box-shadow .22s, border-color .2s; }
+  .menu-btn::after, .chip::after, .team-btn::after { content: ''; position: absolute; top: 0; left: -70%; width: 45%; height: 100%; pointer-events: none;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.3), transparent); transform: skewX(-18deg); }
+  @media (hover: hover) {
+    .menu-btn:hover { transform: translateY(-2px); border-color: #bfeaff; background: rgba(127,212,255,.2);
+      box-shadow: 0 7px 20px rgba(127,212,255,.26), inset 0 0 0 1px rgba(191,234,255,.28); }
+    .team-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 7px 18px rgba(255,255,255,.14); }
+    .chip:hover { transform: translateY(-1px); border-color: rgba(191,234,255,.8); box-shadow: 0 4px 14px rgba(127,212,255,.22); }
+    .icon-btn:hover { transform: translateY(-2px) scale(1.07); border-color: #bfeaff; box-shadow: 0 6px 18px rgba(127,212,255,.3); }
+    .wcard:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(255,233,138,.16); }
+    .menu-btn:hover::after, .chip:hover::after, .team-btn:hover::after { animation: btnshine .75s ease; }
+  }
+  .menu-btn:active, .chip:active, .team-btn:active:not(:disabled), .wcard:active { transform: translateY(1px) scale(.96); box-shadow: inset 0 3px 12px rgba(0,0,0,.5); transition-duration: .06s; }
+  .icon-btn:active { transform: scale(.9); box-shadow: inset 0 2px 8px rgba(0,0,0,.5); transition-duration: .06s; }
+  .menu-btn:focus-visible, .chip:focus-visible, .icon-btn:focus-visible, .team-btn:focus-visible { outline: 3px solid #ffe98a; outline-offset: 3px; }
+  @keyframes btnshine { from { left: -70%; } to { left: 135%; } }
+  .rip { position: absolute; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(255,255,255,.55), rgba(127,212,255,.25) 55%, transparent 70%);
+    transform: scale(0); animation: ripple .55s ease-out forwards; }
+  @keyframes ripple { to { transform: scale(1); opacity: 0; } }
+  .chip.sel, .team-btn.sel, .wcard.sel { animation: selpop .32s cubic-bezier(.2, 1.6, .4, 1); }
+  @keyframes selpop { 0% { transform: scale(.9); } 60% { transform: scale(1.06); } 100% { transform: scale(1); } }
+  /* Bouton principal (Lancer / Rejouer) : dégradé lumineux qui respire */
+  .menu-btn.primary { background: linear-gradient(180deg, rgba(127,212,255,.42), rgba(47,143,214,.34)); border-color: #bfeaff;
+    text-shadow: 0 0 10px rgba(127,212,255,.8); animation: primpulse 2.2s ease-in-out infinite; }
+  @keyframes primpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(127,212,255,.45); } 50% { box-shadow: 0 0 24px 3px rgba(127,212,255,.42); } }
+  .menu-btn:disabled { opacity: .5; cursor: default; }
+
+  /* ---------- Entrées en cascade (accueil, salon) et ambiance de fond ---------- */
+  #home-left > * { animation: itemin .55s cubic-bezier(.2, .9, .3, 1) backwards; animation-delay: calc(var(--i, 0) * 60ms + .1s); }
+  #lobby .lobby-body > * { animation: itemup .55s cubic-bezier(.2, .9, .3, 1) backwards; animation-delay: calc(var(--i, 0) * 70ms + .05s); }
+  #lobby-actions { animation: itemup .5s cubic-bezier(.2, .9, .3, 1) .35s backwards; }
+  @keyframes itemin { from { opacity: 0; translate: -28px 0; filter: blur(3px); } }
+  @keyframes itemup { from { opacity: 0; translate: 0 18px; filter: blur(2px); } }
+  #home h1 { animation: h1in 1s cubic-bezier(.2, .8, .3, 1) backwards, zhflicker 7s 1s infinite; }
+  @keyframes h1in { from { opacity: 0; letter-spacing: 20px; filter: blur(7px) drop-shadow(0 0 30px rgba(127,212,255,.9)); } }
+  #skin-preview { animation: previewin .9s cubic-bezier(.2, .8, .3, 1) .25s backwards; }
+  #skin-name { animation: previewin .9s cubic-bezier(.2, .8, .3, 1) .5s backwards; }
+  @keyframes previewin { from { opacity: 0; translate: 46px 0; } }
+  #home-level, .icon-btn:not(#btn-skin) { animation: fadein .8s ease .5s backwards; }
+  #btn-skin { animation: fadein .8s ease .6s backwards; }
+  @keyframes fadein { from { opacity: 0; } }
+  #home::before, #lobby::before { content: ''; position: fixed; inset: -12%; pointer-events: none;
+    background: radial-gradient(38% 34% at 18% 28%, rgba(70,130,210,.14), transparent 72%), radial-gradient(34% 40% at 82% 72%, rgba(150,45,70,.11), transparent 72%);
+    animation: fogdrift 20s ease-in-out infinite alternate; }
+  @keyframes fogdrift { from { transform: translate3d(-3%, -2%, 0) scale(1); } to { transform: translate3d(4%, 3%, 0) scale(1.1); } }
+  #home::after, #lobby::after { content: ''; position: fixed; inset: 0; pointer-events: none; opacity: .16;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.55) 0 1px, transparent 1px 3px); }
+  /* Panneaux : sortie douce au lieu d'une disparition sèche */
+  .panel.open.closing { animation: panelout .17s ease-in both; }
+  @keyframes panelout { to { opacity: 0; transform: translateY(8px) scale(.97); } }
+
+  /* ---------- Salon : joueurs présents, code copiable, compte à rebours en barre ---------- */
+  #lobby-roster { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; width: min(720px, 94vw); margin: 2px 0; }
+  .slot { display: flex; align-items: center; gap: 10px; padding: 6px 12px; min-height: 44px; border-radius: 12px; text-align: left;
+    border: 2px solid rgba(127,212,255,.32); background: rgba(127,212,255,.07); font-family: var(--font-ui); font-size: 22px; font-weight: 600; letter-spacing: .5px; }
+  .slot .av { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 18px; font-weight: 700;
+    color: #05080f; background: var(--c, #7fd4ff); box-shadow: 0 0 10px var(--c, #7fd4ff); }
+  .slot .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .slot .tag { font-size: 14px; letter-spacing: 2px; color: #ffe98a; }
+  .slot.me { border-color: #ffe98a; background: rgba(255,233,138,.1); }
+  .slot.empty { border-style: dashed; border-color: rgba(127,212,255,.18); background: transparent; color: rgba(200,220,240,.36); font-weight: 500; }
+  .slot.empty .av { background: transparent; box-shadow: none; border: 2px dashed rgba(127,212,255,.26); color: rgba(127,212,255,.4); }
+  .slot.enter { animation: slotin .55s cubic-bezier(.2, 1.5, .4, 1); }
+  @keyframes slotin { 0% { opacity: 0; transform: scale(.55) translateY(12px); filter: brightness(2.8); } 60% { filter: brightness(1.7); } 100% { opacity: 1; transform: none; filter: none; } }
+  .slot.leave { animation: slotout .25s ease-in forwards; }
+  @keyframes slotout { to { opacity: 0; transform: scale(.8); } }
+  #lobby .code { cursor: pointer; position: relative; user-select: none; transition: transform .15s, border-color .2s, box-shadow .2s; }
+  #lobby .code span { display: inline-block; animation: charin .55s cubic-bezier(.2, 1.4, .4, 1) backwards; animation-delay: calc(var(--i, 0) * 75ms + .25s); }
+  @keyframes charin { from { opacity: 0; transform: translateY(-16px) rotateX(80deg); } }
+  @media (hover: hover) { #lobby .code:hover { border-style: solid; border-color: #ffe98a; box-shadow: 0 0 22px rgba(255,233,138,.25); transform: scale(1.02); } }
+  #lobby .code:active { transform: scale(.97); }
+  #lobby .code.copied::after { content: 'COPIÉ ✓'; position: absolute; inset: 0; display: grid; place-items: center; border-radius: 12px;
+    background: rgba(5,8,15,.9); color: #6aff9e; font-size: .42em; letter-spacing: 5px; animation: fadein .15s; }
+  #lobby-bar { width: min(420px, 80vw); height: 8px; border-radius: 6px; background: rgba(255,255,255,.1); overflow: hidden; opacity: 0; transition: opacity .3s; }
+  #lobby-bar.on { opacity: 1; }
+  #lobby-bar i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #ffe98a, #ff9d4a); transition: width 1s linear, background .3s; }
+  #lobby-bar.hot i { background: linear-gradient(90deg, #ff6a5a, #ff3a2a); animation: hotpulse .5s ease-in-out infinite alternate; }
+  @keyframes hotpulse { to { filter: brightness(1.6); } }
+  #lobby-timer.tick { animation: numpop .4s ease-out; }
+  @media (prefers-reduced-motion: reduce) {
+    .menu-btn::after, .chip::after, .team-btn::after { display: none; }
+    #home-left > *, #lobby .lobby-body > *, #lobby-actions, #home h1, #skin-preview, #skin-name, #home-level, .icon-btn, #home::before, #lobby::before,
+    .slot.enter, .menu-btn.primary, .chip.sel, .team-btn.sel, .wcard.sel, #lobby .code span, #lobby-bar.hot i { animation: none; }
+  }
+
   /* ---------- Contrôles tactiles (mobile) ---------- */
   /* Tout est en unités --u (liées à la taille de l'écran) et rangé autour du bouton de tir, en bas à
      droite : une position par bouton, jamais deux au même endroit. Le joystick est flottant. */
@@ -654,8 +742,9 @@
 <div id="lobby" style="display:none">
   <div class="lobby-body">
   <h1 id="lobby-title">PARTIE PRIVÉE</h1>
-  <div class="code" id="lobby-code">······</div>
+  <div class="code" id="lobby-code" title="Clique pour copier le code">······</div>
   <p id="lobby-info">Partage ce code avec tes amis</p>
+  <div id="lobby-roster"></div>
   <div id="lobby-players">1 joueur connecté</div>
   <div id="pseudo-row">
     <span style="color:#fff2d8">Ton pseudo :</span>
@@ -672,9 +761,10 @@
     <div class="opt-label" style="width:100%">Ton objet de survie (3 utilisations)</div>
   </div>
   <div id="lobby-timer"></div>
+  <div id="lobby-bar"><i></i></div>
   </div>
   <div id="lobby-actions">
-    <button class="menu-btn" id="btn-start" style="display:none">🚀 Lancer la partie</button>
+    <button class="menu-btn primary" id="btn-start" style="display:none">🚀 Lancer la partie</button>
     <button class="menu-btn small" id="btn-lobby-invite">🔗 Inviter</button>
     <button class="menu-btn small" id="btn-lobby-leave">↩ Quitter</button>
   </div>
@@ -713,7 +803,7 @@
   ZQSD / WASD : bouger · Souris : viser · Clic : tirer · R : recharger · Maj : courir · Espace : sauter · V : vue 1ʳᵉ/3ᵉ personne</p>
   <div class="go" id="go-label">Clique pour combattre</div>
   <div id="end-actions" style="display:none">
-    <button class="menu-btn" id="btn-replay">🔁 Rejouer</button>
+    <button class="menu-btn primary" id="btn-replay">🔁 Rejouer</button>
     <button class="menu-btn small" id="btn-invite">🔗 Inviter</button>
   </div>
 </div>
@@ -824,6 +914,10 @@ const sfxGlitch = (short, vol = 1) => {  // transition « signal perdu »
 };
 const uiHover = () => sfx(1900, 0.035, 'square', 0.04, 0.7);
 const uiClick = () => { sfx(560, 0.07, 'square', 0.08, 0.5); sfx(1250, 0.05, 'triangle', 0.06, 0.6); };
+const uiConfirm = () => { sfx(180, 0.16, 'sawtooth', 0.1, 2.2); sfx(520, 0.14, 'triangle', 0.1, 1.9); setTimeout(() => sfx(1040, 0.2, 'triangle', 0.08, 1.2), 80); };   // bouton principal : montée nette
+const uiJoin = () => { sfx(660, 0.09, 'triangle', 0.1, 1.5); setTimeout(() => sfx(990, 0.14, 'triangle', 0.09, 1.1), 90); };                                         // un joueur arrive
+const uiLeave = () => { sfx(420, 0.12, 'triangle', 0.08, 0.6); setTimeout(() => sfx(300, 0.16, 'triangle', 0.06, 0.6), 80); };                                       // un joueur part
+const uiTick = (hot) => sfx(hot ? 1100 : 780, 0.06, 'square', hot ? 0.09 : 0.05, 0.7);                                                                                // compte à rebours
 
 // ---------- Musique d'accueil : « Paranoid Truth » de Tsorthan Grove (CC0, opengameart.org/content/paranoid-truth) ----------
 // Lue en flux par un élément <audio> (2 min 50 : on ne décode pas tout en mémoire), en boucle, branchée sur le bus général.
@@ -6355,7 +6449,7 @@ function updateRemote(d, conn) {
   }
   if (conn) r.conn = conn;
   r.lastState = d;
-  if (d.nm) extNames.set(d.id, d.nm); // pseudo le plus récent (Extinction)
+  if (d.nm && extNames.get(d.id) !== d.nm) { extNames.set(d.id, d.nm); if (!gameStarted) renderRoster(); } // pseudo le plus récent (Extinction)
   if (r.rig && typeof d.sk === 'number' && r.rig.skinIdx !== d.sk) applySkinToRig(r.rig, d.sk);
   // Dernière position réseau connue : le rendu s'en approche par lissage
   // exponentiel (voir la boucle animate) — jamais de saut, quelle que soit
@@ -6500,7 +6594,7 @@ function onMsg(conn, d) {
       extStartCountdown(d.nms);
       break;
     case 'name': // pseudo échangé dans le salon Extinction
-      if (d.id && d.id !== myId) { extNames.set(d.id, d.nm); }
+      if (d.id && d.id !== myId) { extNames.set(d.id, d.nm); if (!gameStarted) renderRoster(); }
       if (authority) broadcastExcept(conn, d);
       break;
     case 'ext_map': // une cellule du labyrinthe vient d'être explorée (partagé)
@@ -6603,7 +6697,51 @@ function updateLobby() {
   const n = 1 + conns.length;
   const el = document.getElementById('lobby-players');
   if (el) el.textContent = lobbyCountText(n);
+  renderRoster();
   if (isRoomHost && !gameStarted) broadcast({ t: 'lobby', n });
+}
+// Liste des joueurs du salon : une carte par joueur (qui apparaît avec un petit éclat), des places vides en pointillés
+const rosterEls = new Map();
+let rosterPrevN = 0;
+const AV_COLORS = ['#7fd4ff', '#ffe98a', '#ff8a7a', '#8affb0', '#c9a0ff', '#ffb86b', '#7ae0d4', '#ff9ad0'];
+const hashStr = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); };
+function rosterEntries() {
+  const myName = duelMode === 'extinction' ? extPseudo() : ((myPseudo || '').trim() || 'Toi');
+  const list = [{ id: myId, name: myName, me: true, host: isRoomHost }];
+  for (const id of remotePlayers.keys()) list.push({ id, name: extNames.get(id) || 'Joueur-' + id.slice(-3).toUpperCase() });
+  for (let i = list.length; i < 1 + conns.length; i++) list.push({ id: 'anon' + i, name: 'Joueur…' });   // connexion annoncée, état pas encore reçu
+  return list;
+}
+function resetRoster() { rosterEls.clear(); rosterPrevN = 0; const b = document.getElementById('lobby-roster'); if (b) b.innerHTML = ''; }
+function renderRoster() {
+  const box = document.getElementById('lobby-roster');
+  if (!box || document.getElementById('lobby').style.display === 'none') return;
+  const list = rosterEntries(), max = Math.max(list.length, Math.min(10, maxPlayers()));
+  const ids = new Set(list.map(e => e.id));
+  for (const [id, el] of rosterEls) if (!ids.has(id)) { rosterEls.delete(id); el.classList.add('leave'); setTimeout(() => el.remove(), 260); }
+  list.forEach((e, i) => {
+    let el = rosterEls.get(e.id);
+    if (!el) {
+      el = document.createElement('div'); el.className = 'slot enter';
+      el.innerHTML = '<span class="av"></span><span class="nm"></span><span class="tag"></span>';
+      rosterEls.set(e.id, el); box.appendChild(el);
+      setTimeout(() => el.classList.remove('enter'), 650);
+    }
+    const av = el.querySelector('.av');
+    av.textContent = (e.name.replace(/[^\p{L}\p{N}]/gu, '')[0] || '?').toUpperCase();
+    av.style.setProperty('--c', AV_COLORS[hashStr(e.id) % AV_COLORS.length]);
+    el.querySelector('.nm').textContent = e.name;
+    el.querySelector('.tag').textContent = e.host ? '👑' : e.me ? 'TOI' : '';
+    el.classList.toggle('me', !!e.me);
+    el.style.order = i;
+  });
+  box.querySelectorAll('.slot.empty').forEach(x => x.remove());
+  for (let i = list.length; i < max; i++) {
+    const s = document.createElement('div'); s.className = 'slot empty'; s.style.order = i;
+    s.innerHTML = '<span class="av">?</span><span class="nm">En attente…</span>'; box.appendChild(s);
+  }
+  if (rosterPrevN > 0 && list.length > rosterPrevN) uiJoin(); else if (rosterPrevN > 0 && list.length < rosterPrevN) uiLeave();
+  rosterPrevN = list.length;
 }
 
 function beginGame(mode) {
@@ -6701,22 +6839,30 @@ function openLobbyScreen(opts) {
     document.getElementById('home').style.display = 'none';
     document.getElementById('lobby').style.display = 'flex';
     $('lobby').scrollTop = 0;
+    renderRoster();
   });
   document.getElementById('loadout-row').style.display = 'none'; // (réactivé par les duels)
   document.getElementById('loup-row').style.display = 'none';
   document.getElementById('lobby-title').textContent = opts.title;
-  document.getElementById('lobby-code').style.display = opts.code ? '' : 'none';
-  if (opts.code) document.getElementById('lobby-code').textContent = opts.code;
+  resetRoster();
+  const codeEl = document.getElementById('lobby-code');
+  codeEl.style.display = opts.code ? '' : 'none';
+  if (opts.code) codeEl.innerHTML = [...opts.code].map((ch, i) => '<span style="--i:' + i + '">' + ch + '</span>').join('');   // les lettres tombent une à une
+  [...document.querySelectorAll('#lobby .lobby-body > *')].forEach((c, i) => c.style.setProperty('--i', i));       // entrée en cascade du salon
   document.getElementById('lobby-info').textContent = opts.info;
   document.getElementById('btn-start').style.display = opts.startBtn ? 'block' : 'none';
 }
 function startLobbyCountdown(seconds, onEnd) {
-  const el = document.getElementById('lobby-timer');
+  const el = document.getElementById('lobby-timer'), bar = document.getElementById('lobby-bar'), fill = bar.firstElementChild;
   let left = Math.max(0, Math.round(seconds));
   const tick = () => {
-    if (gameStarted) { el.textContent = ''; return; }
-    if (left <= 0) { el.textContent = 'Démarrage…'; if (onEnd) onEnd(); return; }
+    if (gameStarted) { el.textContent = ''; bar.classList.remove('on', 'hot'); return; }
+    if (left <= 0) { el.textContent = 'Démarrage…'; fill.style.width = '0%'; bar.classList.remove('hot'); if (onEnd) onEnd(); return; }
     el.textContent = '⏱ La partie démarre dans ' + left + ' s';
+    bar.classList.add('on'); bar.classList.toggle('hot', left <= 5);
+    fill.style.width = Math.min(100, left / LOBBY_WAIT * 100) + '%';
+    el.classList.remove('tick'); void el.offsetWidth; if (left <= 10) el.classList.add('tick');   // le chiffre « claque » sur les 10 dernières secondes
+    if (left <= 5) uiTick(left <= 3);
     left--;
     setTimeout(tick, 1000);
   };
@@ -6940,6 +7086,15 @@ document.getElementById('pseudo-input').addEventListener('input', e => {
   localStorage.setItem('zh-pseudo', myPseudo);
   netSelf({ t: 'name', id: myId, nm: extPseudo() });
   if (isRoomHost) broadcast({ t: 'name', id: myId, nm: extPseudo() });
+  renderRoster();
+});
+// Clic sur le code du salon : copié dans le presse-papiers, avec un « COPIÉ ✓ » qui s'affiche une seconde
+document.getElementById('lobby-code').addEventListener('click', async e => {
+  const el = e.currentTarget, code = (el.textContent || '').trim();
+  if (!/^[A-Z0-9]{4,8}$/i.test(code)) return;
+  try { await navigator.clipboard.writeText(code); } catch (err) { return; }
+  el.classList.add('copied'); sfx(880, 0.08, 'triangle', 0.1, 1.4); buzz(12, 0);
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('copied'), 1100);
 });
 // Cartes Guérison / Bouclier du mode loup (le loup, lui, aura le fusil à pompe)
 const loupRow = document.getElementById('loup-row');
@@ -7185,7 +7340,7 @@ addEventListener('popstate', () => {
   if (ctrlEditing) { closeCtrlEdit(false); return; } // éditeur de commandes : fermer sans garder
   // panneaux de l'accueil (duel, paramètres, skins) : les refermer
   for (const id of ['settings-panel', 'skin-panel'])
-    document.getElementById(id).classList.remove('open');
+    setPanel(document.getElementById(id), false);
   duelChoiceEl.style.display = 'none';
 });
 
@@ -7196,14 +7351,24 @@ applyQuality(quality); // resurligne le bouton actif maintenant que le DOM est p
 // Panneaux ⚙ paramètres (haut droite) et 🎭 skin (bas gauche)
 const settingsPanel = document.getElementById('settings-panel');
 const skinPanel = document.getElementById('skin-panel');
+// Ouverture avec rebond, fermeture en fondu (la classe « closing » joue l'animation de sortie avant de retirer « open »)
+function setPanel(el, open) {
+  if (open) { clearTimeout(el._ct); el.classList.remove('closing'); el.classList.add('open'); }
+  else if (el.classList.contains('open') && !el.classList.contains('closing')) {
+    el.classList.add('closing');
+    el._ct = setTimeout(() => el.classList.remove('open', 'closing'), 170);
+  }
+}
+const panelOpen = el => el.classList.contains('open') && !el.classList.contains('closing');
 document.getElementById('btn-settings').onclick = () => {
-  settingsPanel.classList.toggle('open');
-  skinPanel.classList.remove('open');
+  setPanel(settingsPanel, !panelOpen(settingsPanel));
+  setPanel(skinPanel, false);
 };
 document.getElementById('btn-skin').onclick = () => {
-  skinPanel.classList.toggle('open');
-  settingsPanel.classList.remove('open');
+  setPanel(skinPanel, !panelOpen(skinPanel));
+  setPanel(settingsPanel, false);
 };
+[...document.getElementById('home-left').children].forEach((c, i) => c.style.setProperty('--i', i));   // entrée en cascade du menu d'accueil
 const chkFps = document.getElementById('chk-fps');
 chkFps.checked = showFps;
 chkFps.onchange = () => {
@@ -7260,7 +7425,17 @@ document.addEventListener('pointerover', e => {
 document.addEventListener('pointerout', e => { if (e.target.closest && e.target.closest(UI_SEL) === uiLastHover) uiLastHover = null; });
 document.addEventListener('click', e => {
   const el = e.target.closest && e.target.closest(UI_SEL);
-  if (el && uiMenuVisible(el)) uiClick();
+  if (!el || !uiMenuVisible(el)) return;
+  if (el.classList.contains('primary')) { uiConfirm(); buzz([10, 30, 16], 0); } else { uiClick(); buzz(7, 30); }   // petit retour tactile sur mobile
+}, true);
+// Onde lumineuse qui part du point d'appui (sur les boutons, pas sur les cartes d'arme)
+document.addEventListener('pointerdown', e => {
+  const el = e.target.closest && e.target.closest('.menu-btn, .chip, .icon-btn, .team-btn');
+  if (!el || el.disabled || !uiMenuVisible(el) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const r = el.getBoundingClientRect(), d = Math.max(r.width, r.height) * 2.2, s = document.createElement('span');
+  s.className = 'rip'; s.style.width = s.style.height = d + 'px';
+  s.style.left = (e.clientX - r.left - d / 2) + 'px'; s.style.top = (e.clientY - r.top - d / 2) + 'px';
+  el.appendChild(s); setTimeout(() => s.remove(), 600);
 }, true);
 
 // ---------- Porte d'entrée + intro horreur « chargement corrompu » ----------
