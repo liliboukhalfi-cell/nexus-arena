@@ -31,7 +31,7 @@ $mime = @{
   '.html' = 'text/html; charset=utf-8'; '.js' = 'application/javascript'; '.css' = 'text/css';
   '.png' = 'image/png'; '.jpg' = 'image/jpeg'; '.svg' = 'image/svg+xml'; '.ico' = 'image/x-icon';
   '.glb' = 'model/gltf-binary'; '.vrm' = 'application/octet-stream'; '.json' = 'application/json';
-  '.webmanifest' = 'application/manifest+json'
+  '.webmanifest' = 'application/manifest+json'; '.wav' = 'audio/wav'; '.mp3' = 'audio/mpeg'
 }
 
 # TcpListener sur 0.0.0.0 : accepte tout le reseau local SANS droits admin

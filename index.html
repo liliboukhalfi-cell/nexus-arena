@@ -705,8 +705,8 @@ function sfxNoise(dur = 0.25, vol = 0.12, f0 = 800, f1 = 3000) {
   const g = audioCtx.createGain(); g.gain.value = vol;
   src.connect(bp).connect(g).connect(bus()); src.start();
 }
-// Son de glitch : le vrai fichier (sounds/glitch.mp3, chargé au 1er geste) s'il existe, sinon synthèse de secours.
-const GLITCH_FILE = 'sounds/glitch.mp3';
+// Son de glitch : le vrai fichier (sounds/glitch.wav = 1er son du pack « 10 Glitch Sounds », libre de droits, chargé au 1er geste), sinon synthèse de secours.
+const GLITCH_FILE = 'sounds/glitch.wav';
 let glitchBuf = null, glitchLoading = false;
 function loadGlitchSample() {
   if (glitchBuf || glitchLoading || !audioCtx) return;
