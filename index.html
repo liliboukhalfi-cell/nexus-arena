@@ -857,6 +857,15 @@ const QUALITIES = {
   normale: { pr: 1,    shadows: true,  mapSize: 1536, exposure: 1.1 },
   haute:   { pr: Math.min(devicePixelRatio, 2), shadows: true, mapSize: 2048, exposure: 1.12 }
 };
+// Effets de peaufinage, par niveau de qualité : Basse = rien de plus qu'avant ; Normale = effets légers et peu coûteux
+// (vent dans les haies, lucioles, ombres de contact, sol humide) ; Haute = tout (halo, ombres de la lampe, grain).
+const FX = { wind: false, fireflies: false, blob: false, wet: false, lampShadow: false, bloom: false };
+const fxHooks = [];   // fonctions rappelées quand la qualité change (les modules d'effets s'y inscrivent)
+function applyFx(q) {
+  FX.wind = FX.fireflies = FX.blob = FX.wet = q !== 'basse';
+  FX.lampShadow = FX.bloom = q === 'haute';
+  for (const h of fxHooks) h();
+}
 // On démarre prudent (normale) : si le jeu tourne mal, la qualité baisse toute
 // seule ; le joueur peut monter en Haute depuis l'accueil s'il a la machine.
 // (v2 : oublie le « haute » imposé automatiquement par l'ancienne version)
@@ -875,6 +884,7 @@ function applyQuality(q) {
   renderer.toneMappingExposure = Q.exposure;
   renderer.setSize(innerWidth, innerHeight);
   scene.traverse(o => { if (o.isMesh && o.material) o.material.needsUpdate = true; });
+  applyFx(q);
   document.querySelectorAll('[data-quality]').forEach(b =>
     b.classList.toggle('sel', b.dataset.quality === q));
 }
@@ -1020,6 +1030,252 @@ const floor = new THREE.Mesh(
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
+
+// ================= Peaufinage : reflets, ombres de contact, ambiance vivante, halo =================
+// Tout est discret (« légèrement, n'abuse pas ») et réglé par FX (voir qualité graphique).
+// ── Ciel flou pour les reflets (nuit bleutée + éclat de lune) : sol humide, feuilles et métal le reflètent un peu
+const skyEnv = (() => {
+  const envScene = new THREE.Scene();
+  envScene.add(new THREE.Mesh(new THREE.SphereGeometry(50, 24, 16), new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: 'varying vec3 vP; void main(){ float h = clamp(vP.y * 0.5 + 0.5, 0.0, 1.0); vec3 c = mix(vec3(0.05,0.07,0.12), vec3(0.015,0.02,0.05), h); float m = pow(max(dot(vP, normalize(vec3(0.5,0.8,0.3))), 0.0), 180.0); c += vec3(0.8,0.88,1.0) * m * 2.5; gl_FragColor = vec4(c, 1.0); }'
+  })));
+  const pm = new THREE.PMREMGenerator(renderer);
+  const rt = pm.fromScene(envScene, 0.03);
+  pm.dispose();
+  return rt.texture;
+})();
+// ── Sol humide : flaques lisses (qui renvoient la lampe, les balises et la lune) au milieu d'un sol rugueux
+const wetTex = canvasTex(512, (x, s) => {
+  x.fillStyle = 'rgb(255,214,255)'; x.fillRect(0, 0, s, s);
+  for (let i = 0; i < 16; i++) {
+    const cx = Math.random() * s, cy = Math.random() * s, lobes = 3 + (Math.random() * 4 | 0);
+    for (let l = 0; l < lobes; l++) {
+      const px = cx + (Math.random() - 0.5) * 70, py = cy + (Math.random() - 0.5) * 40, r = 14 + Math.random() * 30;
+      const g = x.createRadialGradient(px, py, r * 0.25, px, py, r);
+      g.addColorStop(0, 'rgba(255,22,255,1)'); g.addColorStop(0.7, 'rgba(255,60,255,0.85)'); g.addColorStop(1, 'rgba(255,214,255,0)');
+      x.fillStyle = g; x.beginPath(); x.arc(px, py, r, 0, 7); x.fill();
+    }
+  }
+}, 6, 6);
+fxHooks.push(() => {
+  const wet = FX.wet;
+  floor.material.roughnessMap = wet ? wetTex : null; floor.material.roughness = wet ? 1 : 0.85;
+  floor.material.envMap = wet ? skyEnv : null; floor.material.envMapIntensity = 0.55;
+  hedgeMat.envMap = wet ? skyEnv : null; hedgeMat.envMapIntensity = 0.35;
+  leverMetal.envMap = leverDark.envMap = wet ? skyEnv : null; leverMetal.envMapIntensity = 0.7;
+  floor.material.needsUpdate = hedgeMat.needsUpdate = leverMetal.needsUpdate = leverDark.needsUpdate = true;
+  hedgeWindAmp.value = FX.wind ? 1 : 0;
+});
+// ── Ombre de contact : tache sombre et douce sous les personnages (ils ne « flottent » plus dans le noir)
+const blobTex = canvasTex(64, (x, s) => {
+  const g = x.createRadialGradient(s / 2, s / 2, 2, s / 2, s / 2, s / 2);
+  g.addColorStop(0, 'rgba(0,0,0,0.7)'); g.addColorStop(0.55, 'rgba(0,0,0,0.32)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  x.fillStyle = g; x.fillRect(0, 0, s, s);
+}, 1, 1);
+blobTex.wrapS = blobTex.wrapT = THREE.ClampToEdgeWrapping;
+const blobGeo = new THREE.PlaneGeometry(1, 1), blobMat = new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false });
+function ensureBlob(model, size) {
+  let b = model.userData.blob;
+  if (b && b.parent === model) { b.visible = FX.blob; return; }
+  const ms = model.scale.y || 1;
+  b = new THREE.Mesh(blobGeo, blobMat);
+  b.rotation.x = -Math.PI / 2; b.position.y = 0.03; b.scale.set(size / ms, size / ms, 1);
+  b.raycast = () => {}; b.renderOrder = 1; b.visible = FX.blob;
+  model.userData.blob = b; model.add(b);
+}
+// ── Lucioles : quelques points qui dérivent et clignotent autour du joueur (Extinction)
+const softDot = canvasTex(64, (x, s) => {
+  const g = x.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+  g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(255,255,255,0.35)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = g; x.fillRect(0, 0, s, s);
+}, 1, 1);
+softDot.wrapS = softDot.wrapT = THREE.ClampToEdgeWrapping;
+const FF_N = 42, FF_R = 15;
+let fireflies = null; const ffV = [], ffPh = [];
+function ensureFireflies() {
+  if (fireflies) return fireflies;
+  const pos = new Float32Array(FF_N * 3), col = new Float32Array(FF_N * 3);
+  for (let i = 0; i < FF_N; i++) {
+    pos[i * 3] = (Math.random() * 2 - 1) * FF_R; pos[i * 3 + 1] = 0.4 + Math.random() * 2.4; pos[i * 3 + 2] = (Math.random() * 2 - 1) * FF_R;
+    ffV.push([0, 0, 0]); ffPh.push([Math.random() * 6.3, 0.35 + Math.random() * 0.7]);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  fireflies = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.3, map: softDot, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  fireflies.frustumCulled = false; fireflies.visible = false; scene.add(fireflies);
+  return fireflies;
+}
+function updateFireflies(dt, tt) {
+  const on = FX.fireflies && duelMode === 'extinction' && gameStarted && !extOver;
+  if (!on) { if (fireflies) fireflies.visible = false; return; }
+  const f = ensureFireflies(); f.visible = true;
+  const p = f.geometry.attributes.position, c = f.geometry.attributes.color;
+  for (let i = 0; i < FF_N; i++) {
+    const v = ffV[i];
+    v[0] += (Math.random() - 0.5) * dt * 2.4; v[1] += (Math.random() - 0.5) * dt * 1.2; v[2] += (Math.random() - 0.5) * dt * 2.4;
+    for (let k = 0; k < 3; k++) v[k] = Math.max(-0.7, Math.min(0.7, v[k]));
+    let x = p.getX(i) + v[0] * dt, y = Math.max(0.35, Math.min(2.9, p.getY(i) + v[1] * dt)), z = p.getZ(i) + v[2] * dt;
+    const dx = x - player.pos.x, dz = z - player.pos.z;                       // rebouclage autour du joueur
+    if (dx > FF_R) x -= 2 * FF_R; else if (dx < -FF_R) x += 2 * FF_R;
+    if (dz > FF_R) z -= 2 * FF_R; else if (dz < -FF_R) z += 2 * FF_R;
+    p.setXYZ(i, x, y, z);
+    const blink = Math.pow(Math.max(0, Math.sin(tt * ffPh[i][1] * 2.2 + ffPh[i][0])), 3);   // brille par à-coups
+    const near = monSmooth(2.2, 6, Math.hypot(x - player.pos.x, z - player.pos.z));        // pas collées à la caméra
+    const b = blink * near * 0.75;
+    c.setXYZ(i, b * 0.78, b, b * 0.42);
+  }
+  p.needsUpdate = true; c.needsUpdate = true;
+}
+// ── Étoiles qui scintillent (quelques-unes à chaque instant)
+const starCol = new Float32Array(900 * 3).fill(0.85);
+starGeo.setAttribute('color', new THREE.BufferAttribute(starCol, 3));
+stars.material.vertexColors = true; stars.material.needsUpdate = true;
+let starT = 0;
+function twinkleStars(dt) {
+  starT -= dt;
+  if (starT > 0) return;
+  starT = 0.12;
+  for (let k = 0; k < 40; k++) { const i = (Math.random() * 900) | 0, b = 0.3 + Math.random() * 0.75; starCol[i * 3] = starCol[i * 3 + 1] = starCol[i * 3 + 2] = b; }
+  starGeo.attributes.color.needsUpdate = true;
+}
+// ── Éclairs de chaleur au loin (très discrets) puis tonnerre sourd : le ciel s'éclaire une fraction de seconde
+let ltT = 45 + Math.random() * 40, ltFlash = [];     // ltFlash : suite de [début, durée] en secondes
+function lightningBase() { return isMonster() ? { bg: 0x070a14, hemi: 0.35 } : { bg: 0x02030a, hemi: 0.04 }; }
+function updateLightning(dt) {
+  const on = duelMode === 'extinction' && gameStarted && !extOver;
+  if (!on) { if (ltFlash.length) { ltFlash = []; applyExtinctionLights(false); } return; }
+  ltT -= dt;
+  if (ltT <= 0) {
+    ltT = 50 + Math.random() * 70;
+    const t0 = performance.now() / 1000;
+    ltFlash = [[t0, 0.1], [t0 + 0.2, 0.14]];
+    setTimeout(() => sfxRumble(2.6 + Math.random() * 1.5, 0.5), 1300 + Math.random() * 2200);   // le tonnerre arrive après
+  }
+  if (!ltFlash.length) return;
+  const now = performance.now() / 1000;
+  let k = 0;
+  for (const [a, d] of ltFlash) if (now >= a && now < a + d) k = Math.max(k, 1 - (now - a) / d);
+  const base = lightningBase(), c = new THREE.Color(base.bg), fl = new THREE.Color(0x24345e);
+  c.lerp(fl, k * 0.8);
+  scene.background.copy(c); scene.fog.color.copy(c); hemi.intensity = base.hemi + 0.12 * k;
+  if (now > ltFlash[ltFlash.length - 1][0] + ltFlash[ltFlash.length - 1][1]) { ltFlash = []; scene.background.setHex(base.bg); scene.fog.color.setHex(base.bg); hemi.intensity = base.hemi; }
+}
+// ── Ambiance sonore de nuit : vent continu qui gonfle, corbeaux lointains, tonnerre
+let windNode = null, crowT = 22;
+function startWind() {
+  if (!audioCtx || windNode) return;
+  const sr = audioCtx.sampleRate, n = sr * 4, buf = audioCtx.createBuffer(1, n, sr), d = buf.getChannelData(0);
+  let lp = 0;
+  for (let i = 0; i < n; i++) { lp += ((Math.random() * 2 - 1) - lp) * 0.06; d[i] = lp * 3.2 * Math.min(1, i / 2000, (n - i) / 2000); }  // bruit grave, bords adoucis
+  const src = audioCtx.createBufferSource(); src.buffer = buf; src.loop = true;
+  const f = audioCtx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 520;
+  const g = audioCtx.createGain(); g.gain.value = 0.045;
+  const lfo = audioCtx.createOscillator(), lg = audioCtx.createGain();
+  lfo.frequency.value = 0.11; lg.gain.value = 0.03; lfo.connect(lg).connect(g.gain);                 // les rafales vont et viennent
+  const lfo2 = audioCtx.createOscillator(), lg2 = audioCtx.createGain();
+  lfo2.frequency.value = 0.07; lg2.gain.value = 180; lfo2.connect(lg2).connect(f.frequency);        // et changent de timbre
+  src.connect(f).connect(g).connect(bus());
+  src.start(); lfo.start(); lfo2.start();
+  windNode = { src, g, lfo, lfo2 };
+}
+function stopWind() {
+  const w = windNode; if (!w) return; windNode = null;
+  try { w.g.gain.cancelScheduledValues(audioCtx.currentTime); w.g.gain.setTargetAtTime(0, audioCtx.currentTime, 0.2); } catch (e) {}
+  setTimeout(() => { for (const o of [w.src, w.lfo, w.lfo2]) { try { o.stop(); } catch (e) {} } }, 1200);
+}
+function crowCaw(delay, pitch) {          // un « croa » lointain : dent de scie qui descend, filtrée
+  setTimeout(() => {
+    if (!audioCtx || audioPaused) return;
+    const t = audioCtx.currentTime, o = audioCtx.createOscillator(), f = audioCtx.createBiquadFilter(), g = audioCtx.createGain();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(pitch, t); o.frequency.exponentialRampToValueAtTime(pitch * 0.62, t + 0.3);
+    f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = 3.5;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.06, t + 0.04); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.34);
+    o.connect(f).connect(g).connect(bus()); o.start(t); o.stop(t + 0.36);
+  }, delay);
+}
+function sfxRumble(dur, vol) {            // grondement de tonnerre : bruit très grave qui monte puis s'éteint
+  if (!audioCtx || audioPaused) return;
+  const sr = audioCtx.sampleRate, n = Math.floor(sr * dur), buf = audioCtx.createBuffer(1, n, sr), d = buf.getChannelData(0);
+  let lp = 0;
+  for (let i = 0; i < n; i++) { lp += ((Math.random() * 2 - 1) - lp) * 0.03; const k = i / n; d[i] = lp * 5 * Math.min(1, k * 6) * Math.pow(1 - k, 1.6); }
+  const src = audioCtx.createBufferSource(); src.buffer = buf;
+  const f = audioCtx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 160;
+  const g = audioCtx.createGain(); g.gain.value = vol;
+  src.connect(f).connect(g).connect(bus()); src.start();
+}
+function updateNightAmbience(dt) {
+  const on = duelMode === 'extinction' && gameStarted && !extOver;
+  if (!on) { stopWind(); return; }
+  startWind();
+  crowT -= dt;
+  if (crowT <= 0) {
+    crowT = 28 + Math.random() * 50;
+    const n = 2 + (Math.random() * 2 | 0), p = 430 + Math.random() * 120;
+    for (let i = 0; i < n; i++) crowCaw(i * 420, p * (1 - i * 0.05));
+  }
+}
+// ── Halo (bloom léger), grain de film et aberration chromatique sur les bords quand on est touché (qualité Haute)
+let composer = null, fxPass = null, composerLoading = false;
+async function ensureComposer() {
+  if (composer || composerLoading || !FX.bloom) return;
+  composerLoading = true;
+  try {
+    const base = 'https://unpkg.com/three@0.160.0/examples/jsm/postprocessing/';
+    const [m1, m2, m3, m4, m5] = await Promise.all(['EffectComposer', 'RenderPass', 'UnrealBloomPass', 'ShaderPass', 'OutputPass'].map(n => import(base + n + '.js')));
+    if (!FX.bloom) { composerLoading = false; return; }
+    const sz = renderer.getDrawingBufferSize(new THREE.Vector2());
+    const rt = new THREE.WebGLRenderTarget(sz.x, sz.y, { type: THREE.HalfFloatType, samples: 4 });
+    const c = new m1.EffectComposer(renderer, rt);
+    c.setPixelRatio(renderer.getPixelRatio()); c.setSize(innerWidth, innerHeight);
+    c.addPass(new m2.RenderPass(scene, camera));
+    c.addPass(new m3.UnrealBloomPass(new THREE.Vector2(Math.ceil(innerWidth / 2), Math.ceil(innerHeight / 2)), 0.26, 0.42, 1.0)); // force, rayon, seuil
+    const sp = new m4.ShaderPass({
+      uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uAber: { value: 0 }, uGrain: { value: 0.022 } },
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: `uniform sampler2D tDiffuse; uniform float uTime, uAber, uGrain; varying vec2 vUv;
+        void main(){
+          vec2 c = vUv - 0.5; float d = dot(c, c);
+          vec2 off = c * (0.0035 + uAber) * d * 2.0;
+          vec3 col = vec3(texture2D(tDiffuse, vUv + off).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv - off).b);
+          float n = fract(sin(dot(vUv * vec2(1731.0, 1013.0) + fract(uTime) * 91.7, vec2(12.9898, 78.233))) * 43758.5453);
+          col += (n - 0.5) * uGrain * (0.4 + 0.6 * (1.0 - clamp(dot(col, vec3(0.33)), 0.0, 1.0)));
+          gl_FragColor = vec4(col, 1.0);
+        }`
+    });
+    c.addPass(sp); c.addPass(new m5.OutputPass());
+    composer = c; fxPass = sp;
+  } catch (e) { console.warn('Post-traitement indisponible :', e && e.message); FX.bloom = false; }
+  composerLoading = false;
+}
+function renderFrame(tt) {
+  if (composer && FX.bloom) {
+    fxPass.uniforms.uTime.value = tt;
+    fxPass.uniforms.uAber.value = Math.min(0.05, shakeT * 0.06 + (deathCam ? 0.03 : 0));
+    composer.render();
+  } else renderer.render(scene, camera);
+}
+fxHooks.push(() => {
+  if (FX.bloom) ensureComposer();
+  else if (composer) { composer.dispose && composer.dispose(); composer = null; fxPass = null; }
+  if (composer) { composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(innerWidth, innerHeight); }
+  if (typeof flashlight !== 'undefined') {                     // ombres de la lampe torche (qualité Haute seulement)
+    flashlight.castShadow = FX.lampShadow;
+    if (FX.lampShadow) { const s = flashlight.shadow; s.mapSize.set(1024, 1024); s.camera.near = 0.4; s.camera.far = 34; s.bias = -0.0008; s.normalBias = 0.04; s.radius = 3; }
+    scene.traverse(o => { if (o.material) o.material.needsUpdate = true; });
+  }
+});
+// Appelée à chaque image
+function updatePolish(dt, tt) {
+  hedgeWind.value = tt;
+  if (FX.wind) hedgeWindAmp.value = 0.75 + 0.45 * Math.sin(tt * 0.21) + 0.2 * Math.sin(tt * 0.53 + 1.3);   // rafales
+  if (FX.lampShadow && typeof flashlight !== 'undefined') flashlight.shadow.autoUpdate = player.flashOn; // pas de passe d'ombre lampe éteinte
+  twinkleStars(dt);
+  updateFireflies(dt, tt);
+  updateLightning(dt);
+  updateNightAmbience(dt);
+}
 
 // Murs
 const wallMat = new THREE.MeshStandardMaterial({ color: 0x9aa4bd, map: wallTex, roughness: 0.7, metalness: 0.25 });
@@ -1247,7 +1503,7 @@ const LV_GEO = {
 function makeLever(i, x, z) {
   const g = new THREE.Group(); g.position.set(x, 0, z);
   const part = (geo, mat, px, py, pz) => { const m = new THREE.Mesh(geo, mat); m.position.set(px, py, pz); m.castShadow = true; g.add(m); return m; };
-  part(LV_GEO.base, leverDark, 0, 0.11, 0); part(LV_GEO.post, leverMetal, 0, 0.9, 0); part(LV_GEO.box, leverDark, 0, 1.75, 0);
+  part(LV_GEO.base, leverMetal, 0, 0.11, 0); part(LV_GEO.post, leverMetal, 0, 0.9, 0); part(LV_GEO.box, leverDark, 0, 1.75, 0);
   const lampMat = new THREE.MeshStandardMaterial({ color: 0x220000, emissive: 0xff2a1a, emissiveIntensity: 2 });
   part(LV_GEO.lamp, lampMat, 0, 2.18, 0);
   const screen = new THREE.Mesh(LV_GEO.screen, lampMat); screen.position.set(0, 1.9, 0.185); g.add(screen);   // petit écran d'état au-dessus du levier
@@ -1358,7 +1614,7 @@ function updateLevers(dt) {
       lv.light.color.setHex(0x37ff7a); lv.light.intensity = 2.2;
     } else {
       const blink = hold ? (Math.sin(tt * 40) > 0 ? 1 : 0.25) : (Math.sin(tt * 3.2 + lv.i * 2.1) > 0.35 ? 1 : 0.3);
-      lv.lampMat.emissiveIntensity = 0.5 + 2.4 * blink; lv.beamMat.opacity = 0.08 + 0.4 * blink;
+      lv.lampMat.emissiveIntensity = 0.5 + 2.4 * blink; lv.beamMat.opacity = 0.06 + 0.26 * blink;
       lv.ringMat.opacity = 0.14 + 0.24 * blink; lv.light.intensity = 0.5 + 2.4 * blink;
     }
     lv.beam.visible = seen;                         // le monstre ne voit pas la balise d'un levier au repos
@@ -1410,8 +1666,22 @@ const hedgeTexFallback = canvasTex(512, (x, s) => {
 }, 3, 1.5);
 const hedgeMat = new THREE.MeshStandardMaterial({
   map: hedgeTexFallback, bumpMap: hedgeTexFallback, bumpScale: 2.5,
-  roughness: 0.85, vertexColors: true // couleurs par sommet : pied de la haie plus sombre
+  roughness: 0.66, vertexColors: true // couleurs par sommet : pied de la haie plus sombre ; feuilles légèrement luisantes (humides)
 });
+// Vent : le haut des haies ondule doucement (quelques centimètres) ; l'amplitude respire avec les rafales
+const hedgeWind = { value: 0 }, hedgeWindAmp = { value: 0 };
+hedgeMat.onBeforeCompile = sh => {
+  sh.uniforms.uWind = hedgeWind; sh.uniforms.uWindAmp = hedgeWindAmp;
+  sh.vertexShader = sh.vertexShader
+    .replace('#include <common>', '#include <common>\nuniform float uWind; uniform float uWindAmp;')
+    .replace('#include <begin_vertex>', `#include <begin_vertex>
+      float wy = clamp((position.y - 0.5) / 2.9, 0.0, 1.0);
+      float ph = position.x * 0.31 + position.z * 0.27;
+      transformed.x += (sin(uWind * 1.1 + ph) * 0.05 * wy * wy + sin(uWind * 2.9 + ph * 2.1) * 0.012 * wy) * uWindAmp;
+      transformed.z += (cos(uWind * 0.9 + ph * 1.3) * 0.045 * wy * wy) * uWindAmp;
+      transformed.y += sin(uWind * 1.7 + ph * 1.7) * 0.012 * wy * uWindAmp;`);
+};
+hedgeMat.customProgramCacheKey = () => 'hedgeWind1';
 // Petit générateur pseudo-aléatoire déterministe, indépendant de `rand()`
 // (celui-ci reste dédié aux obstacles de l'arène classique).
 // Graine du labyrinthe : l'hôte en tire une au hasard à chaque partie Extinction et la diffuse avec les rôles, donc tout
@@ -4610,6 +4880,9 @@ addEventListener('wheel', e => {
 // ---------- Tir ----------
 const raycaster = new THREE.Raycaster();
 let recoil = 0, recoilPitch = 0, recoilYaw = 0, shakeT = 0;
+// Fluidité de la caméra : vitesse lissée (légère inertie), balancement qui suit la vitesse réelle, inclinaison en
+// déplacement latéral, secousse à l'atterrissage, champ de vision qui s'élargit en courant
+let mvx = 0, mvz = 0, bobAmp = 0, landDip = 0, leanRoll = 0, moveStrafe = 0, isSprinting = false, sprintK = 0;
 let aimT = 0, aimBlend = 0, rifleOnAim = false; // sortie/rangement de l'arme + zoom
 // Son de tir propre à chaque arme (synthèse, aucun fichier)
 function gunSound(kind) {
@@ -5101,7 +5374,8 @@ function animate() {
   // Lunette du sniper : zoom puissant, sinon zoom léger pendant le tir
   // Extinction : survivants = champ resserré (vision de tunnel, plus d'angoisse) ; monstre = champ très large (chasse)
   const baseFov = duelMode === 'extinction' ? (isMonster() ? 104 : 58) : FOV_IDLE;
-  const fovTarget = deathCam ? 34 : scoped ? 15 : ((firing && duelMode !== 'extinction') ? FOV_AIM : baseFov);
+  sprintK += ((isSprinting && Math.hypot(mvx, mvz) > 6 ? 1 : 0) - sprintK) * Math.min(1, dt * 4);   // le champ s'élargit quand on court
+  const fovTarget = deathCam ? 34 : scoped ? 15 : ((firing && duelMode !== 'extinction') ? FOV_AIM : baseFov) + sprintK * (duelMode === 'extinction' ? 4 : 6);
   if (Math.abs(camera.fov - fovTarget) > 0.05) {
     camera.fov += (fovTarget - camera.fov) * Math.min(1, dt * (scoped ? 10 : (firing ? 7 : 12)));
     camera.updateProjectionMatrix();
@@ -5113,6 +5387,7 @@ function animate() {
     const strafe = Math.max(-1, Math.min(1, (kd('right') ? 1 : 0) - (kd('left') ? 1 : 0) + mob.strafe));
     // On ne peut pas courir en reculant : marche arrière lente, sprint vers l'avant uniquement
     const sprint = (kd('sprint') || mob.sprint) && fwd > 0;
+    isSprinting = sprint; moveStrafe = strafe;
     let speed = fwd < 0 ? 5.5 : (sprint ? 13 : 8);
     if (duelMode === 'extinction') {
       if (isMonster()) speed *= 1.3;              // le monstre est plus rapide
@@ -5122,15 +5397,22 @@ function animate() {
       if (Date.now() < extBeingHealedUntil) speed = 0;   // on me soigne : vraiment aucun mouvement
     }
     const dirX = Math.sin(yaw), dirZ = Math.cos(yaw);
-    let nx = player.pos.x + (-dirX * fwd + dirZ * strafe) * speed * dt;
-    let nz = player.pos.z + (-dirZ * fwd - dirX * strafe) * speed * dt;
+    // vitesse lissée : on accélère vite et on freine un peu plus vite, sans à-coup (le mouvement garde sa précision)
+    const tvx = (-dirX * fwd + dirZ * strafe) * speed, tvz = (-dirZ * fwd - dirX * strafe) * speed;
+    const ak = 1 - Math.exp(-dt * (speed === 0 ? 40 : (tvx || tvz ? 17 : 24)));
+    mvx += (tvx - mvx) * ak; mvz += (tvz - mvz) * ak;
+    let nx = player.pos.x + mvx * dt;
+    let nz = player.pos.z + mvz * dt;
     [nx, nz] = (duelMode === 'extinction' && isMonster()) ? collideMonster(nx, nz, yaw) : collide(nx, nz, 0.7);
     player.pos.x = nx; player.pos.z = nz;
 
     if ((kd('jump') || mob.jump) && player.onGround) { player.velY = 8.5; player.onGround = false; }
     player.velY -= 26 * dt;
     player.pos.y += player.velY * dt;
-    if (player.pos.y <= EYE) { player.pos.y = EYE; player.velY = 0; player.onGround = true; }
+    if (player.pos.y <= EYE) {
+      if (!player.onGround && player.velY < -5) { landDip = Math.min(0.15, -player.velY * 0.0085); shakeT = Math.max(shakeT, 0.05); sfx(70, 0.1, 'sine', 0.12, 0.5); } // atterrissage
+      player.pos.y = EYE; player.velY = 0; player.onGround = true;
+    }
 
     if (player.invuln > 0) player.invuln -= dt;
     // Dash du loup : impulsion vers l'avant, freinée rapidement
@@ -5160,7 +5442,7 @@ function animate() {
       }
     }
     wantFire = false;
-  }
+  } else { mvx = mvz = 0; isSprinting = false; moveStrafe = 0; }
 
   // Lampe torche : ne se vide que si allumée, jamais au repos
   if (duelMode === 'extinction' && player.flashOn) {
@@ -5216,6 +5498,10 @@ function animate() {
     camera.rotateZ((Math.random() - 0.5) * shakeT * 0.25);
     camera.rotateX((Math.random() - 0.5) * shakeT * 0.12);
   }
+  // Inclinaison douce dans les déplacements latéraux + léger roulis de marche
+  leanRoll += ((player.alive && inputActive() ? -moveStrafe * 0.016 * Math.min(1, Math.hypot(mvx, mvz) / 8) : 0) - leanRoll) * Math.min(1, dt * 7);
+  landDip *= Math.exp(-dt * 10);
+  if (!thirdPerson && !scoped) camera.rotateZ(leanRoll + Math.cos(bobPhase) * 0.0045 * bobAmp);
   if (thirdPerson) {
     // Caméra à l'épaule : décalée à droite pour garder la ligne de visée dégagée
     const viewDir = new THREE.Vector3();
@@ -5265,13 +5551,13 @@ function animate() {
     }
   } else {
     camera.position.copy(player.pos);
-    // Head-bob : léger balancement de la tête en marchant
-    if (player.onGround && (kd('forward') || kd('left') || kd('back') || kd('right'))) {
-      bobPhase += dt * (kd('sprint') ? 13 : 9);
-      camera.position.y += Math.sin(bobPhase * 2) * 0.035;
-      camera.position.x += Math.cos(bobPhase) * Math.cos(yaw) * 0.02;
-      camera.position.z -= Math.cos(bobPhase) * Math.sin(yaw) * 0.02;
-    }
+    // Head-bob : balancement de la tête qui suit la vitesse réelle (s'installe et s'estompe en douceur)
+    const spd = Math.hypot(mvx, mvz);
+    bobAmp += ((player.onGround && spd > 0.5 ? Math.min(1, spd / 8) : 0) - bobAmp) * Math.min(1, dt * 9);
+    if (spd > 0.5) bobPhase += dt * (5.2 + spd * 0.62);
+    camera.position.y += Math.sin(bobPhase * 2) * 0.034 * bobAmp - landDip;
+    camera.position.x += Math.cos(bobPhase) * Math.cos(yaw) * 0.019 * bobAmp;
+    camera.position.z -= Math.cos(bobPhase) * Math.sin(yaw) * 0.019 * bobAmp;
   }
   gun.visible = !thirdPerson && !scoped && duelMode !== 'extinction'; // lunette : pas d'arme ; Extinction : lampe/soin, pas de fusil
   playerSm.group.visible = thirdPerson && !playerModel.loaded;
@@ -5467,19 +5753,28 @@ function animate() {
     }
     const rig = r.rig;
     if (!r.net) continue;
+    ensureBlob(rig.model, monsterIds.has(rpId) ? 2.6 : 1.15);   // ombre de contact sous le personnage
     // Lissage exponentiel vers la dernière position réseau connue : converge
     // toujours en douceur (~120 ms), quelle que soit l'irrégularité des paquets
     // (rafales, pauses) — mathématiquement, ça ne peut jamais « sauter ».
     const netP = r.net.p;
     const k = 1 - Math.exp(-25 * dt); // quasi instantané, juste assez pour éviter un vrai saut
     rig.model.position.x += (netP.x - rig.model.position.x) * k;
-    rig.model.position.y += (netP.y - rig.model.position.y) * k;
+    rig.model.position.y += (netP.y + 0.2 * (r.fall || 0) - rig.model.position.y) * k;   // corps couché : un peu relevé pour ne pas s'enfoncer dans le sol
     rig.model.position.z += (netP.z - rig.model.position.z) * k;
     const tg = r.net;
     // Rotation lissée (plus de tête qui claque à chaque paquet)
     const dy = Math.atan2(Math.sin((tg.yaw || 0) - rig.model.rotation.y), Math.cos((tg.yaw || 0) - rig.model.rotation.y));
     rig.model.rotation.y += dy * Math.min(1, dt * 14);
-    rigSetAnim(rig, tg.anim || 'Idle');
+    // Éliminé (dévoré) : le corps bascule en arrière en douceur puis reste au sol (sa lampe éclaire alors le sol)
+    const down = (duelMode === 'extinction' || duelMode === 'loup') && duelElim.has(rpId);
+    r.fall = (r.fall || 0) + ((down ? 1 : 0) - (r.fall || 0)) * Math.min(1, dt * 3.2);
+    if (r.fall > 0.002) {
+      rig.model.rotation.order = 'YXZ';
+      rig.model.rotation.x = Math.PI / 2 * 0.97 * (r.fall * r.fall * (3 - 2 * r.fall));
+      const bl = rig.model.userData.blob; if (bl) bl.visible = false;
+    } else if (rig.model.rotation.x !== 0) rig.model.rotation.x = 0;
+    rigSetAnim(rig, down ? 'Idle' : (tg.anim || 'Idle'));
     if (rig.actions.Walk) rig.actions.Walk.timeScale = tg.back ? -1 : 1;
     rig.mixer.update(dt);
     rig.aimBlend += ((tg.aim ? 1 : 0) - rig.aimBlend) * Math.min(1, dt * 7);
@@ -5504,7 +5799,7 @@ function animate() {
         const ms = rig.model.scale.y || 1;
         r.tag.scale.set(1.6 / ms, 0.4 / ms, 1);
         r.tag.position.y = 1.8; // local au modèle : suit la taille du personnage
-        r.tag.visible = Math.hypot(rig.model.position.x - player.pos.x, rig.model.position.z - player.pos.z) < 22;
+        r.tag.visible = !down && Math.hypot(rig.model.position.x - player.pos.x, rig.model.position.z - player.pos.z) < 22;
       } else if (r.tag) r.tag.visible = false;
     } else {
       if (r.lampLight) r.lampLight.intensity = 0;
@@ -5541,8 +5836,9 @@ function animate() {
     $('health').style.width = player.hp + '%';
   }
 
+  updatePolish(dt, t);
   const _rt0 = performance.now();
-  renderer.render(scene, camera);
+  renderFrame(t);
   debugRenderMs = performance.now() - _rt0;
   debugWorkMs = performance.now() - debugPrevFrame; // travail total de la frame
 }
@@ -6887,6 +7183,7 @@ const pvClock = new THREE.Clock();
 })();
 
 // La partie démarre via le menu d'accueil (beginGame) ; la scène tourne en fond
+applyFx(quality);   // tous les modules d'effets sont définis : on règle les effets selon la qualité
 animate();
 updateHud();
 updateXpHud();
@@ -6897,6 +7194,7 @@ addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+  if (composer) composer.setSize(innerWidth, innerHeight);
   updateUnits();
 });
 addEventListener('orientationchange', () => setTimeout(updateUnits, 250)); // innerWidth/Height se stabilisent après la rotation
