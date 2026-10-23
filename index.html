@@ -1662,7 +1662,7 @@ function tryMonsterAttack() {
   monsterStamina = 0; // le coup vide toute la barre, 2s pour la recharger
   recoil = 0.5;
   sfx(150, 0.25, 'sawtooth', 0.2, 0.4);
-  if (target) { netSend({ t: 'pvp', to: target, d: 40 }); showMsg('🩸 Attaque !', 500); }
+  if (target) { netSend({ t: 'pvp', to: target, d: 40 }); showMsg('🩸 Attaque !', 500); buzz([20, 30, 60], 0, true); }
 }
 function updateMonsterState(dt) {
   if (duelMode !== 'extinction' || !gameStarted) return;
@@ -3683,6 +3683,7 @@ let duelLoadout = 0; // arme choisie avant un duel (cartes du salon)
 const isUnlocked = i => duelMode ? true : UNLOCK_ORDER.indexOf(i) < unlockedWeapons;
 function onKill() {
   killCount++;
+  buzz([30, 40, 70], 0, true); // kill : double pulsation
   if (killCount % 10 === 0 && unlockedWeapons < WEAPONS.length) {
     const wi = UNLOCK_ORDER[unlockedWeapons];
     unlockedWeapons++;
@@ -4155,12 +4156,14 @@ const IS_TOUCH = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in wi
   || new URLSearchParams(location.search).has('touch'); // ?touch=1 : forcer pour tester sur PC
 if (IS_TOUCH) document.body.classList.add('is-touch'); // active le HUD compact tactile (CSS)
 // Vibrations (Android ; iOS ne les supporte pas). Option dans les paramètres, activée par défaut.
-let vibrateOn = localStorage.getItem('zh-vibrate') !== '0', lastBuzz = 0;
-function buzz(pattern, minGap = 0) {
+// Deux niveaux : les petits retours (tir, cœur qui bat) sont freinés par TOUT ce qui a vibré récemment ; les retours
+// importants (touché, toucher quelqu'un, kill, mort) ne sont freinés que par eux-mêmes, donc jamais « mangés » par un tir.
+let vibrateOn = localStorage.getItem('zh-vibrate') !== '0', lastBuzz = 0, lastStrong = 0;
+function buzz(pattern, minGap = 0, strong = false) {
   if (!vibrateOn || !IS_TOUCH || !navigator.vibrate) return;
   const now = performance.now();
-  if (now - lastBuzz < minGap) return;
-  lastBuzz = now;
+  if (now - (strong ? lastStrong : lastBuzz) < minGap) return;
+  lastBuzz = now; if (strong) lastStrong = now;
   try { navigator.vibrate(pattern); } catch (e) {}
 }
 let touchPlaying = false;
@@ -4526,7 +4529,7 @@ function shoot() {
     }
     return;
   }
-  buzz(8, 90); // retour de tir (limité : le tir auto ne doit pas vibrer en continu)
+  buzz(12, 90); // retour de tir (limité : le tir auto ne doit pas vibrer en continu)
   if (duelMode === 'loup' && !isWolf()) { useItem(); return; } // survivant : le tir utilise l'objet
   if (curWeapon.snd === 'sniper' && !scoped) { // sniper : il FAUT viser d'abord
     if (!shoot._s || performance.now() - shoot._s > 1500) {
@@ -4604,16 +4607,18 @@ function shoot() {
         if (pid) {
           burst(hit.point, 0xff5555, 10);
           sfx(1000, 0.06, 'square', 0.09, 0.3); // hitmarker
+          buzz(24, 0, true); // touché ! (remplace la petite vibration de tir)
           netSend({ t: 'pvp', to: pid, d: w.pdmg });
         }
       } else if (authority) {
         const cible = hit.object.userData.enemy;
         damageEnemy(cible, hit.point, w.dmg);
+        if (cible) buzz(24, 0, true);
         if (cible && cible.dead) onKill(); // mon kill : compte pour le déblocage
       }
       else {
         const eid = hit.object.userData.enemyId;
-        if (eid != null) { burst(hit.point, 0xffaa33, 8); netSend({ t: 'hit', id: eid, d: w.dmg }); }
+        if (eid != null) { burst(hit.point, 0xffaa33, 8); buzz(24, 0, true); netSend({ t: 'hit', id: eid, d: w.dmg }); }
       }
     } else if (dO < Infinity && dO <= w.range) {
       burst(hitsO[0].point, 0x999999, 5);
@@ -4629,7 +4634,7 @@ function hurt(dmg) {
   if (shieldUntil > Date.now()) { showMsg('🛡️ Bouclier !', 600); sfx(900, 0.1, 'triangle', 0.1, 1.4); return; }
   player.hp -= dmg;
   shakeT = 0.35;
-  buzz(35, 120); // touché : petite vibration
+  buzz(Math.round(Math.min(100, 30 + dmg * 1.5)), 120, true); // touché : vibration proportionnelle aux dégâts (5 → 38 ms, 40 → 90 ms)
   $('damage').style.opacity = 1;
   clearTimeout($('damage')._t);
   $('damage')._t = setTimeout(() => $('damage').style.opacity = 0, 350);
@@ -4745,7 +4750,7 @@ function startJumpScare() {                   // la caméra se retourne vers le 
 }
 function die() {
   setScoped(false);
-  buzz([90, 50, 220]);
+  buzz([90, 50, 220], 0, true);
   if (duelMode !== 'extinction') glitchPulse(); // le signal se brouille à la mort
   if (duelMode === 'extinction') { // dévoré : une seule vie, on spectate
     player.alive = false;
