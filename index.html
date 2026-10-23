@@ -38,7 +38,35 @@
     position: absolute; bottom: 24px; left: 24px; width: 260px; height: 18px;
     background: rgba(0,0,0,.5); border: 2px solid rgba(255,255,255,.4); border-radius: 10px; overflow: hidden;
   }
-  #health { height: 100%; width: 100%; background: linear-gradient(90deg, #ff4d4d, #7CFC00); transition: width .15s; }
+  #health { position: relative; height: 100%; width: 100%; background: linear-gradient(90deg, #ff4d4d, #7CFC00); transition: width .15s; }
+  /* Traînée claire derrière la barre de vie : montre la perte, puis rattrape en douceur */
+  #health-trail { position: absolute; left: 0; top: 0; height: 100%; width: 100%; background: rgba(255,226,190,.85); }
+  #health-wrap.low { animation: lowhp .9s ease-in-out infinite; }
+  @keyframes lowhp { 50% { box-shadow: 0 0 14px rgba(255,40,40,.9); border-color: rgba(255,90,90,.95); } }
+  /* Messages à l'écran : petit rebond d'apparition ; compteurs qui « claquent » quand ils changent */
+  #msg.pop { animation: msgpop .34s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes msgpop { 0% { transform: translateY(12px) scale(.9); } 100% { transform: none; } }
+  .numpop { animation: numpop .42s ease-out; }
+  @keyframes numpop { 0% { transform: scale(1.55); } 100% { transform: scale(1); } }
+  /* Marqueur de touche sur le viseur */
+  #crosshair.hit::before, #crosshair.hit::after { background: rgba(255,70,70,.95); }
+  #crosshair.hit { animation: hitm .16s ease-out; }
+  @keyframes hitm { 0% { transform: translate(-50%,-50%) scale(1.6) rotate(45deg); } 100% { transform: translate(-50%,-50%) scale(1) rotate(0); } }
+  /* Direction des dégâts : arc rouge autour du viseur, du côté d'où vient le coup */
+  #dmg-dir { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
+  #dmg-dir .arc { position: absolute; left: -150px; top: -150px; width: 300px; height: 300px; border-radius: 50%; opacity: 0; transition: opacity .7s ease-out;
+    background: conic-gradient(from -26deg, rgba(255,40,40,0) 0deg, rgba(255,40,40,.85) 26deg, rgba(255,40,40,0) 52deg, transparent 52deg);
+    -webkit-mask: radial-gradient(circle, transparent 62%, #000 64%, #000 72%, transparent 74%); mask: radial-gradient(circle, transparent 62%, #000 64%, #000 72%, transparent 74%); }
+  #dmg-dir .arc.on { opacity: 1; transition: opacity .04s; }
+  /* Fil d'actualité (en haut à droite) */
+  #feed { position: absolute; top: 14px; right: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; max-width: 46vw; pointer-events: none; }
+  #feed .it { font-family: var(--font-ui); font-weight: 600; font-size: 20px; letter-spacing: 1px; color: #fff; padding: 2px 12px 3px; border-radius: 8px;
+    background: rgba(4,7,14,.68); border-left: 3px solid #7fd4ff; text-shadow: 0 1px 3px #000; animation: feedin .28s ease-out; transition: opacity .5s; }
+  #feed .it.red { border-left-color: #ff5a4a; } #feed .it.green { border-left-color: #6aff9e; } #feed .it.gold { border-left-color: #ffd24d; }
+  @keyframes feedin { from { transform: translateX(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+  body.is-touch #feed { top: calc(var(--sat) + 6px); right: calc(var(--sar) + 10px); gap: 3px; }
+  body.is-touch #feed .it { font-size: calc(13px * var(--u)); padding: 1px 8px 2px; }
+  @media (prefers-reduced-motion: reduce) { #health-wrap.low, #crosshair.hit, #msg.pop, .numpop, #feed .it { animation: none; } }
   #ammo {
     position: absolute; bottom: 22px; right: 28px; color: #fff; font-size: 30px; font-weight: 700;
     text-shadow: 0 2px 6px rgba(0,0,0,.9); text-align: right; line-height: 1.1;
@@ -523,7 +551,9 @@
     </div>
   </div>
   <div id="crosshair" style="display:none"></div>
-  <div id="health-wrap"><div id="health"></div></div>
+  <div id="dmg-dir"><div class="arc"></div></div>
+  <div id="feed"></div>
+  <div id="health-wrap"><div id="health-trail"></div><div id="health"></div></div>
   <div id="ammo"><span id="weapon-name">Fusil d'assaut</span><br><span id="clip">30</span><small id="clip-max"> / ∞</small></div>
   <div id="hearts">❤️❤️❤️</div>
   <div id="scope"><div class="h"></div><div class="v"></div></div>
@@ -723,6 +753,21 @@ function sfxNoise(dur = 0.25, vol = 0.12, f0 = 800, f1 = 3000) {
   bp.frequency.setValueAtTime(f0, t); bp.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t + dur);
   const g = audioCtx.createGain(); g.gain.value = vol;
   src.connect(bp).connect(g).connect(bus()); src.start();
+}
+// Son situé dans le monde : volume qui baisse avec la distance, timbre étouffé au loin, balance gauche/droite selon la direction
+function sfx3(x, z, freq, dur, type = 'sine', vol = 0.2, slide = 0.5, maxD = 45) {
+  if (!audioCtx || audioPaused) return;
+  const dx = x - player.pos.x, dz = z - player.pos.z, d = Math.hypot(dx, dz);
+  if (d > maxD) return;
+  const att = Math.pow(1 - d / maxD, 1.5);
+  const t = audioCtx.currentTime, o = audioCtx.createOscillator(), g = audioCtx.createGain(), f = audioCtx.createBiquadFilter();
+  o.type = type; o.frequency.setValueAtTime(freq, t); o.frequency.exponentialRampToValueAtTime(Math.max(freq * slide, 1), t + dur);
+  g.gain.setValueAtTime(vol * att, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  f.type = 'lowpass'; f.frequency.value = 500 + 5500 * att;
+  o.connect(f).connect(g);
+  if (audioCtx.createStereoPanner) { const p = audioCtx.createStereoPanner(); p.pan.value = Math.max(-1, Math.min(1, (dx * Math.cos(yaw) - dz * Math.sin(yaw)) / (d || 1) * 0.9)); g.connect(p).connect(bus()); }
+  else g.connect(bus());
+  o.start(t); o.stop(t + dur);
 }
 // Son de glitch : le vrai fichier (sounds/glitch.wav = 1er son du pack « 10 Glitch Sounds », libre de droits, chargé au 1er geste), sinon synthèse de secours.
 const GLITCH_FILE = 'sounds/glitch.wav';
@@ -1062,7 +1107,7 @@ const wetTex = canvasTex(512, (x, s) => {
 fxHooks.push(() => {
   const wet = FX.wet;
   floor.material.roughnessMap = wet ? wetTex : null; floor.material.roughness = wet ? 1 : 0.85;
-  floor.material.envMap = wet ? skyEnv : null; floor.material.envMapIntensity = 0.55;
+  floor.material.envMap = wet ? skyEnv : null; floor.material.envMapIntensity = 0.32;
   hedgeMat.envMap = wet ? skyEnv : null; hedgeMat.envMapIntensity = 0.35;
   leverMetal.envMap = leverDark.envMap = wet ? skyEnv : null; leverMetal.envMapIntensity = 0.7;
   floor.material.needsUpdate = hedgeMat.needsUpdate = leverMetal.needsUpdate = leverDark.needsUpdate = true;
@@ -1141,6 +1186,7 @@ function twinkleStars(dt) {
   starGeo.attributes.color.needsUpdate = true;
 }
 // ── Éclairs de chaleur au loin (très discrets) puis tonnerre sourd : le ciel s'éclaire une fraction de seconde
+let sprintT = 0, breathCd = 0;                       // temps de course continue / prochaine respiration
 let ltT = 45 + Math.random() * 40, ltFlash = [];     // ltFlash : suite de [début, durée] en secondes
 function lightningBase() { return isMonster() ? { bg: 0x070a14, hemi: 0.35 } : { bg: 0x02030a, hemi: 0.04 }; }
 function updateLightning(dt) {
@@ -1271,6 +1317,12 @@ function updatePolish(dt, tt) {
   hedgeWind.value = tt;
   if (FX.wind) hedgeWindAmp.value = 0.75 + 0.45 * Math.sin(tt * 0.21) + 0.2 * Math.sin(tt * 0.53 + 1.3);   // rafales
   if (FX.lampShadow && typeof flashlight !== 'undefined') flashlight.shadow.autoUpdate = player.flashOn; // pas de passe d'ombre lampe éteinte
+  // Souffle : après une longue course, on s'essouffle (inspirations bruitées qui s'espacent quand on ralentit)
+  sprintT = isSprinting && player.alive ? sprintT + dt : Math.max(0, sprintT - dt * 0.5);
+  if (sprintT > 3.5 && player.alive) {
+    breathCd -= dt;
+    if (breathCd <= 0) { breathCd = 0.75 - Math.min(0.2, (sprintT - 3.5) * 0.03); sfxNoise(0.28, 0.06 + Math.min(0.06, (sprintT - 3.5) * 0.01), 900, 2600); }
+  }
   twinkleStars(dt);
   updateFireflies(dt, tt);
   updateLightning(dt);
@@ -1563,14 +1615,15 @@ function extOpenB() {
 }
 function extLeversOn() { let k = 0; for (const lv of extLevers) if (lv.on) k++; return k; }
 // Activation (locale : j'ai tenu 4 s ; sinon : message d'un autre joueur)
-function extActivateLever(i, local) {
+function extActivateLever(i, local, by) {
   const lv = extLevers[i];
   if (!lv || lv.on) return;
   lv.on = true; lv.prog = 1; lv.holdUntil = 0;
   sfx(110, 0.3, 'square', 0.3, 0.4); sfx(900, 0.25, 'triangle', 0.16, 1.9); sfxNoise(0.3, 0.22, 3500, 400);
   const k = extLeversOn();
   showMsg('⚡ Levier ' + k + '/' + extLevers.length + ' activé !', 2000);
-  if (local) { buzz([30, 40, 70], 0, true); netSend({ t: 'lever', i }); }
+  if (local) { buzz([30, 40, 70], 0, true); netSend({ t: 'lever', i, by: myId }); }
+  feed('⚡ ' + (by === myId || local ? 'Tu as' : by ? extNameOf(by) + ' a' : 'Un survivant a') + ' activé le levier ' + (i + 1) + ' (' + k + '/' + extLevers.length + ')', 'gold');
   if (k === extLevers.length) extOpenB();
   updateHud(); if (duelMode === 'extinction') drawExtMinimap();
 }
@@ -1910,6 +1963,8 @@ window.__lv = (cmd, a, b) => { // debug (tests) : état des leviers, téléporta
   if (cmd === 'pos') { player.pos.set(a, EYE, b); return 1; }
   if (cmd === 'yaw') { yaw = a; return 1; }
   if (cmd === 'cell') return extCellOf(player.pos.x, player.pos.z);
+  if (cmd === 'monster') { monsterIds.add(a); updateRemote({ id: a, p: [b.x, 0, b.z], yaw: b.yaw, pitch: 0, sk: MONSTER_SKIN, anim: 'Run' }, null); return 1; }   // faux monstre distant
+  if (cmd === 'fx') { const r = remotePlayers.get(a); const gl = r && r.rig && r.rig.custom && r.rig.custom.eyeGlows; return { prints: prints.length, smokes: smokes.length, holes: holes.length, eye: gl ? gl[0].material.opacity : null, fall: r && r.fall, blob: !!(r && r.rig && r.rig.model.userData.blob) }; }
   return { seed: mazeSeed, built: mazeBuiltSeed, bOpen: extBOpen, A: mazePointA, B: mazePointB, levers: extLevers.map(l => ({ i: l.i, x: Math.round(l.x), z: Math.round(l.z), on: l.on, prog: +l.prog.toFixed(2), beam: l.beam.visible })), freeze: extFreezeUntil - Date.now(), pos: [player.pos.x, player.pos.z].map(v => +v.toFixed(1)) };
 };
 window.__tick = n => { for (let i = 0; i < (n || 1); i++) animate(); }; // debug : force la boucle (le pane de test ne déclenche pas rAF)
@@ -2112,7 +2167,7 @@ function tryMonsterAttack() {
   monsterStamina = 0; // le coup vide toute la barre, 2s pour la recharger
   recoil = 0.5;
   sfx(150, 0.25, 'sawtooth', 0.2, 0.4);
-  if (target) { netSend({ t: 'pvp', to: target, d: 40 }); showMsg('🩸 Attaque !', 500); buzz([20, 30, 60], 0, true); }
+  if (target) { netSend({ t: 'pvp', to: target, d: 40, from: myId }); showMsg('🩸 Attaque !', 500); buzz([20, 30, 60], 0, true); hitMarker(); }
 }
 function updateMonsterState(dt) {
   if (duelMode !== 'extinction' || !gameStarted) return;
@@ -2189,10 +2244,13 @@ function extAudio(dt) {
     }
   } else extStepT = Math.min(extStepT, 0.1);
   if (isMonster()) { $('heartbeat').style.opacity = 0; return; }
-  let dMin = 1e9; // distance au monstre le plus proche
+  let dMin = 1e9, mnx = 0, mnz = 0; // distance (et position) du monstre le plus proche
   for (const pid of monsterIds) {
     const r = remotePlayers.get(pid);
-    if (r && r.lastState) dMin = Math.min(dMin, Math.hypot(r.lastState.p[0] - player.pos.x, r.lastState.p[2] - player.pos.z));
+    if (r && r.lastState) {
+      const dd = Math.hypot(r.lastState.p[0] - player.pos.x, r.lastState.p[2] - player.pos.z);
+      if (dd < dMin) { dMin = dd; mnx = r.lastState.p[0]; mnz = r.lastState.p[2]; }
+    }
   }
   const nearNow = dMin < 32 ? 1 - dMin / 32 : 0;
   extNear += (nearNow - extNear) * Math.min(1, dt * 1.5);   // lissé : la tension monte et retombe doucement
@@ -2211,7 +2269,7 @@ function extAudio(dt) {
     extGrowlT -= dt;
     if (extGrowlT <= 0 && dMin < 24) {
       extGrowlT = 4 + Math.random() * 5;
-      sfx(95, 0.9, 'sawtooth', 0.05 + near * 0.12, 0.4); // grognement grave
+      sfx3(mnx, mnz, 95, 0.9, 'sawtooth', 0.12 + near * 0.25, 0.4, 36);   // grognement grave, situé : on sait de quel côté il rôde
     }
   } else { extBeatT = 0; if (extGrowlT > 3) extGrowlT = 3; }
 }
@@ -3285,7 +3343,7 @@ function buildCreature() {
   const root = new THREE.Group(), body = new THREE.Group();
   body.position.y = 0.07; // les pieds (orteils et griffes) posent exactement sur le sol, sans l'effleurer
   root.add(body);
-  const eyes = [];
+  const eyes = [], eyeGlows = [];
   const J = (parent, x = 0, y = 0, z = 0) => { const g = new THREE.Group(); g.position.set(x, y, z); parent.add(g); return g; };
   // Un « lot » de formes pour un joint : peau et os, fusionnés en 2 meshes
   const Part = () => ({ s: [], b: [] });
@@ -3364,6 +3422,12 @@ function buildCreature() {
       const e2 = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 6), M.eye); e2.position.set(s * 0.06, 0.2, -0.12); head.add(e2); eyes.push(e2);
     }
     const eyeLight = new THREE.PointLight(0xff2a12, 0.8, 8, 1.8); eyeLight.position.set(0, 0.12, -0.35); head.add(eyeLight);
+    // Lueur des yeux visible de loin (au-delà du brouillard) quand le monstre regarde vers nous : un indice dans le noir
+    for (const s of [-1, 1]) {
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: softDot, color: 0xff2a14, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+      sp.scale.setScalar(0.34); sp.position.set(s * 0.09, 0.12, -0.19); sp.raycast = () => {};
+      head.add(sp); eyeGlows.push(sp);
+    }
   }
   // ---------- Mâchoire articulée + langue ----------
   const jaw = J(head, 0, -0.03, 0.06);
@@ -3558,7 +3622,7 @@ function buildCreature() {
     M.halo.opacity = 0.22 + 0.07 * Math.sin(t * 6.3) * Math.sin(t * 2.1);
   }
   update(0);
-  return { root, update, eyes, A, parts: { arms, legs, tail, head, hips, hair, tongue } };
+  return { root, update, eyes, eyeGlows, A, parts: { arms, legs, tail, head, hips, hair, tongue } };
 }
 
 // Construit (ou reconstruit) un personnage : VRM d'abord, mannequin en secours
@@ -4138,6 +4202,64 @@ function ejectShell(origin, rightDir) {
   });
 }
 
+// ---------- Fumée de canon, étincelles d'impact et trous de balle ----------
+const smokes = [], holes = [];
+const smokeBase = new THREE.SpriteMaterial({ map: softDot, color: 0xb8bcc4, transparent: true, opacity: 0.3, depthWrite: false });
+function puffSmoke(pos, dir) {
+  if (smokes.length > 26) return;
+  const m = smokeBase.clone(), s = new THREE.Sprite(m);
+  s.position.copy(pos); s.scale.setScalar(0.12); s.raycast = () => {};
+  scene.add(s);
+  smokes.push({ s, m, life: 0.8, max: 0.8,
+    vel: new THREE.Vector3().copy(dir).multiplyScalar(0.7 + Math.random() * 0.9).add(new THREE.Vector3((Math.random() - 0.5) * 0.3, 0.35 + Math.random() * 0.4, (Math.random() - 0.5) * 0.3)) });
+}
+const sparkGeo = new THREE.BoxGeometry(0.012, 0.012, 0.1), sparkMat = new THREE.MeshBasicMaterial({ color: 0xffc070 });
+const holeTex = canvasTex(64, (x, s) => {
+  const g = x.createRadialGradient(s / 2, s / 2, 1, s / 2, s / 2, s / 2);
+  g.addColorStop(0, 'rgba(6,6,8,0.95)'); g.addColorStop(0.35, 'rgba(10,10,12,0.7)'); g.addColorStop(0.7, 'rgba(30,28,26,0.28)'); g.addColorStop(1, 'rgba(30,28,26,0)');
+  x.fillStyle = g; x.fillRect(0, 0, s, s);
+}, 1, 1);
+holeTex.wrapS = holeTex.wrapT = THREE.ClampToEdgeWrapping;
+const holeGeo = new THREE.PlaneGeometry(0.16, 0.16);
+function impactFx(point, normal, withHole) {
+  for (let i = 0; i < 6; i++) {            // étincelles qui rebondissent sur la surface
+    const m = new THREE.Mesh(sparkGeo, sparkMat);
+    m.position.copy(point).addScaledVector(normal, 0.03); m.raycast = () => {};
+    const vel = new THREE.Vector3().copy(normal).multiplyScalar(1.5 + rand() * 3).add(new THREE.Vector3((rand() - 0.5) * 3, (rand() - 0.2) * 2.5, (rand() - 0.5) * 3));
+    m.lookAt(m.position.clone().add(vel));
+    scene.add(m);
+    particles.push({ mesh: m, life: 0.16 + rand() * 0.2, vel, noShrink: true });
+  }
+  if (!withHole) return;
+  const mat = new THREE.MeshBasicMaterial({ map: holeTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+  const h = new THREE.Mesh(holeGeo, mat);
+  h.position.copy(point).addScaledVector(normal, 0.014); h.lookAt(point.clone().add(normal)); h.rotation.z = rand() * 6.28; h.raycast = () => {};
+  scene.add(h);
+  holes.push({ h, mat, t: 16 });
+  if (holes.length > 36) { const o = holes.shift(); scene.remove(o.h); o.mat.dispose(); }
+}
+
+// ---------- Empreintes du monstre : traces de griffes qui s'effacent en une vingtaine de secondes ----------
+const printTex = canvasTex(64, (x, s) => {
+  x.fillStyle = 'rgba(1,1,2,0.9)';
+  x.beginPath(); x.ellipse(s / 2, s * 0.62, s * 0.2, s * 0.24, 0, 0, 7); x.fill();                  // paume
+  for (const [dx, a] of [[-0.24, -0.35], [-0.08, -0.1], [0.08, 0.1], [0.24, 0.35]]) {                // 4 doigts + griffes
+    x.beginPath(); x.ellipse(s / 2 + dx * s, s * 0.28, s * 0.055, s * 0.11, a, 0, 7); x.fill();
+    x.beginPath(); x.moveTo(s / 2 + dx * s - 3, s * 0.2); x.lineTo(s / 2 + dx * s + dx * s * 0.2, s * 0.03); x.lineTo(s / 2 + dx * s + 3, s * 0.2); x.fill();
+  }
+}, 1, 1);
+printTex.wrapS = printTex.wrapT = THREE.ClampToEdgeWrapping;
+const printGeo = new THREE.PlaneGeometry(0.55, 0.9), prints = [];
+function footprint(x, z, yawA, side) {
+  const mat = new THREE.MeshBasicMaterial({ map: printTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  const m = new THREE.Mesh(printGeo, mat);
+  m.rotation.order = 'YXZ'; m.rotation.set(-Math.PI / 2, yawA, 0);
+  m.position.set(x + side * 0.38 * Math.cos(yawA), 0.03, z - side * 0.38 * Math.sin(yawA)); m.raycast = () => {};
+  scene.add(m);
+  prints.push({ m, mat, t: 22 });
+  if (prints.length > 30) { const o = prints.shift(); scene.remove(o.m); o.mat.dispose(); }
+}
+
 // ---------- État du jeu ----------
 // ---------- Armes ----------
 // spread en degrés, pellets = projectiles par tir, dmg en points de vie
@@ -4519,15 +4641,53 @@ function transition(fn, opts = {}) {
 }
 // Impulsion de brouillage sans changer d'écran (mort, fin de partie)
 const glitchPulse = () => transition(null, { short: true });
+// ---------- Petits retours d'interface : barre de vie à traînée, viseur qui réagit, arc de direction des dégâts, fil d'actualité ----------
+let lastHpShown = 100;
+function setHealthBar(hp) {
+  const pct = Math.max(0, Math.min(100, hp)), trail = $('health-trail'), bar = $('health');
+  if (pct < lastHpShown - 0.01) trail.style.transition = 'width .7s ease-out .35s';   // perte : la traînée rattrape après un instant
+  else trail.style.transition = 'none';                                                 // soin / régénération : tout suit tout de suite
+  bar.style.width = pct + '%'; trail.style.width = pct + '%';
+  $('health-wrap').classList.toggle('low', pct > 0 && pct < 30);
+  lastHpShown = pct;
+}
+function hitMarker() {
+  const c = $('crosshair'); c.classList.remove('hit'); void c.offsetWidth; c.classList.add('hit');
+  clearTimeout(c._t); c._t = setTimeout(() => c.classList.remove('hit'), 170);
+}
+function showDmgDir(src) {            // src : position monde de l'attaquant
+  if (!src || !player.alive) return;
+  const dx = src.x - player.pos.x, dz = src.z - player.pos.z;
+  if (Math.hypot(dx, dz) < 0.3) return;
+  const fwd = -(dx * Math.sin(yaw)) - dz * Math.cos(yaw), right = dx * Math.cos(yaw) - dz * Math.sin(yaw);
+  const arc = document.querySelector('#dmg-dir .arc');
+  arc.style.transform = 'rotate(' + (Math.atan2(right, fwd) * 180 / Math.PI).toFixed(1) + 'deg)';
+  arc.classList.add('on'); void arc.offsetWidth;
+  clearTimeout(arc._t); arc._t = setTimeout(() => arc.classList.remove('on'), 120);
+}
+function feed(text, cls = '') {
+  const box = $('feed'), it = document.createElement('div');
+  it.className = 'it ' + cls; it.textContent = text;
+  box.appendChild(it);
+  while (box.children.length > 4) box.removeChild(box.firstChild);
+  setTimeout(() => { it.style.opacity = 0; setTimeout(() => it.remove(), 520); }, 5200);
+}
+function setNum(el, v) {              // met à jour un compteur et le fait « claquer » s'il change
+  const s = String(v);
+  if (el.textContent === s) return;
+  el.textContent = s;
+  el.classList.remove('numpop'); void el.offsetWidth; el.classList.add('numpop');
+}
 function showMsg(text, ms = 2200) {
   const el = $('msg');
   el.textContent = text;
+  el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
   el.style.opacity = 1;
   clearTimeout(el._t);
   el._t = setTimeout(() => el.style.opacity = 0, ms);
 }
 function updateHud() {
-  $('health').style.width = Math.max(player.hp, 0) + '%';
+  setHealthBar(player.hp);
   $('clip').textContent = player.reloading ? '…' : player.clip;
   const wn = $('weapon-name');
   if (wn) wn.textContent = curWeapon.name + '  [' + (weaponIdx + 1) + ']';
@@ -4560,10 +4720,10 @@ function updateHud() {
     if (wn) wn.textContent = curWeapon.name; // pas de numéro d'arme dans ce mode
     const ids = [myId, ...remotePlayers.keys()];
     const surv = ids.filter(id => !monsterIds.has(id) && !duelElim.has(id)).length;
-    $('ext-surv').textContent = surv;
-    $('ext-safe').textContent = extArrived.size;
+    setNum($('ext-surv'), surv);
+    setNum($('ext-safe'), extArrived.size);
     const lOn = extLeversOn(), lAll = extLevers.length || LEVER_COUNT;
-    $('ext-lev').textContent = lOn + '/' + lAll;
+    setNum($('ext-lev'), lOn + '/' + lAll);
     $('ext-lev-pill').classList.toggle('done', lOn >= lAll);
     if (!isMonster()) player.clip = extItemSel === 0 ? Math.round(player.battery) : extHealCharges;
     $('clip').textContent = player.clip;
@@ -5045,6 +5205,7 @@ function shoot() {
   camera.getWorldDirection(_shotDir);
   _shotRight.crossVectors(_shotDir, camera.up).normalize();
   ejectShell(muzzleWorld.clone(), _shotRight);
+  if (!shoot._smk || performance.now() - shoot._smk > 70) { shoot._smk = performance.now(); puffSmoke(muzzleWorld, _shotDir); }   // fumée de canon
 
   let targets;
   if (duelMode) { // duel : on vise les autres joueurs (jamais ses coéquipiers)
@@ -5088,32 +5249,37 @@ function shoot() {
           burst(hit.point, 0xff5555, 10);
           sfx(1000, 0.06, 'square', 0.09, 0.3); // hitmarker
           buzz(24, 0, true); // touché ! (remplace la petite vibration de tir)
-          netSend({ t: 'pvp', to: pid, d: w.pdmg });
+          hitMarker();
+          netSend({ t: 'pvp', to: pid, d: w.pdmg, from: myId });
         }
       } else if (authority) {
         const cible = hit.object.userData.enemy;
         damageEnemy(cible, hit.point, w.dmg);
-        if (cible) buzz(24, 0, true);
+        if (cible) { buzz(24, 0, true); hitMarker(); }
         if (cible && cible.dead) onKill(); // mon kill : compte pour le déblocage
       }
       else {
         const eid = hit.object.userData.enemyId;
-        if (eid != null) { burst(hit.point, 0xffaa33, 8); buzz(24, 0, true); netSend({ t: 'hit', id: eid, d: w.dmg }); }
+        if (eid != null) { burst(hit.point, 0xffaa33, 8); buzz(24, 0, true); hitMarker(); netSend({ t: 'hit', id: eid, d: w.dmg }); }
       }
     } else if (dO < Infinity && dO <= w.range) {
       burst(hitsO[0].point, 0x999999, 5);
+      const ho = hitsO[0], nrm = ho.face ? ho.face.normal.clone().transformDirection(ho.object.matrixWorld) : new THREE.Vector3(0, 1, 0);
+      impactFx(ho.point, nrm, w.pellets <= 3 || p % 3 === 0);
     }
   }
   updateHud();
 }
 
 // ---------- Dégâts au joueur ----------
-function hurt(dmg) {
+const srcOf = id => { const r = remotePlayers.get(id); return r && r.rig ? r.rig.model.position : null; };   // position d'un autre joueur (direction des dégâts)
+function hurt(dmg, src) {
   if (!player.alive) return;
   if (player.invuln > 0) return; // invulnérable juste après un respawn (duel)
   if (shieldUntil > Date.now()) { showMsg('🛡️ Bouclier !', 600); sfx(900, 0.1, 'triangle', 0.1, 1.4); return; }
   player.hp -= dmg;
   shakeT = 0.35;
+  showDmgDir(src);
   buzz(Math.round(Math.min(100, 30 + dmg * 1.5)), 120, true); // touché : vibration proportionnelle aux dégâts (5 → 38 ms, 40 → 90 ms)
   $('damage').style.opacity = 1;
   clearTimeout($('damage')._t);
@@ -5672,7 +5838,7 @@ function animate() {
     if (tgt && dist < 2.1 && e.attackCd <= 0) {
       e.attackCd = 1.0;
       const dmg = e.tough ? 18 : 10;
-      if (tgt.local) hurt(dmg);
+      if (tgt.local) hurt(dmg, e.mesh.position);
       else if (tgt.conn) send(tgt.conn, { t: 'dmg', amount: dmg });
     }
     // Tir à distance des bots : cadence lente, précision moyenne, ligne de vue requise
@@ -5697,7 +5863,7 @@ function animate() {
         broadcast({ t: 'shot', a: from.toArray(), b: to.toArray() });
         if (rand() < 0.3) { // 30 % de chances de toucher — jouable
           const dmg = e.tough ? 8 : 5;
-          if (tgt.local) hurt(dmg);
+          if (tgt.local) hurt(dmg, e.mesh.position);
           else if (tgt.conn) send(tgt.conn, { t: 'dmg', amount: dmg });
         }
       }
@@ -5762,6 +5928,30 @@ function animate() {
     rig.model.position.x += (netP.x - rig.model.position.x) * k;
     rig.model.position.y += (netP.y + 0.2 * (r.fall || 0) - rig.model.position.y) * k;   // corps couché : un peu relevé pour ne pas s'enfoncer dans le sol
     rig.model.position.z += (netP.z - rig.model.position.z) * k;
+    // Extinction : pas des autres joueurs (bruit situé : lourd et grave pour le monstre), empreintes du monstre, lueur de ses yeux
+    if (duelMode === 'extinction' && gameStarted) {
+      const px0 = r.px === undefined ? rig.model.position.x : r.px, pz0 = r.pz === undefined ? rig.model.position.z : r.pz;
+      r.px = rig.model.position.x; r.pz = rig.model.position.z;
+      const stepD = Math.hypot(r.px - px0, r.pz - pz0), isMon = monsterIds.has(rpId), grounded = (r.fall || 0) < 0.3;
+      if (grounded && Date.now() > extFreezeUntil && dt > 0 && stepD / dt > 1.2 && stepD / dt < 40) {
+        r.stepAcc = (r.stepAcc || 0) + stepD;
+        const stride = isMon ? 2.2 : 1.5;
+        if (r.stepAcc >= stride) {
+          r.stepAcc -= stride;
+          if (isMon) {
+            sfx3(r.px, r.pz, 58, 0.26, 'sine', 0.6, 0.5, 60); sfx3(r.px, r.pz, 150, 0.1, 'sawtooth', 0.12, 0.5, 42);
+            footprint(r.px, r.pz, rig.model.rotation.y, r.stepSide = -(r.stepSide || 1));
+          } else sfx3(r.px, r.pz, 110 + Math.random() * 35, 0.07, 'sine', 0.08, 0.5, 24);
+        }
+      }
+      const gl = rig.custom && rig.custom.eyeGlows;
+      if (gl && gl.length) {
+        const dxm = player.pos.x - r.px, dzm = player.pos.z - r.pz, dm = Math.hypot(dxm, dzm) || 1;
+        const facing = (-Math.sin(rig.model.rotation.y) * dxm - Math.cos(rig.model.rotation.y) * dzm) / dm;   // 1 = il me regarde droit dans les yeux
+        const vis = !isMonster() && grounded ? monSmooth(0.05, 0.55, facing) * monSmooth(80, 26, dm) * (0.82 + 0.18 * Math.sin(t * 7 + 1)) : 0;
+        for (const g of gl) g.material.opacity = vis;
+      }
+    }
     const tg = r.net;
     // Rotation lissée (plus de tête qui claque à chaque paquet)
     const dy = Math.atan2(Math.sin((tg.yaw || 0) - rig.model.rotation.y), Math.cos((tg.yaw || 0) - rig.model.rotation.y));
@@ -5830,10 +6020,32 @@ function animate() {
     if (!p.noShrink) p.mesh.scale.setScalar(Math.max(p.life, 0.05));
   }
 
+  // Fumée de canon qui se dissipe, trous de balle qui s'estompent
+  for (let i = smokes.length - 1; i >= 0; i--) {
+    const s = smokes[i];
+    s.life -= dt;
+    if (s.life <= 0) { scene.remove(s.s); s.m.dispose(); smokes.splice(i, 1); continue; }
+    s.s.position.addScaledVector(s.vel, dt); s.vel.multiplyScalar(Math.exp(-1.8 * dt));
+    const k = 1 - s.life / s.max;
+    s.s.scale.setScalar(0.12 + k * 0.6); s.m.opacity = 0.3 * (1 - k);
+  }
+  for (let i = holes.length - 1; i >= 0; i--) {
+    const o = holes[i];
+    o.t -= dt;
+    if (o.t <= 0) { scene.remove(o.h); o.mat.dispose(); holes.splice(i, 1); continue; }
+    o.mat.opacity = Math.min(1, o.t / 3);
+  }
+  for (let i = prints.length - 1; i >= 0; i--) {
+    const o = prints[i];
+    o.t -= dt;
+    if (o.t <= 0) { scene.remove(o.m); o.mat.dispose(); prints.splice(i, 1); continue; }
+    o.mat.opacity = Math.min(1, o.t / 6) * 0.9;
+  }
+
   // Régénération lente
   if (player.alive && player.hp < 100) {
     player.hp = Math.min(100, player.hp + dt * 1.5);
-    $('health').style.width = player.hp + '%';
+    setHealthBar(player.hp);
   }
 
   updatePolish(dt, t);
@@ -6079,7 +6291,7 @@ function onMsg(conn, d) {
     case 'pvp': // dégâts joueur-contre-joueur (duel)
       if (d.to === myId && duelMode && !duelOver) {
         if (duelMode === '2v2' && conn && conn.relayId && teamOf(conn.relayId) === myTeam) break; // anti tir allié
-        hurt(d.d || 10);
+        hurt(d.d || 10, srcOf(d.from));
       }
       if (authority && d.to !== myId) broadcastExcept(conn, d); // hôte PeerJS : relaie à la cible
       break;
@@ -6097,14 +6309,17 @@ function onMsg(conn, d) {
       if (authority) broadcastExcept(conn, d); // hôte PeerJS : relaie aux autres
       break;
     case 'elim': // un joueur a perdu ses 3 cœurs (ou sa vie de la manche en loup)
-      if (d.id) { duelElim.add(d.id); checkDuelEnd(); updateHud(); }
+      if (d.id) {
+        if (!duelElim.has(d.id)) feed((duelMode === 'extinction' ? '🩸 ' + extNameOf(d.id) + ' est dévoré' : '💀 ' + extNameOf(d.id) + ' est éliminé'), 'red');
+        duelElim.add(d.id); checkDuelEnd(); updateHud();
+      }
       if (authority) broadcastExcept(conn, d);
       break;
     case 'lp_wolf': // moi seul le reçois : je suis le loup
       wolfId = myId;
       break;
     case 'lever': // un survivant a activé un levier
-      if (typeof d.i === 'number') extActivateLever(d.i, false);
+      if (typeof d.i === 'number') extActivateLever(d.i, false, d.by);
       if (authority) broadcastExcept(conn, d);
       break;
     case 'lv_hold': { // quelqu'un est en train d'activer un levier : le monstre l'entend et le voit 5 s sur sa carte
@@ -6140,7 +6355,7 @@ function onMsg(conn, d) {
       if (authority) broadcastExcept(conn, d);
       break;
     case 'ext_arrive': // un survivant entre dans la zone sûre du point B
-      if (d.id) { extArrived.add(d.id); showMsg('🏁 ' + extNameOf(d.id) + ' est à l\'abri !', 1500); updateHud(); }
+      if (d.id) { extArrived.add(d.id); showMsg('🏁 ' + extNameOf(d.id) + ' est à l\'abri !', 1500); feed('🏁 ' + extNameOf(d.id) + ' est à l\'abri', 'green'); updateHud(); }
       if (authority) broadcastExcept(conn, d);
       break;
     case 'ext_leave': // il en ressort (au risque de tout perdre)
