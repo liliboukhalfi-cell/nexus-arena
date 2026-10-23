@@ -50,7 +50,7 @@
   #xp-bar { height: 7px; background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.35); border-radius: 5px; overflow: hidden; }
   #xp-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #ffd24d, #ffe98a); transition: width .3s; }
   /* Niveau : décalé à gauche du bouton plein écran (plus aucun chevauchement) */
-  #home-level { position: absolute; top: 34px; right: 170px; font-size: 17px; font-weight: 700; color: #ffe98a; text-shadow: 0 2px 6px rgba(0,0,0,.8); }
+  #home-level { position: absolute; top: 31px; right: 134px; font-size: 15px; font-weight: 700; color: #ffe98a; text-shadow: 0 2px 6px rgba(0,0,0,.8); }
   /* Mini-fenêtre de choix du duel (1v1 / 2v2) */
   #btn-extinction { border-color: rgba(255,242,216,.5); }
   #duel-choice { position: absolute; inset: 0; z-index: 8; background: rgba(2,4,10,.72); align-items: center; justify-content: center; }
@@ -241,14 +241,14 @@
     height: 80vh; width: calc(80vh * 0.75);
   }
   .icon-btn {
-    position: absolute; width: 54px; height: 54px; border-radius: 50%;
-    font-size: 24px; line-height: 1; color: #fff; cursor: pointer;
+    position: absolute; width: 42px; height: 42px; border-radius: 50%;
+    font-size: 20px; line-height: 1; color: #fff; cursor: pointer;
     background: rgba(255,255,255,.07); border: 2px solid rgba(127,212,255,.45);
     display: flex; align-items: center; justify-content: center;
   }
   .icon-btn:hover { background: rgba(127,212,255,.25); }
   #btn-settings { top: 20px; right: 26px; }
-  #btn-fullscreen { top: 20px; right: 90px; }
+  #btn-fullscreen { top: 20px; right: 78px; }
   #btn-skin { bottom: 24px; left: 26px; }
   /* Nom du personnage : plaque sous l'aperçu, centrée sur le perso */
   #skin-name {
@@ -478,15 +478,19 @@
     #home h1 { font-size: 84px; top: 20px; letter-spacing: 8px; }
     #home-left { top: 142px; left: 5vw; max-height: calc(100vh - 160px); }
     #home-status { font-size: 20px; min-height: 26px; }
-    #home-level { top: 44px; right: 200px; font-size: 26px; }
-    .icon-btn { width: 64px; height: 64px; font-size: 30px; }
-    #btn-settings { top: 26px; right: 36px; } #btn-fullscreen { top: 26px; right: 112px; } #btn-skin { bottom: 34px; left: 36px; }
+    #home-level { top: 39px; right: 156px; font-size: 19px; }
+    .icon-btn { width: 46px; height: 46px; font-size: 22px; }
+    #btn-settings { top: 28px; right: 36px; } #btn-fullscreen { top: 28px; right: 92px; } #btn-skin { bottom: 34px; left: 36px; }
     #skin-name { font-size: 30px; }
     #lobby h1 { font-size: 58px; }
     #lobby .code { font-size: 72px; }
     #lobby-players { font-size: 26px; } #lobby-timer { font-size: 26px; } #lobby-info { font-size: 20px; }
     #duel-choice .box { padding: 24px 30px; gap: 18px; } #duel-choice .opt-label { font-size: 20px; }
     .panel { max-width: min(540px, 88vw); } .opt-label { font-size: 15px; } .chip { font-size: 16px; }
+  }
+  /* Fenêtre PC un peu étroite : le titre (84 px) arriverait sous le niveau → le niveau passe sous les boutons ronds */
+  @media (min-width: 1000px) and (max-width: 1179px) and (min-height: 640px) and (pointer: fine) {
+    #home-level { top: 84px; right: 36px; }
   }
 </style>
 </head>
@@ -651,7 +655,7 @@ import { clone as skeletonClone } from 'https://unpkg.com/three@0.160.0/examples
 // ---------- Audio (synthèse WebAudio, aucun fichier) ----------
 let audioCtx = null, outBus = null;
 let introActive = !/[?&]nointro\b/.test(location.search); // porte « Touche pour entrer » + intro horreur (pas de musique d'accueil avant la fin)
-const MASTER_BOOST = 3.6; // gain général : les sons de synthèse sont créés très bas, on les remonte d'un coup
+const MASTER_BOOST = /[?&]silent\b/.test(location.search) ? 0 : 3.6; // gain général : les sons de synthèse sont créés très bas, on les remonte d'un coup (?silent = tests automatisés, aucun son)
 // Tout le son passe par un gain général puis un limiteur : beaucoup plus fort, sans saturer.
 function bus() {
   if (!audioCtx) return null;
