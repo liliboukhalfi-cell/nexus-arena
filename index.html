@@ -176,6 +176,27 @@
   #ext-hud .pill.safe { border-color: rgba(106,255,158,.6); } #ext-hud .pill.safe .k { color: #9dffbf; }
   #ext-hud .pill.lev { border-color: rgba(255,120,90,.7); } #ext-hud .pill.lev .k { color: #ffb3a0; }
   #ext-hud .pill.lev.done { border-color: rgba(106,255,158,.7); } #ext-hud .pill.lev.done .k { color: #9dffbf; }
+  /* Mode spectateur (après avoir été dévoré) : on suit un survivant en vie */
+  #spec-bar { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); display: none; align-items: center; gap: 10px;
+    padding: 6px 12px; border-radius: 14px; background: rgba(4,7,14,.78); border: 2px solid rgba(127,212,255,.5); pointer-events: auto; font-family: var(--font-ui); }
+  #spec-bar.on { display: flex; }
+  #spec-bar .mid { display: flex; flex-direction: column; align-items: center; min-width: 140px; line-height: 1.05; }
+  #spec-bar small { font-size: 14px; letter-spacing: 3px; color: #9fdcff; }
+  #spec-bar b { font-size: 26px; font-weight: 700; color: #fff; letter-spacing: 1px; text-shadow: 0 0 10px rgba(127,212,255,.6); }
+  #spec-bar button { font-family: var(--font-ui); font-size: 22px; font-weight: 600; color: #fff; cursor: pointer; padding: 2px 14px 4px; border-radius: 10px;
+    background: rgba(255,255,255,.08); border: 1.5px solid rgba(127,212,255,.5); }
+  #spec-bar button:hover { background: rgba(127,212,255,.25); }
+  #spec-bar #spec-quit { border-color: rgba(255,120,100,.6); margin-left: 6px; }
+  body.is-touch #spec-bar { bottom: calc(var(--sab) + 10px); padding: 3px 8px; gap: 6px; }
+  body.is-touch #spec-bar b { font-size: calc(18px * var(--u)); } body.is-touch #spec-bar small { font-size: calc(11px * var(--u)); }
+  body.is-touch #spec-bar button { font-size: calc(16px * var(--u)); padding: 2px 10px 3px; }
+  /* Écran de fin : récapitulatif de la partie + boutons Rejouer / Inviter */
+  #intro .verdict { display: block; margin-bottom: 8px; }
+  #intro .recap { display: grid; grid-template-columns: auto auto 1fr; gap: 4px 12px; align-items: baseline; margin: 10px auto 0; max-width: min(460px, 90vw); text-align: left;
+    padding: 10px 16px; border-radius: 12px; background: rgba(4,7,14,.6); border: 1.5px solid rgba(127,212,255,.3); font-family: var(--font-ui); font-size: 20px; letter-spacing: .5px; }
+  #intro .recap i { font-style: normal; } #intro .recap span { color: #9fdcff; } #intro .recap b { color: #fff; text-align: right; font-weight: 600; }
+  #end-actions { gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+  #end-actions .menu-btn:disabled { opacity: .55; cursor: default; }
   /* Barre d'activation d'un levier (au-dessus du bas de l'écran, visible seulement près d'un levier) */
   #lever-hud { position: absolute; left: 50%; bottom: 27%; transform: translateX(-50%); width: min(340px, 72vw); text-align: center;
     opacity: 0; transition: opacity .18s; font-family: var(--font-ui); }
@@ -568,6 +589,12 @@
   <div id="ext-banner"></div>
   <div id="ext-count"></div>
   <div id="lever-hud"><div class="t">⚡ ACTIVATION DU LEVIER…</div><div class="bar"><i id="lever-fill"></i></div></div>
+  <div id="spec-bar">
+    <button id="spec-prev" title="Survivant précédent">◀</button>
+    <div class="mid"><small>👁 SPECTATEUR</small><b id="spec-name">—</b></div>
+    <button id="spec-next" title="Survivant suivant">▶</button>
+    <button id="spec-quit">Quitter</button>
+  </div>
   <div id="debug-panel" style="position:absolute;top:10px;left:10px;background:rgba(0,0,0,.75);color:#7fffb0;font:12px monospace;padding:8px 12px;border-radius:8px;white-space:pre;line-height:1.5;"></div>
 </div>
 <div id="home">
@@ -648,6 +675,7 @@
   </div>
   <div id="lobby-actions">
     <button class="menu-btn" id="btn-start" style="display:none">🚀 Lancer la partie</button>
+    <button class="menu-btn small" id="btn-lobby-invite">🔗 Inviter</button>
     <button class="menu-btn small" id="btn-lobby-leave">↩ Quitter</button>
   </div>
 </div>
@@ -684,6 +712,10 @@
   <p id="intro">Des vagues de robots hostiles attaquent l'arène. Survis le plus longtemps possible.<br>
   ZQSD / WASD : bouger · Souris : viser · Clic : tirer · R : recharger · Maj : courir · Espace : sauter · V : vue 1ʳᵉ/3ᵉ personne</p>
   <div class="go" id="go-label">Clique pour combattre</div>
+  <div id="end-actions" style="display:none">
+    <button class="menu-btn" id="btn-replay">🔁 Rejouer</button>
+    <button class="menu-btn small" id="btn-invite">🔗 Inviter</button>
+  </div>
 </div>
 
 <script>window.__errs = []; window.onerror = (m, s, l, c) => { window.__errs.push(m + ' @' + l + ':' + c); };</script>
@@ -1619,6 +1651,7 @@ function extActivateLever(i, local, by) {
   const lv = extLevers[i];
   if (!lv || lv.on) return;
   lv.on = true; lv.prog = 1; lv.holdUntil = 0;
+  const who = local ? myId : (by || '?'); extStats.leversBy[who] = (extStats.leversBy[who] || 0) + 1;
   sfx(110, 0.3, 'square', 0.3, 0.4); sfx(900, 0.25, 'triangle', 0.16, 1.9); sfxNoise(0.3, 0.22, 3500, 400);
   const k = extLeversOn();
   showMsg('⚡ Levier ' + k + '/' + extLevers.length + ' activé !', 2000);
@@ -2337,6 +2370,7 @@ function applyExtEnd(d) {
   if (extOver) return;
   extOver = true; duelOver = true;
   player.alive = false;
+  stopSpectate();
   glitchPulse();
   $('heartbeat').style.opacity = 0;
   setFlashlight(false);
@@ -2345,16 +2379,120 @@ function applyExtEnd(d) {
   const jaiGagne = isMonster() ? !d.dead : d.dead;
   $('overlay').querySelector('h1').textContent = jaiGagne ? '🏆 VICTOIRE' : '💀 DÉFAITE';
   $('overlay').querySelector('h1').classList.toggle('dead', !jaiGagne);
-  $('intro').innerHTML = (!monsterIds.size
+  const verdict = !monsterIds.size
     ? '🔦 Tu as traversé le labyrinthe ! (partie solo, sans monstre)'
     : d.dead
     ? '🔦 Les survivants ont abattu le monstre !'
-    : '🐺 Le monstre a survécu à la nuit…')
-    + '<br>' + d.arrived + ' / ' + d.total + ' survivant' + (d.total > 1 ? 's' : '') + ' au point B'
-    + ' — dégâts infligés : ' + d.dmg + ' / ' + d.hp + ' PV restants';
+    : '🐺 Le monstre a survécu à la nuit…';
+  $('intro').innerHTML = '<span class="verdict">' + verdict + '</span>' + recapHtml(d);
   $('go-label').textContent = 'Clique pour revenir à l\'accueil';
+  const ea = $('end-actions'), rp = $('btn-replay');
+  ea.style.display = 'flex'; rp.disabled = !authority;
+  rp.textContent = authority ? '🔁 Rejouer' : '⏳ L\'hôte peut relancer…';
+  $('btn-invite').style.display = inviteUrl() ? '' : 'none';
   overlay.style.display = 'flex';
 }
+// ---------- Mode spectateur (Extinction) : une fois dévoré, on suit un survivant encore en vie ----------
+// La caméra se cale sur ses yeux (en douceur) ; si sa lampe est allumée, la nôtre l'est aussi. ◀ ▶ (ou flèches) changent de survivant.
+const spec = { on: false, id: null, yaw: 0, pitch: 0, pos: new THREE.Vector3(), lamp: false };
+const specTargets = () => [...remotePlayers.keys()].filter(id => !monsterIds.has(id) && !duelElim.has(id) && remotePlayers.get(id).rig);
+function specPick(dir) {
+  const list = specTargets();
+  if (!list.length) { spec.id = null; $('spec-name').textContent = '—'; return; }
+  const i = list.indexOf(spec.id);
+  spec.id = list[(i + dir + list.length * 2) % list.length];
+  $('spec-name').textContent = extNameOf(spec.id);
+  const r = remotePlayers.get(spec.id), m = r.rig.model;
+  spec.pos.set(m.position.x, m.position.y + EYE - 0.1, m.position.z); spec.yaw = m.rotation.y;   // changement de cible : coupe franche
+}
+function startSpectate() {
+  if (duelMode !== 'extinction' || extOver || !gameStarted) return;
+  spec.on = true; spec.id = null; spec.pos.copy(camera.position); spec.yaw = yaw; spec.pitch = pitch;
+  specPick(1);
+  if (spec.id) { /* position déjà posée par specPick */ } else spec.pos.copy(camera.position);
+  $('spec-bar').classList.add('on');
+  document.body.classList.remove('touch-playing');   // les commandes de jeu n'ont plus de sens : place au sélecteur
+}
+function stopSpectate() {
+  if (!spec.on) return;
+  spec.on = false; spec.lamp = false; flashlight.intensity = 0;
+  $('spec-bar').classList.remove('on');
+}
+function updateSpectate(dt) {   // true = la caméra suit un survivant (appelée à chaque image quand on est mort)
+  if (!spec.on) return false;
+  if (duelMode !== 'extinction' || extOver || !gameStarted) { stopSpectate(); return false; }
+  let r = spec.id && remotePlayers.get(spec.id);
+  if (!r || !r.rig || duelElim.has(spec.id)) { specPick(1); r = spec.id && remotePlayers.get(spec.id); }
+  if (!r || !r.rig) { spec.lamp = false; flashlight.intensity = 0; return false; }   // plus personne en vie : on garde la vue de mort
+  const m = r.rig.model, k = 1 - Math.exp(-dt * 12);
+  spec.pos.x += (m.position.x - spec.pos.x) * k; spec.pos.y += (m.position.y + EYE - 0.1 - spec.pos.y) * k; spec.pos.z += (m.position.z - spec.pos.z) * k;
+  spec.yaw += Math.atan2(Math.sin(m.rotation.y - spec.yaw), Math.cos(m.rotation.y - spec.yaw)) * Math.min(1, dt * 12);
+  spec.pitch += (((r.net && r.net.pitch) || 0) - spec.pitch) * k;
+  spec.lamp = !!(r.lastState && r.lastState.fl);
+  flashlight.intensity = spec.lamp ? 6.5 : 0;
+  return true;
+}
+// Les boutons sont branchés par initEndUi() (appelée à la fin du module, quand tout le reste existe)
+function initEndUi() {
+  $('spec-prev').onclick = () => specPick(-1);
+  $('spec-next').onclick = () => specPick(1);
+  $('spec-quit').onclick = () => location.reload();
+  addEventListener('keydown', e => { if (spec.on && (e.code === 'ArrowRight' || e.code === 'ArrowLeft' || e.code === 'Space')) { specPick(e.code === 'ArrowLeft' ? -1 : 1); e.preventDefault(); } });
+  $('btn-invite').onclick = e => { e.stopPropagation(); shareInvite($('go-label')); };
+  $('btn-lobby-invite').onclick = () => shareInvite($('lobby-info'));
+  $('btn-replay').onclick = e => { e.stopPropagation(); startRematch(); };
+}
+
+// ---------- Récapitulatif de fin de partie, Rejouer, lien d'invitation ----------
+const extStats = { leversBy: {}, eaten: [] };   // qui a activé combien de leviers, qui a été dévoré (dans l'ordre)
+function extStatsReset() { extStats.leversBy = {}; extStats.eaten = []; }
+function recapHtml(d) {
+  const secs = Math.max(0, Math.round((Date.now() - extFreezeUntil) / 1000)), time = Math.floor(secs / 60) + ':' + String(secs % 60).padStart(2, '0');
+  const nm = id => extNameOf(id);
+  const lev = Object.entries(extStats.leversBy).map(([id, n]) => (id === myId ? 'Toi' : nm(id)) + ' ' + n).join(' · ');
+  const rows = [['⏱', 'Durée', time], ['⚡', 'Leviers', extLeversOn() + '/' + (extLevers.length || LEVER_COUNT) + (lev ? ' (' + lev + ')' : '')],
+    ['🏁', 'À l\'abri', d.arrived + ' / ' + d.total], ['🩸', 'Dévorés', extStats.eaten.length ? extStats.eaten.map(nm).join(', ') : 'personne']];
+  if (monsterIds.size) rows.push(['🐺', 'Monstre', [...monsterIds].map(nm).join(', ')], ['💥', 'Dégâts', d.dmg + ' / ' + d.hp + ' PV']);
+  return '<div class="recap">' + rows.map(([i, k, v]) => '<i>' + i + '</i><span>' + k + '</span><b>' + v + '</b>').join('') + '</div>';
+}
+function inviteUrl() {
+  const code = ($('lobby-code').textContent || '').trim();
+  return /^[A-Z0-9]{4,8}$/i.test(code) ? location.origin + location.pathname + '?code=' + encodeURIComponent(code) : null;
+}
+async function shareInvite(statusEl) {
+  const url = inviteUrl();
+  const say = t => { if (statusEl) { const old = statusEl.textContent; statusEl.textContent = t; setTimeout(() => { if (statusEl.textContent === t) statusEl.textContent = old; }, 2600); } else showMsg(t, 1800); };
+  if (!url) { say('Pas de code à partager (partie hors ligne)'); return; }
+  const text = 'Rejoins ma partie de Zone Hostile ! Code : ' + new URL(url).searchParams.get('code');
+  try { if (navigator.share) { await navigator.share({ title: 'Zone Hostile', text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(url); say('🔗 Lien copié : colle-le à tes amis'); }
+  catch (e) { window.prompt('Copie ce lien et envoie-le à tes amis :', url); }
+}
+// Rejouer : même salon, mêmes joueurs, nouveau labyrinthe. L'hôte (ou le solo) relance ; les autres suivent.
+function doRematch() {
+  stopSpectate();
+  gameStarted = false; extOver = false; duelOver = false; deathCam = null; scareLight.intensity = 0;
+  player.alive = true; player.hp = 100; player.invuln = 0; player.velY = 0; player.flashOn = false; flashlight.intensity = 0;
+  setHealthBar(100); $('heartbeat').style.opacity = 0; $('blood').style.display = 'none'; $('feed').innerHTML = '';
+  $('mblind') && ($('mblind').style.opacity = 0); $('spec-bar').classList.remove('on'); $('end-actions').style.display = 'none';
+  const b = $('ext-banner'); b.classList.remove('on'); $('ext-count').style.opacity = 0; $('lever-hud').classList.remove('on');
+  clearExtinctionMaze(); monsterIds.clear(); extArrived.clear(); duelElim.clear(); toggleExtBigMap(false);
+  if (playerModel && playerModel.skinIdx === MONSTER_SKIN) applySkinToRig(playerModel, mySkin);
+  for (const r of remotePlayers.values()) { r.fall = 0; r.stepAcc = 0; if (r.rig) r.rig.model.rotation.x = 0; }
+  applyExtinctionLights(false);
+  const h = $('overlay').querySelector('h1'); h.textContent = OVERLAY0.h1; h.classList.remove('dead');
+  $('intro').innerHTML = OVERLAY0.intro; $('go-label').textContent = OVERLAY0.go;
+  $('overlay').style.display = 'none';
+  showMsg('🔁 Nouvelle partie…', 1500);
+}
+function startRematch() {
+  if (!authority) return;
+  const mode = gameMode;
+  broadcast({ t: 'rematch' });
+  doRematch();
+  setTimeout(() => { broadcast({ t: 'start' }); beginGame(mode); }, 900);   // laisse aux autres le temps de se remettre à zéro
+}
+
 // ---------- Cartes du labyrinthe (fog-of-war en live) ----------
 // Mini-carte ronde : centrée sur soi et tournée avec le regard (devant = en
 // haut), zoomée sur les environs. Grande carte (M / toucher la mini-carte) :
@@ -4351,6 +4489,7 @@ function extNameOf(id, nms) {
 // puis chacun est téléporté à son point de départ (clairière ou point A).
 function extStartCountdown(nms) {
   buildExtinctionMaze(); // idempotent : garantit points A/B même si l'ordre réseau varie
+  extStatsReset();
   extFreezeUntil = Date.now() + 5000;
   applyExtinctionLights(true);
   // le monstre prend son vrai corps de loup-garou, visible par tous
@@ -4968,7 +5107,8 @@ for (const id of CTRL_IDS) {
 }
 
 const overlay = $('overlay');
-overlay.addEventListener('click', () => {
+overlay.addEventListener('click', e => {
+  if (e.target.closest && e.target.closest('#end-actions')) return;   // Rejouer / Inviter : ne pas quitter la partie
   if (!player.alive) { location.reload(); return; }
   ensureAudio();
   if (IS_TOUCH) { // pas de pointer lock sur mobile : on lance directement
@@ -5407,11 +5547,15 @@ function die() {
     netSend({ t: 'ext_leave', id: myId });
     netSend({ t: 'ext_eat' }); // le monstre se régénère en mangeant
     if (!IS_TOUCH) document.exitPointerLock();
-    $('overlay').querySelector('h1').textContent = '🩸 Dévoré !';
-    $('intro').innerHTML = 'Le monstre t\'a eu… attends la fin de la partie.';
-    $('go-label').textContent = 'Clique pour quitter la partie';
-    const scare = startJumpScare();   // 1,5 s de jump scare AVANT l'écran de fin
-    setTimeout(() => { glitchPulse(); overlay.style.display = 'flex'; }, scare ? 1500 : 0);
+    extStats.eaten.push(myId);
+    const scare = startJumpScare();   // 1,5 s de jump scare, puis on devient spectateur d'un survivant encore en vie
+    setTimeout(() => {
+      if (extOver) return;            // la partie s'est terminée entre-temps : l'écran de fin est déjà là
+      glitchPulse();
+      const b = $('ext-banner'); b.textContent = '🩸 DÉVORÉ'; b.classList.remove('safe'); b.classList.add('on');
+      setTimeout(() => b.classList.remove('on'), 2600);
+      startSpectate();
+    }, scare ? 1500 : 0);
     updateHud();
     return;
   }
@@ -5638,7 +5782,7 @@ function animate() {
     flashlight.intensity = 6.5 * f;
     lampFlicker = f;
   }
-  updateMist(dt, player.flashOn ? lampFlicker : 0);
+  updateMist(dt, (player.flashOn || spec.lamp) ? lampFlicker : 0);
   { // chiffre de batterie qui clignote en rouge sous 20 %
     const lowNow = duelMode === 'extinction' && !isMonster() && extItemSel === 0 && player.battery < 20 && player.flashOn;
     $('ammo').classList.toggle('low', lowNow);
@@ -5724,6 +5868,10 @@ function animate() {
     camera.position.y += Math.sin(bobPhase * 2) * 0.034 * bobAmp - landDip;
     camera.position.x += Math.cos(bobPhase) * Math.cos(yaw) * 0.019 * bobAmp;
     camera.position.z -= Math.cos(bobPhase) * Math.sin(yaw) * 0.019 * bobAmp;
+  }
+  if (!player.alive && updateSpectate(dt)) {   // spectateur : la caméra suit les yeux du survivant choisi
+    camera.position.copy(spec.pos);
+    camera.rotation.set(0, 0, 0); camera.rotateY(spec.yaw); camera.rotateX(spec.pitch);
   }
   gun.visible = !thirdPerson && !scoped && duelMode !== 'extinction'; // lunette : pas d'arme ; Extinction : lampe/soin, pas de fusil
   playerSm.group.visible = thirdPerson && !playerModel.loaded;
@@ -6310,7 +6458,10 @@ function onMsg(conn, d) {
       break;
     case 'elim': // un joueur a perdu ses 3 cœurs (ou sa vie de la manche en loup)
       if (d.id) {
-        if (!duelElim.has(d.id)) feed((duelMode === 'extinction' ? '🩸 ' + extNameOf(d.id) + ' est dévoré' : '💀 ' + extNameOf(d.id) + ' est éliminé'), 'red');
+        if (!duelElim.has(d.id)) {
+          feed((duelMode === 'extinction' ? '🩸 ' + extNameOf(d.id) + ' est dévoré' : '💀 ' + extNameOf(d.id) + ' est éliminé'), 'red');
+          if (duelMode === 'extinction' && !extStats.eaten.includes(d.id)) extStats.eaten.push(d.id);
+        }
         duelElim.add(d.id); checkDuelEnd(); updateHud();
       }
       if (authority) broadcastExcept(conn, d);
@@ -6382,6 +6533,7 @@ function onMsg(conn, d) {
       }
       if (authority && d.to !== myId) broadcastExcept(conn, d);
       break;
+    case 'rematch': if (!authority) doRematch(); break;   // l'hôte relance : on se remet à zéro et on attend son « start »
     case 'start': if (!gameStarted) beginGame('client'); break;
     case 'welcome': {
       if (gameStarted) break; // déjà dans la partie : un « bienvenue » tardif ne doit jamais nous renvoyer à l'accueil
@@ -7288,6 +7440,15 @@ function introSoundStop() {
   try { s.master.gain.cancelScheduledValues(t); s.master.gain.setTargetAtTime(0, t, 0.015); s.hg.gain.cancelScheduledValues(t); s.hg.gain.setTargetAtTime(0, t, 0.015); } catch (e) {}
   setTimeout(() => s.nodes.forEach(o => { try { o.stop(); } catch (e) {} }), 300);
 }
+// Lien d'invitation (?code=ABC123) : le code est mis dans le champ puis on rejoint tout seul, une fois l'accueil affiché
+const inviteCode = (() => { const c = new URLSearchParams(location.search).get('code'); return c && /^[A-Za-z0-9]{4,8}$/.test(c) ? c.toUpperCase() : null; })();
+function autoJoinFromLink() {
+  if (!inviteCode) return;
+  document.getElementById('join-code').value = inviteCode;
+  homeStatus('🔗 Invitation reçue : ' + inviteCode + ' — connexion…');
+  try { history.replaceState(null, '', location.pathname); } catch (e) {}   // un rechargement ne rejoint pas une 2e fois
+  setTimeout(() => document.getElementById('btn-join').click(), 1100);
+}
 function endIntro() {
   if (introDone) return;
   introDone = true; introActive = false;
@@ -7295,6 +7456,7 @@ function endIntro() {
   transition(null, { intro: true, silent: true });   // repart du noir (1re image immédiate), puis le signal revient en fondu sur l'accueil
   introCv.style.display = 'none'; gate.style.display = 'none';
   if (musicOn) startMenuMusic();
+  autoJoinFromLink();
 }
 function startIntro() {
   if (introStarted) return;
@@ -7323,6 +7485,7 @@ if (introActive) {
 } else {
   gate.style.display = 'none';
   transition(null, { intro: true, silent: true }); // sans intro : l'écran noir se brouille puis le signal arrive
+  autoJoinFromLink();
 }
 
 // ---------- Aperçu 3D du personnage à l'accueil ----------
@@ -7398,6 +7561,8 @@ const pvClock = new THREE.Clock();
 })();
 
 // La partie démarre via le menu d'accueil (beginGame) ; la scène tourne en fond
+const OVERLAY0 = { h1: $('overlay').querySelector('h1').textContent, intro: $('intro').innerHTML, go: $('go-label').textContent };   // textes d'origine de l'écran de départ
+initEndUi();
 applyFx(quality);   // tous les modules d'effets sont définis : on règle les effets selon la qualité
 animate();
 updateHud();
