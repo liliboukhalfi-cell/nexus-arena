@@ -263,13 +263,16 @@
     position: absolute; display: none; flex-direction: column; gap: 12px;
     background: rgba(8,12,24,.96); border: 2px solid rgba(127,212,255,.35);
     border-radius: 14px; padding: 16px 18px; z-index: 5; max-width: min(440px, 88vw);
+    overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(127,212,255,.45) transparent;
   }
+  .panel > * { flex-shrink: 0; }  /* le contenu garde sa taille : c'est le panneau qui défile s'il est trop haut */
   .panel.open { display: flex; }
-  #settings-panel { top: 86px; right: 26px; }
-  #skin-panel { bottom: 92px; left: 26px; }
+  /* max-height = place restante à l'écran − 36 px (marges internes + bordure du panneau, qui s'ajoutent à la hauteur) */
+  #settings-panel { top: 86px; right: 26px; max-height: calc(100vh - 136px); max-height: calc(100dvh - 136px); }
+  #skin-panel { bottom: 92px; left: 26px; max-height: calc(100vh - 148px); max-height: calc(100dvh - 148px); }
   .check-line { font-size: 14px; display: flex; gap: 8px; align-items: center; cursor: pointer; }
   .check-line input { accent-color: #7fd4ff; width: 17px; height: 17px; }
-  #keys-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; max-height: 190px; overflow-y: auto; }
+  #keys-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .key-line { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; }
   .key-line button {
     min-width: 84px; padding: 5px 8px; font-family: inherit; font-size: 12px; font-weight: 700;
@@ -448,8 +451,8 @@
     #btn-skin { bottom: calc(var(--sab) + 10px); left: calc(var(--sal) + 12px); }
     #skin-preview { height: 74vh; width: calc(74vh * .75); left: 66%; }
     #skin-name { font-size: 14px; padding: 3px 16px; bottom: 1vh; left: 66%; }
-    #settings-panel { top: calc(var(--sat) + 54px); right: calc(var(--sar) + 10px); max-height: calc(100vh - var(--sat) - 64px); overflow-y: auto; }
-    #skin-panel { bottom: calc(var(--sab) + 56px); left: calc(var(--sal) + 12px); max-height: calc(100vh - 70px); overflow-y: auto; }
+    #settings-panel { top: calc(var(--sat) + 54px); right: calc(var(--sar) + 10px); max-height: calc(100vh - var(--sat) - var(--sab) - 100px); max-height: calc(100dvh - var(--sat) - var(--sab) - 100px); overflow-y: auto; }
+    #skin-panel { bottom: calc(var(--sab) + 56px); left: calc(var(--sal) + 12px); max-height: calc(100vh - var(--sat) - var(--sab) - 102px); max-height: calc(100dvh - var(--sat) - var(--sab) - 102px); overflow-y: auto; }
     #lobby h1 { font-size: 30px; margin: 0 0 4px; }
     #lobby .code { font-size: 32px; letter-spacing: 8px; padding: 6px 18px; }
     #lobby .lobby-body { gap: 8px; }
