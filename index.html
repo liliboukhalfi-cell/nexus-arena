@@ -381,6 +381,15 @@
     72%  { transform: translate(-4px, 0); filter: drop-shadow(3px 0 0 rgba(255,40,70,.5)) drop-shadow(-3px 0 0 rgba(40,220,255,.5)); }
     90%  { transform: translate(3px, -1px) skewX(-1deg); filter: none; }
   }
+  /* ---------- Porte d'entrée + intro horreur (chargement corrompu) ---------- */
+  #gate { position: fixed; inset: 0; z-index: 300; background: #000; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 14px; cursor: pointer; user-select: none; text-align: center; padding: 20px; }
+  #gate .gt { font-family: var(--font-ui); font-weight: 600; font-size: clamp(22px, 4.4vw, 38px); letter-spacing: .28em;
+    text-transform: uppercase; color: #cfe9ff; text-shadow: 0 0 18px rgba(127,212,255,.45); animation: gateblink 2.6s steps(1) infinite; }
+  #gate .gs { font-family: var(--font-ui); font-size: clamp(14px, 2.2vw, 18px); letter-spacing: .1em; color: rgba(200,215,230,.42); }
+  @keyframes gateblink { 0%, 100% { opacity: 1; } 44% { opacity: 1; } 46% { opacity: .12; } 48% { opacity: 1; } 51% { opacity: .35; } 53% { opacity: 1; } }
+  #intro-cv { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 301; display: none; background: #000; image-rendering: pixelated; }
+  @media (prefers-reduced-motion: reduce) { #gate .gt { animation: none; } }
   /* Panneaux et fenêtres : apparition courte avec petit tremblement */
   .panel.open, #duel-choice[style*="flex"] .box { animation: panelin .26s ease-out; }
   @keyframes panelin {
@@ -595,6 +604,11 @@
   </div>
 </div>
 <canvas id="glitch"></canvas>
+<canvas id="intro-cv"></canvas>
+<div id="gate">
+  <div class="gt">Touche pour entrer</div>
+  <div class="gs">🔊 Son conseillé &nbsp;·&nbsp; flashs lumineux et sons forts</div>
+</div>
 <div id="rotate-hint" style="display:none">
   <div class="ico">📱↻</div>
   <div>Tourne ton téléphone en <b>paysage</b> pour jouer</div>
@@ -635,7 +649,20 @@ import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders
 import { clone as skeletonClone } from 'https://unpkg.com/three@0.160.0/examples/jsm/utils/SkeletonUtils.js';
 
 // ---------- Audio (synthèse WebAudio, aucun fichier) ----------
-let audioCtx = null;
+let audioCtx = null, outBus = null;
+let introActive = !/[?&]nointro\b/.test(location.search); // porte « Touche pour entrer » + intro horreur (pas de musique d'accueil avant la fin)
+const MASTER_BOOST = 3.6; // gain général : les sons de synthèse sont créés très bas, on les remonte d'un coup
+// Tout le son passe par un gain général puis un limiteur : beaucoup plus fort, sans saturer.
+function bus() {
+  if (!audioCtx) return null;
+  if (!outBus) {
+    const lim = audioCtx.createDynamicsCompressor();
+    lim.threshold.value = -9; lim.knee.value = 6; lim.ratio.value = 16; lim.attack.value = 0.002; lim.release.value = 0.2;
+    outBus = audioCtx.createGain(); outBus.gain.value = MASTER_BOOST;
+    outBus.connect(lim); lim.connect(audioCtx.destination);
+  }
+  return outBus;
+}
 function sfx(freq, dur, type = 'square', vol = 0.15, slide = 0.5) {
   if (!audioCtx) return;
   const o = audioCtx.createOscillator(), g = audioCtx.createGain();
@@ -643,7 +670,7 @@ function sfx(freq, dur, type = 'square', vol = 0.15, slide = 0.5) {
   o.frequency.exponentialRampToValueAtTime(Math.max(freq * slide, 1), audioCtx.currentTime + dur);
   g.gain.value = vol;
   g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
-  o.connect(g).connect(audioCtx.destination);
+  o.connect(g).connect(bus());
   o.start(); o.stop(audioCtx.currentTime + dur);
 }
 
@@ -651,6 +678,7 @@ function sfx(freq, dur, type = 'square', vol = 0.15, slide = 0.5) {
 function ensureAudio() {
   if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  loadGlitchSample();
   return audioCtx;
 }
 // Rafale de bruit filtré (grésillement, signal perdu) : le filtre balaie de f0 à f1
@@ -663,24 +691,40 @@ function sfxNoise(dur = 0.25, vol = 0.12, f0 = 800, f1 = 3000) {
   const t = audioCtx.currentTime;
   bp.frequency.setValueAtTime(f0, t); bp.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t + dur);
   const g = audioCtx.createGain(); g.gain.value = vol;
-  src.connect(bp).connect(g).connect(audioCtx.destination); src.start();
+  src.connect(bp).connect(g).connect(bus()); src.start();
 }
-const sfxGlitch = short => {            // transition « signal perdu » : bruit blanc + descente de ton, puis retour
-  sfxNoise(short ? 0.14 : 0.34, short ? 0.07 : 0.14, 600, 4200);
-  sfx(short ? 230 : 170, short ? 0.1 : 0.3, 'sawtooth', 0.05, 0.3);
-  if (!short) setTimeout(() => sfxNoise(0.2, 0.08, 3200, 500), 360);
+// Son de glitch : le vrai fichier (sounds/glitch.mp3, chargé au 1er geste) s'il existe, sinon synthèse de secours.
+const GLITCH_FILE = 'sounds/glitch.mp3';
+let glitchBuf = null, glitchLoading = false;
+function loadGlitchSample() {
+  if (glitchBuf || glitchLoading || !audioCtx) return;
+  glitchLoading = true;
+  fetch(GLITCH_FILE).then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => audioCtx.decodeAudioData(b)).then(buf => { glitchBuf = buf; }).catch(() => {});
+}
+const sfxGlitch = (short, vol = 1) => {  // transition « signal perdu »
+  if (!audioCtx) return;
+  if (glitchBuf) {
+    const src = audioCtx.createBufferSource(), g = audioCtx.createGain();
+    src.buffer = glitchBuf; g.gain.value = (short ? 0.55 : 1) * vol;
+    src.connect(g).connect(bus());
+    if (short) src.start(0, 0, Math.min(0.35, glitchBuf.duration)); else src.start();
+    return;
+  }
+  sfxNoise(short ? 0.16 : 0.4, (short ? 0.1 : 0.2) * vol, 600, 4200);
+  sfx(short ? 230 : 170, short ? 0.12 : 0.34, 'sawtooth', 0.08 * vol, 0.3);
+  if (!short) setTimeout(() => sfxNoise(0.24, 0.12 * vol, 3200, 500), 380);
 };
-const uiHover = () => sfx(1900, 0.03, 'square', 0.022, 0.7);
-const uiClick = () => { sfx(560, 0.06, 'square', 0.05, 0.5); sfx(1250, 0.04, 'triangle', 0.035, 0.6); };
+const uiHover = () => sfx(1900, 0.035, 'square', 0.04, 0.7);
+const uiClick = () => { sfx(560, 0.07, 'square', 0.08, 0.5); sfx(1250, 0.05, 'triangle', 0.06, 0.6); };
 
 // ---------- Musique d'accueil : nappe sombre, cœur lent, cloche lointaine (tout synthétisé) ----------
 let menuMusic = null;
 function startMenuMusic() {
-  if (!audioCtx || !musicOn || menuMusic || gameStarted) return;
+  if (!audioCtx || !musicOn || menuMusic || gameStarted || introActive) return;
   const ctx = audioCtx, t0 = ctx.currentTime;
   const master = ctx.createGain(); master.gain.value = 0;
   master.gain.linearRampToValueAtTime(0.12, t0 + 3);
-  master.connect(ctx.destination);
+  master.connect(bus());
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 280;
   const lfo = ctx.createOscillator(), lfoG = ctx.createGain(); lfo.frequency.value = 0.07; lfoG.gain.value = 130; // le filtre « respire »
   lfo.connect(lfoG).connect(lp.frequency); lfo.start();
@@ -722,7 +766,7 @@ function startMusic() {
   const master = audioCtx.createGain();
   master.gain.value = 0.0;
   master.gain.linearRampToValueAtTime(0.16, audioCtx.currentTime + 2);
-  master.connect(audioCtx.destination);
+  master.connect(bus());
   // Nappe grave continue (deux oscillateurs légèrement désaccordés)
   const droneA = audioCtx.createOscillator(), droneB = audioCtx.createOscillator();
   const droneG = audioCtx.createGain(); droneG.gain.value = 0.5;
@@ -1546,16 +1590,16 @@ muzzle.position.set(0.32, -0.2, -1.2);
 camera.add(muzzle);
 
 // ---------- Brume animée du labyrinthe ----------
-// Nuage de particules molles qui dérive autour du joueur (réparties dans un cube qui le suit, avec rebouclage).
-// Dans le noir elles sont presque invisibles ; la lampe les éclaire dans son faisceau : on voit la brume bouger
-// dans la lumière. Le brouillard lui-même « respire » lentement (distance de vue qui varie).
-const MIST_N = 260, MIST_R = 14;
+// Quelques volutes discrètes qui dérivent autour du joueur (réparties dans un cube qui le suit, avec rebouclage).
+// Mélange ADDITIF : dans le noir elles sont invisibles ; la lampe n'éclaire qu'un peu de brume dans son faisceau,
+// jamais près de la caméra (sinon un voile gris cache tout). Le brouillard « respire » très légèrement.
+const MIST_N = 70, MIST_R = 13;
 let mist = null, lampFlicker = 1; const mistVel = [];
 function ensureMist() {
   if (mist) return mist;
   const tex = canvasTex(128, (x, s) => {
     const g = x.createRadialGradient(s / 2, s / 2, 2, s / 2, s / 2, s / 2);
-    g.addColorStop(0, 'rgba(255,255,255,0.6)'); g.addColorStop(0.5, 'rgba(255,255,255,0.22)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    g.addColorStop(0, 'rgba(255,255,255,0.5)'); g.addColorStop(0.45, 'rgba(255,255,255,0.14)'); g.addColorStop(1, 'rgba(255,255,255,0)');
     x.fillStyle = g; x.fillRect(0, 0, s, s);
   }, 1, 1);
   tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
@@ -1566,7 +1610,7 @@ function ensureMist() {
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  mist = new THREE.Points(g, new THREE.PointsMaterial({ size: 5.5, map: tex, vertexColors: true, transparent: true, depthWrite: false, sizeAttenuation: true }));
+  mist = new THREE.Points(g, new THREE.PointsMaterial({ size: 1.5, map: tex, vertexColors: true, transparent: true, depthWrite: false, sizeAttenuation: true, blending: THREE.AdditiveBlending }));
   mist.frustumCulled = false; mist.visible = false;
   scene.add(mist);
   return mist;
@@ -1578,7 +1622,7 @@ function updateMist(dt, lampF) {
   const m = ensureMist(); m.visible = true;
   const p = m.geometry.attributes.position, c = m.geometry.attributes.color, tt = performance.now() / 1000;
   camera.getWorldDirection(_mistF);
-  const lit = player.flashOn ? lampF : 0, base = isMonster() ? 0.2 : 0.035; // le monstre voit mieux dans le noir
+  const lit = player.flashOn ? lampF : 0, base = isMonster() ? 0.05 : 0; // le monstre voit un peu mieux dans le noir
   for (let i = 0; i < MIST_N; i++) {
     const v = mistVel[i];
     let x = p.getX(i) + (v[0] + Math.sin(tt * 0.31 + i) * 0.12) * dt, y = p.getY(i) + v[1] * dt, z = p.getZ(i) + (v[2] + Math.cos(tt * 0.27 + i * 1.3) * 0.12) * dt;
@@ -1589,12 +1633,12 @@ function updateMist(dt, lampF) {
     p.setXYZ(i, x, y, z);
     _mistV.set(x - camera.position.x, y - camera.position.y, z - camera.position.z);
     const dist = _mistV.length(), dot = _mistV.divideScalar(dist || 1).dot(_mistF);
-    const inBeam = lit * monSmooth(0.88, 0.975, dot) * Math.max(0, 1 - dist / 24);   // éclairée seulement dans le faisceau
-    const b = (base + 0.8 * inBeam) * monSmooth(0.8, 3.2, dist);                    // jamais de gros voile collé à la caméra
+    const inBeam = lit * monSmooth(0.9, 0.98, dot) * Math.max(0, 1 - dist / 18);     // éclairée seulement dans le faisceau
+    const b = (base + 0.16 * inBeam) * monSmooth(2.5, 6, dist);                     // rien du tout près de la caméra
     c.setXYZ(i, b * 0.78, b * 0.86, b);
   }
   p.needsUpdate = true; c.needsUpdate = true;
-  if (!isMonster()) { scene.fog.near = 3 + 0.9 * Math.sin(tt * 0.5 + 1); scene.fog.far = 30 + 4 * Math.sin(tt * 0.33); } // le brouillard respire
+  if (!isMonster()) { scene.fog.near = 3 + 0.4 * Math.sin(tt * 0.5 + 1); scene.fog.far = 30 + 2 * Math.sin(tt * 0.33); } // le brouillard respire
 }
 
 // ---------- Lampe torche (mode Extinction) ----------
@@ -3971,14 +4015,15 @@ function drawGlitch(now) {
   if (!c || c.token !== glitchToken) return;
   const t = now - glitchT0;
   let cover, inten;
-  if (t < c.out) { const k = t / c.out; cover = c.maxCover * Math.pow(k, 1.5); inten = 0.35 + 0.65 * k; }
-  else if (t < c.out + c.hold) { cover = c.maxCover; inten = 1; }
-  else { const k = Math.min(1, (t - c.out - c.hold) / c.inn); cover = c.maxCover * Math.pow(1 - k, 1.3); inten = 1 - 0.85 * k; }
+  // brouillage qui monte → noir complet (coupure) → le noir se dissipe doucement (fondu) pendant que le brouillage retombe
+  if (t < c.out) { const k = t / c.out; cover = c.maxCover * Math.pow(k, 1.4); inten = 0.35 + 0.65 * k; }
+  else if (t < c.out + c.hold) { cover = c.maxCover; inten = c.fade ? 0.1 : 1; }
+  else { const k = Math.min(1, (t - c.out - c.hold) / c.inn); cover = c.maxCover * (c.fade ? 1 - k * k * (3 - 2 * k) : Math.pow(1 - k, 1.3)); inten = (c.fade ? 0.6 : 1) * (1 - 0.85 * k); }
   const w = glitchCv.width, h = glitchCv.height, g = glitchCtx;
   g.clearRect(0, 0, w, h);
-  g.fillStyle = `rgba(2,4,10,${cover})`; g.fillRect(0, 0, w, h);
+  g.fillStyle = c.fade ? `rgba(0,0,0,${cover})` : `rgba(2,4,10,${cover})`; g.fillRect(0, 0, w, h);
   if (!reduceMotion) {
-    const img = g.createImageData(w, h), d = img.data, a = Math.floor(255 * Math.min(0.5, inten * 0.34 + cover * 0.14));
+    const img = g.createImageData(w, h), d = img.data, a = Math.floor(255 * Math.min(0.5, inten * 0.34 + cover * (c.fade ? 0.05 : 0.14)));
     for (let i = 0; i < d.length; i += 4) { const v = (Math.random() * 255) | 0; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = Math.random() < 0.55 ? a : 0; }
     g.putImageData(img, 0, 0);
     g.globalCompositeOperation = 'lighter';
@@ -3994,7 +4039,7 @@ function drawGlitch(now) {
   if (t < c.out + c.hold + c.inn) glitchRaf = requestAnimationFrame(drawGlitch);
 }
 function transition(fn, opts = {}) {
-  const c = { token: ++glitchToken, out: opts.short ? 110 : 230, hold: opts.short ? 40 : 110, inn: opts.short ? 170 : 330, maxCover: opts.short ? 0.35 : 1 };
+  const c = { token: ++glitchToken, out: opts.short ? 110 : 260, hold: opts.short ? 40 : 300, inn: opts.short ? 170 : 560, maxCover: opts.short ? 0.35 : 1, fade: !opts.short };
   const skip = opts.intro ? c.out : 0;   // intro : on part de l'écran noir et on ne fait que le retour du signal
   const total = c.out + c.hold + c.inn - skip;
   glitchCfg = c;
@@ -4003,7 +4048,7 @@ function transition(fn, opts = {}) {
   glitchCv.style.display = 'block';
   document.body.classList.add('glitching');
   glitchT0 = performance.now() - skip;
-  glitchRaf = requestAnimationFrame(drawGlitch);
+  drawGlitch(performance.now());           // 1re image tout de suite (pas d'image vide entre deux écrans)
   if (audioCtx && !opts.silent) sfxGlitch(!!opts.short);
   if (!opts.intro) setTimeout(() => { if (c.token === glitchToken && fn) fn(); }, c.out + c.hold * 0.5); // au plus fort du brouillage
   setTimeout(() => {
@@ -4299,8 +4344,7 @@ for (const id of CTRL_IDS) {
 const overlay = $('overlay');
 overlay.addEventListener('click', () => {
   if (!player.alive) { location.reload(); return; }
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
+  ensureAudio();
   startMusic();
   if (IS_TOUCH) { // pas de pointer lock sur mobile : on lance directement
     goFullscreenLandscape();
@@ -6333,7 +6377,222 @@ document.addEventListener('click', e => {
   const el = e.target.closest && e.target.closest(UI_SEL);
   if (el && uiMenuVisible(el)) uiClick();
 }, true);
-transition(null, { intro: true, silent: true }); // au chargement : l'écran noir se brouille puis le signal arrive
+
+// ---------- Porte d'entrée + intro horreur « chargement corrompu » ----------
+// Écran noir « Touche pour entrer » (le navigateur n'autorise le son qu'après un geste), puis ~3,9 s de chargement qui se
+// corrompt : barre qui recule, texte rongé, yeux dans le noir, deux apparitions de la créature, coupure noire, puis le
+// signal revient sur l'accueil en fondu. Tout est dessiné au canvas (aucune image) ; l'image ne dépend que du temps écoulé
+// et les sons sont programmés par minuteries : une fenêtre cachée ne bloque jamais la fin de l'intro.
+const gate = $('gate'), introCv = $('intro-cv'), ig = introCv.getContext('2d');
+const INTRO_END = 3900;
+let introT0 = 0, introRaf = 0, introStarted = false, introDone = false, introTimers = [], introSnd = null;
+const introRand = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }; // aléa stable (mêmes yeux à chaque fois)
+const introNoise = document.createElement('canvas'); introNoise.width = introNoise.height = 128;
+{ const g = introNoise.getContext('2d'), im = g.createImageData(128, 128);
+  for (let i = 0; i < im.data.length; i += 4) { const v = (Math.random() * 255) | 0; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 255; }
+  g.putImageData(im, 0, 0); }
+const INTRO_PROG = [[350, 0], [1100, 0.22], [1250, 0.09], [1900, 0.51], [2450, 0.52], [2600, 0.46], [3250, 0.91]]; // la barre avance, recule, se fige
+const INTRO_MSG = [[350, 'CHARGEMENT'], [1250, 'SIGNAL INSTABLE'], [1950, 'PRÉSENCE DÉTECTÉE'], [2650, 'IL EST DERRIÈRE TOI']];
+const INTRO_FLASH = [[1930, 1990, 'COURS'], [2480, 2545, 'ILS SONT LÀ']];                  // mots subliminaux (2-3 images)
+const INTRO_EYES = [[1500, 260, 0.2, 0.34, 1], [1850, 190, 0.8, 0.62, 1.2], [2300, 430, 0.5, 0.18, 1.7], [2750, 330, 0.14, 0.7, 2.1], [2950, 520, 0.74, 0.3, 2.6]]; // t, durée, x, y, taille
+const INTRO_GLYPHS = '█▓▒░#@%&?¤§';
+function introProg(t) {
+  const a = INTRO_PROG;
+  if (t <= a[0][0]) return 0;
+  for (let i = 1; i < a.length; i++) if (t <= a[i][0]) return a[i - 1][1] + (a[i][1] - a[i - 1][1]) * (t - a[i - 1][0]) / (a[i][0] - a[i - 1][0]);
+  return a[a.length - 1][1];
+}
+const introCorrupt = (s, p) => { let o = ''; for (const ch of s) o += (ch !== ' ' && Math.random() < p) ? INTRO_GLYPHS[(Math.random() * INTRO_GLYPHS.length) | 0] : ch; return o; };
+// Créature en pied : silhouette noire, bras longs, tête allongée à pointes, yeux incandescents. (cx, by) = pieds, H = hauteur
+function introFigure(g, cx, by, H) {
+  const u = H / 112;
+  g.save(); g.translate(cx, by); g.scale(u, u);
+  g.fillStyle = '#000'; g.strokeStyle = 'rgba(190,60,40,.55)'; g.lineWidth = 0.9;
+  const body = new Path2D();
+  body.moveTo(-5, 0); body.lineTo(-7, -38); body.lineTo(-13, -40); body.lineTo(-17, -72); body.lineTo(-10, -79); body.lineTo(-6, -77);
+  body.quadraticCurveTo(-14, -92, -5, -102); body.lineTo(-9, -112); body.lineTo(-2, -105); body.lineTo(0, -114); body.lineTo(2, -105); body.lineTo(9, -112); body.lineTo(5, -102); body.quadraticCurveTo(14, -92, 6, -77);
+  body.lineTo(10, -79); body.lineTo(17, -72); body.lineTo(13, -40); body.lineTo(7, -38); body.lineTo(5, 0); body.closePath();
+  for (const s of [-1, 1]) { // bras démesurés + griffes + pointes d'épaule
+    body.moveTo(s * 15, -72); body.lineTo(s * 25, -66); body.lineTo(s * 31, -30); body.lineTo(s * 34, -10); body.lineTo(s * 30, -14);
+    body.lineTo(s * 28, -8); body.lineTo(s * 25, -16); body.lineTo(s * 22, -34); body.lineTo(s * 19, -58); body.closePath();
+    body.moveTo(s * 13, -74); body.lineTo(s * 30, -92); body.lineTo(s * 20, -70); body.closePath();
+  }
+  g.fill(body); g.stroke(body);
+  for (const s of [-1, 1]) { // yeux
+    g.save(); g.translate(s * 2.8, -92); g.rotate(-s * 0.4);
+    const gl = g.createRadialGradient(0, 0, 0.4, 0, 0, 7); gl.addColorStop(0, 'rgba(255,240,220,1)'); gl.addColorStop(0.3, 'rgba(255,70,40,.8)'); gl.addColorStop(1, 'rgba(255,0,0,0)');
+    g.fillStyle = gl; g.fillRect(-8, -8, 16, 16); g.restore();
+  }
+  g.restore();
+}
+// Visage en gros plan : crâne noir, cornes, yeux obliques incandescents, gueule immense pleine de dents. (cx, cy) = centre, S = hauteur
+function introFace(g, cx, cy, S) {
+  const u = S / 130;
+  g.save(); g.translate(cx, cy); g.scale(u, u);
+  const bg = g.createRadialGradient(0, -6, 8, 0, -6, 95); bg.addColorStop(0, 'rgba(170,15,10,.85)'); bg.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = bg; g.fillRect(-130, -130, 260, 260);
+  g.fillStyle = '#020202'; g.strokeStyle = 'rgba(170,70,50,.6)'; g.lineWidth = 1.1;
+  const skull = new Path2D();
+  skull.moveTo(0, -62); skull.bezierCurveTo(28, -62, 41, -30, 37, -4); skull.bezierCurveTo(35, 18, 27, 40, 12, 58);
+  skull.lineTo(0, 64); skull.lineTo(-12, 58); skull.bezierCurveTo(-27, 40, -35, 18, -37, -4); skull.bezierCurveTo(-41, -30, -28, -62, 0, -62);
+  for (const s of [-1, 1]) { // cornes
+    skull.moveTo(s * 14, -60); skull.lineTo(s * 32, -104); skull.lineTo(s * 25, -52); skull.closePath();
+    skull.moveTo(s * 33, -44); skull.lineTo(s * 64, -80); skull.lineTo(s * 40, -28); skull.closePath();
+  }
+  g.fill(skull); g.stroke(skull);
+  for (const s of [-1, 1]) { // yeux obliques
+    g.save(); g.translate(s * 16, -14); g.rotate(-s * 0.38);
+    const gl = g.createRadialGradient(0, 0, 1, 0, 0, 22); gl.addColorStop(0, 'rgba(255,255,235,1)'); gl.addColorStop(0.25, 'rgba(255,90,50,.9)'); gl.addColorStop(1, 'rgba(255,0,0,0)');
+    g.fillStyle = gl; g.fillRect(-24, -24, 48, 48);
+    g.fillStyle = '#fff6e0'; g.beginPath(); g.ellipse(0, 0, 11, 3.4, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#300'; g.beginPath(); g.ellipse(0, 0, 2, 3.2, 0, 0, Math.PI * 2); g.fill();
+    g.restore();
+  }
+  const yU = x => 25 + 0.012 * x * x, yL = x => yU(x) + 7 + 8 * (1 - (x / 31) * (x / 31)); // gueule : lèvre haute / basse
+  g.fillStyle = '#000'; g.beginPath(); g.moveTo(-31, yU(-31));
+  for (let x = -31; x <= 31; x += 2) g.lineTo(x, yU(x));
+  for (let x = 31; x >= -31; x -= 2) g.lineTo(x, yL(x));
+  g.closePath(); g.fill();
+  g.fillStyle = '#ddd5bf';
+  for (let i = 0; i < 13; i++) { // dents haut et bas, tailles inégales
+    const x = -29 + i * 4.85, hu = 5 + introRand(i) * 7, hl = 5 + introRand(i + 40) * 7;
+    g.beginPath(); g.moveTo(x - 2.3, yU(x)); g.lineTo(x + 2.3, yU(x)); g.lineTo(x + (introRand(i + 9) - 0.5) * 2, yU(x) + hu); g.fill();
+    g.beginPath(); g.moveTo(x - 2.3 + 2.4, yL(x)); g.lineTo(x + 2.3 + 2.4, yL(x)); g.lineTo(x + 2.4 + (introRand(i + 21) - 0.5) * 2, yL(x) - hl); g.fill();
+  }
+  g.restore();
+}
+function introSlices(g, w, h, n, amp) { // bandes horizontales décalées
+  for (let i = 0; i < n; i++) { const y = Math.random() * h, sh = 2 + Math.random() * h * 0.07; g.drawImage(introCv, 0, y, w, sh, (Math.random() - 0.5) * 2 * amp, y, w, sh); }
+}
+function drawIntro(now) {
+  if (introDone) return;
+  introRaf = requestAnimationFrame(drawIntro);
+  const t = now - introT0, g = ig;
+  const sc = Math.max(0.33, Math.min(0.6, 720 / innerWidth)), w = Math.ceil(innerWidth * sc), h = Math.ceil(innerHeight * sc), cx = w / 2;
+  if (introCv.width !== w || introCv.height !== h) { introCv.width = w; introCv.height = h; }
+  g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+  g.fillStyle = '#000'; g.fillRect(0, 0, w, h);
+  if (t >= 3470) return;                                                    // coupure noire : le silence tombe
+  const fig = t >= 2650 && t < 2730, face = (t >= 3250 && t < 3320) || (t >= 3380 && t < 3470);
+  const shake = Math.min(1, Math.max(0, (t - 2300) / 1200)) * 3;
+  g.save();
+  if (shake) g.translate((Math.random() - 0.5) * shake * 2, (Math.random() - 0.5) * shake * 2);
+  const spike = introRand(Math.floor(t / 90)) > 0.8 - 0.3 * (t / INTRO_END);   // pics de brouillage de plus en plus fréquents
+  if (face || fig) {                                                          // apparitions : fond rouge sombre + créature
+    g.fillStyle = face ? '#2a0000' : '#1c0000'; g.fillRect(-10, -10, w + 20, h + 20);
+    if (face) introFace(g, cx + (Math.random() - 0.5) * w * 0.04, h * 0.47, t >= 3380 ? h * 1.35 : h * 1.02);
+    else introFigure(g, cx + w * 0.03, h * 0.98, h * 0.86);
+  } else {
+    if (t < 380) { // allumage d'un vieux téléviseur : trait blanc qui s'ouvre
+      const k = t / 380, lh = Math.max(1, h * 0.012 + h * 0.7 * Math.pow(k, 3));
+      g.fillStyle = `rgba(210,235,255,${0.9 * (1 - k)})`; g.fillRect(0, h / 2 - lh / 2, w, lh);
+    }
+    const fs = Math.min(w * 0.115, h * 0.21);
+    const ft = INTRO_FLASH.find(f => t >= f[0] && t < f[1]);
+    if (t >= 650) {                                                           // titre qui se déforme
+      const show = ft || t > 1150 || introRand(Math.floor(t / 45)) > 0.45;
+      if (show) {
+        const txt = ft ? ft[2] : 'ZONE HOSTILE', ga = ft ? 1 : spike ? 1 : 0.12, sx = 1 + ga * 7 * (1 + shake);
+        g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `${fs * (ft ? 1.25 : 1)}px Butcherman, Impact, sans-serif`;
+        const ty = h * 0.4 + (spike ? (Math.random() - 0.5) * 6 : 0);
+        g.save(); g.translate(cx, ty); g.scale(1, t > 2900 ? 1 + 0.35 * Math.sin(t / 55) : 1); g.globalCompositeOperation = 'lighter';
+        g.fillStyle = 'rgb(255,25,55)'; g.fillText(txt, sx, 0);
+        g.fillStyle = 'rgb(25,210,255)'; g.fillText(txt, -sx, 0);
+        g.fillStyle = ft ? 'rgb(255,60,50)' : 'rgb(190,200,210)'; g.fillText(txt, 0, 0);
+        g.restore();
+      }
+    }
+    if (t >= 350) {                                                           // barre de chargement + texte qui se fait manger
+      const bw = w * 0.52, bh = Math.max(5, h * 0.028), bx = cx - bw / 2, by = h * 0.8, p = introProg(t), bad = p > 0.5;
+      const msg = INTRO_MSG.filter(m => t >= m[0]).pop()[1], cp = Math.min(1, Math.max(0, (t - 900) / 2600)) ** 2 * 0.32 + (spike ? 0.25 : 0);
+      const lf = Math.max(9, h * 0.062);
+      g.font = `600 ${lf}px Teko, 'Segoe UI', sans-serif`; g.textBaseline = 'alphabetic';
+      g.textAlign = 'left'; g.fillStyle = bad ? 'rgb(255,70,70)' : 'rgb(170,210,235)'; g.fillText(introCorrupt(msg, cp), bx, by - bh * 0.9);
+      g.textAlign = 'right'; g.fillText((p > 0.655 && p < 0.7 ? '666' : Math.round(p * 100)) + '%', bx + bw, by - bh * 0.9);
+      g.strokeStyle = 'rgba(190,215,235,.55)'; g.lineWidth = 1; g.strokeRect(bx, by, bw, bh);
+      g.fillStyle = bad ? 'rgb(210,25,35)' : 'rgb(120,200,255)'; g.fillRect(bx + 1, by + 1, Math.max(0, (bw - 2) * p), bh - 2);
+      if (spike) { g.fillStyle = 'rgb(255,255,255)'; g.fillRect(bx + Math.random() * bw, by, bw * 0.08, bh); }
+    }
+    g.globalCompositeOperation = 'lighter';
+    for (const [e0, dur, ex, ey, es] of INTRO_EYES) {                         // yeux qui s'ouvrent dans le noir
+      if (t < e0 || t > e0 + dur) continue;
+      const open = Math.min(1, (t - e0) / 70) * Math.min(1, (e0 + dur - t) / 60), r = h * 0.03 * es, x = ex * w, y = ey * h;
+      for (const s of [-1, 1]) {
+        g.save(); g.translate(x + s * r * 1.9, y); g.rotate(-s * 0.3);
+        const gl = g.createRadialGradient(0, 0, 0, 0, 0, r * 2.4); gl.addColorStop(0, `rgba(255,235,210,${0.95 * open})`); gl.addColorStop(0.3, `rgba(255,50,30,${0.75 * open})`); gl.addColorStop(1, 'rgba(255,0,0,0)');
+        g.fillStyle = gl; g.fillRect(-r * 2.4, -r * 2.4, r * 4.8, r * 4.8);
+        g.fillStyle = `rgba(255,248,230,${open})`; g.beginPath(); g.ellipse(0, 0, r * 0.9, Math.max(0.5, r * 0.28 * open), 0, 0, Math.PI * 2); g.fill();
+        g.restore();
+      }
+    }
+    g.globalCompositeOperation = 'source-over';
+  }
+  g.restore();
+  if (spike || face || fig) { g.setTransform(1, 0, 0, 1, 0, 0); introSlices(g, w, h, face ? 7 : 3 + (t / 700 | 0), w * (face ? 0.09 : 0.06)); }
+  const vg = g.createRadialGradient(cx, h / 2, h * 0.25, cx, h / 2, h * 0.95); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.7)');
+  g.fillStyle = vg; g.fillRect(0, 0, w, h);                                   // vignette
+  g.globalAlpha = 0.08 + 0.1 * Math.min(1, t / 3000) + (face ? 0.07 : 0); g.fillStyle = g.createPattern(introNoise, 'repeat');
+  g.save(); g.translate((Math.random() * 128) | 0, (Math.random() * 128) | 0); g.fillRect(-128, -128, w + 256, h + 256); g.restore(); g.globalAlpha = 1; // grain
+  g.fillStyle = 'rgba(0,0,0,.18)'; for (let y = 0; y < h; y += 2) g.fillRect(0, y, w, 1);   // lignes de balayage
+}
+const introAt = (ms, fn) => introTimers.push(setTimeout(fn, ms));
+function introSound() { // nappe grave qui gonfle + acouphène qui monte ; coupés net à la dernière apparition
+  if (!audioCtx) return;
+  const ctx = audioCtx, t0 = ctx.currentTime;
+  const master = ctx.createGain(); master.gain.setValueAtTime(0.0001, t0); master.gain.linearRampToValueAtTime(0.55, t0 + 3.2); master.connect(bus());
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260; lp.connect(master);
+  const nodes = [];
+  for (const [type, f, v] of [['sawtooth', 41.2, 0.6], ['sawtooth', 41.9, 0.5], ['sine', 82.4, 0.4]]) {
+    const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.value = f; g.gain.value = v; o.connect(g).connect(lp); o.start(); nodes.push(o);
+  }
+  const hi = ctx.createOscillator(), hg = ctx.createGain(), tr = ctx.createOscillator(), tg = ctx.createGain();
+  hi.type = 'sine'; hi.frequency.setValueAtTime(1400, t0); hi.frequency.exponentialRampToValueAtTime(3300, t0 + 3.3);
+  hg.gain.setValueAtTime(0.0001, t0); hg.gain.linearRampToValueAtTime(0.09, t0 + 3.2); tr.frequency.value = 9; tg.gain.value = 0.03;
+  tr.connect(tg).connect(hg.gain); hi.connect(hg).connect(bus()); hi.start(); tr.start(); nodes.push(hi, tr);
+  introSnd = { master, hg, nodes };
+}
+function introSoundStop() {
+  const s = introSnd; if (!s || !audioCtx) return; introSnd = null;
+  const t = audioCtx.currentTime;
+  try { s.master.gain.cancelScheduledValues(t); s.master.gain.setTargetAtTime(0, t, 0.015); s.hg.gain.cancelScheduledValues(t); s.hg.gain.setTargetAtTime(0, t, 0.015); } catch (e) {}
+  setTimeout(() => s.nodes.forEach(o => { try { o.stop(); } catch (e) {} }), 300);
+}
+function endIntro() {
+  if (introDone) return;
+  introDone = true; introActive = false;
+  introTimers.forEach(clearTimeout); cancelAnimationFrame(introRaf); introSoundStop();
+  transition(null, { intro: true, silent: true });   // repart du noir (1re image immédiate), puis le signal revient en fondu sur l'accueil
+  introCv.style.display = 'none'; gate.style.display = 'none';
+  if (musicOn) startMenuMusic();
+}
+function startIntro() {
+  if (introStarted) return;
+  introStarted = true;
+  ensureAudio();
+  if (IS_TOUCH) goFullscreenLandscape();
+  if (reduceMotion) { endIntro(); return; }          // pas de flashs pour qui a demandé moins d'animations
+  gate.style.display = 'none'; introCv.style.display = 'block';
+  introT0 = performance.now(); introRaf = requestAnimationFrame(drawIntro);
+  sfxGlitch(false, 1.3); introSound();
+  for (const ms of [900, 1650, 2300, 2800, 3100]) introAt(ms, () => { sfx(55, 0.24, 'sine', 0.6, 0.45); setTimeout(() => sfx(48, 0.26, 'sine', 0.45, 0.45), 170); }); // cœur qui s'emballe
+  for (const ms of [700, 1250, 1900, 2450]) introAt(ms, () => sfxNoise(0.12, 0.16, 2500, 5200));
+  introAt(2650, () => { sfxGlitch(true, 1.3); sfx(70, 0.6, 'sine', 0.7, 0.3); });
+  introAt(3250, () => { sfxScream(); sfxGlitch(false, 1.4); sfx(55, 0.9, 'sine', 0.9, 0.3); });
+  introAt(3380, () => { sfxNoise(0.3, 0.3, 5200, 400); sfx(40, 0.8, 'sine', 1, 0.4); });
+  introAt(3475, introSoundStop);                      // plus un bruit : coupure noire
+  introAt(INTRO_END, endIntro);
+}
+if (introActive) {
+  const enter = e => {
+    if (!introStarted) { if (e.type === 'keydown' && (e.ctrlKey || e.metaKey || e.altKey || /^(F\d+|Shift|Control|Alt|Meta|Tab)$/.test(e.key))) return; startIntro(); }
+    else if (!introDone && performance.now() - introT0 > 1200) endIntro();   // un 2e geste après 1,2 s passe l'intro
+  };
+  gate.addEventListener('pointerdown', enter); introCv.addEventListener('pointerdown', enter); addEventListener('keydown', enter);
+  document.fonts && document.fonts.load('48px Butcherman'); document.fonts && document.fonts.load('600 24px Teko');
+} else {
+  gate.style.display = 'none';
+  transition(null, { intro: true, silent: true }); // sans intro : l'écran noir se brouille puis le signal arrive
+}
 
 // ---------- Aperçu 3D du personnage à l'accueil ----------
 // Petit rendu séparé : le soldat au skin choisi tourne sur lui-même
