@@ -733,7 +733,9 @@ const uiClick = () => { sfx(560, 0.07, 'square', 0.08, 0.5); sfx(1250, 0.05, 'tr
 // ---------- Musique d'accueil : « Paranoid Truth » de Tsorthan Grove (CC0, opengameart.org/content/paranoid-truth) ----------
 // Lue en flux par un élément <audio> (2 min 50 : on ne décode pas tout en mémoire), en boucle, branchée sur le bus général.
 // Si le fichier ne charge pas, repli sur l'ancienne nappe synthétisée.
-const LOBBY_FILE = 'sounds/lobby.mp3', MENU_VOL = 0.8;
+// Le morceau est surtout une basse très grave (sous 150 Hz, inaudible sur des haut-parleurs d'ordinateur, et qui fait
+// travailler le limiteur à vide) : on l'atténue de 12 dB et on remonte le gain pour que les médiums s'entendent.
+const LOBBY_FILE = 'sounds/lobby.mp3', MENU_VOL = 2.0;
 let menuMusic = null;
 function startMenuMusic() {
   if (!audioCtx || !musicOn || menuMusic || gameStarted || introActive) return;
@@ -741,7 +743,8 @@ function startMenuMusic() {
   el.loop = true; el.preload = 'auto';
   let node; try { node = ctx.createMediaElementSource(el); } catch (e) { menuMusic = menuSynth(); return; }
   const master = ctx.createGain(); master.gain.value = 0; master.gain.linearRampToValueAtTime(MENU_VOL, ctx.currentTime + 3);
-  node.connect(master); master.connect(bus());
+  const shelf = ctx.createBiquadFilter(); shelf.type = 'lowshelf'; shelf.frequency.value = 150; shelf.gain.value = -12;
+  node.connect(shelf); shelf.connect(master); master.connect(bus());
   const mm = { master, oscs: [], timers: [], el };
   const fallback = () => { if (menuMusic === mm) { stopMenuMusic(); menuMusic = menuSynth(); } };
   el.addEventListener('error', fallback);
