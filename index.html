@@ -575,7 +575,7 @@
     <div class="opt-label">Touches (PC)</div>
     <div id="keys-row"></div>
     <button class="chip" id="keys-reset">Touches par défaut</button>
-    <label class="check-line"><input type="checkbox" id="chk-music"> Musique de fond</label>
+    <label class="check-line"><input type="checkbox" id="chk-music"> Musique d'accueil</label>
     <label class="check-line"><input type="checkbox" id="chk-fps"> Afficher FPS et infos techniques</label>
   </div>
   <div class="panel" id="skin-panel">
@@ -799,62 +799,8 @@ function stopMenuMusic() {
   }, 800);
 }
 
-// ---------- Musique de fond (synthèse, ambiance de combat, désactivable) ----------
+// Réglage « Musique » (accueil / lobby). Il n'y a plus de musique pendant la partie : seulement les bruitages et l'ambiance.
 let musicOn = localStorage.getItem('zh-music') !== '0';
-let musicNodes = null, musicTimer = null;
-function startMusic() {
-  if (!audioCtx || !musicOn || musicNodes) return;
-  const master = audioCtx.createGain();
-  master.gain.value = 0.0;
-  master.gain.linearRampToValueAtTime(0.16, audioCtx.currentTime + 2);
-  master.connect(bus());
-  // Nappe grave continue (deux oscillateurs légèrement désaccordés)
-  const droneA = audioCtx.createOscillator(), droneB = audioCtx.createOscillator();
-  const droneG = audioCtx.createGain(); droneG.gain.value = 0.5;
-  droneA.type = 'sawtooth'; droneB.type = 'sawtooth';
-  droneA.frequency.value = 55; droneB.frequency.value = 55.6; // La grave
-  const lp = audioCtx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 380;
-  droneA.connect(lp); droneB.connect(lp); lp.connect(droneG).connect(master);
-  droneA.start(); droneB.start();
-  musicNodes = { master, droneA, droneB };
-  if (duelMode === 'extinction') { // Extinction : nappe sourde et inquiétante, pas de motif de combat
-    droneA.frequency.value = 41.2; droneB.frequency.value = 43.4;
-    lp.frequency.value = 170; droneG.gain.value = 0.8;
-    const lfo = audioCtx.createOscillator(), lfoG = audioCtx.createGain(); // le filtre « respire » lentement
-    lfo.frequency.value = 0.11; lfoG.gain.value = 70;
-    lfo.connect(lfoG).connect(lp.frequency); lfo.start();
-    musicNodes.lfo = lfo;
-    return;
-  }
-  // Motif rythmique : notes de tension jouées en boucle
-  const scale = [110, 130.8, 146.8, 164.8, 196]; // La mineur, pulsation
-  let step = 0;
-  const beat = () => {
-    if (!musicNodes) return;
-    const t = audioCtx.currentTime;
-    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-    o.type = 'triangle';
-    o.frequency.value = scale[step % scale.length] * (step % 8 < 4 ? 1 : 1.5);
-    g.gain.value = 0; g.gain.linearRampToValueAtTime(0.09, t + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
-    o.connect(g).connect(master);
-    o.start(t); o.stop(t + 0.55);
-    step++;
-    musicTimer = setTimeout(beat, 300);
-  };
-  beat();
-}
-function stopMusic() {
-  if (musicTimer) { clearTimeout(musicTimer); musicTimer = null; }
-  if (musicNodes) {
-    try {
-      musicNodes.master.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.6);
-      const n = musicNodes;
-      setTimeout(() => { try { n.droneA.stop(); n.droneB.stop(); if (n.lfo) n.lfo.stop(); } catch (e) {} }, 700);
-    } catch (e) {}
-    musicNodes = null;
-  }
-}
 
 // ---------- Scène ----------
 const scene = new THREE.Scene();
@@ -1885,7 +1831,6 @@ function applyExtEnd(d) {
   glitchPulse();
   $('heartbeat').style.opacity = 0;
   setFlashlight(false);
-  stopMusic();
   if (IS_TOUCH) { touchPlaying = false; document.body.classList.remove('touch-playing'); shooting = false; }
   else { try { document.exitPointerLock(); } catch (e) {} }
   const jaiGagne = isMonster() ? !d.dead : d.dead;
@@ -4386,7 +4331,6 @@ const overlay = $('overlay');
 overlay.addEventListener('click', () => {
   if (!player.alive) { location.reload(); return; }
   ensureAudio();
-  startMusic();
   if (IS_TOUCH) { // pas de pointer lock sur mobile : on lance directement
     goFullscreenLandscape();
     touchPlaying = true;
@@ -4732,7 +4676,6 @@ function duelEnd(won) {
   player.alive = false;
   glitchPulse();
   setScoped(false);
-  stopMusic();
   if (IS_TOUCH) { touchPlaying = false; document.body.classList.remove('touch-playing'); shooting = false; $('crosshair').style.display = 'none'; }
   else document.exitPointerLock();
   overlay.style.display = 'flex';
@@ -4858,7 +4801,6 @@ function die() {
     overlay.style.display = 'flex';
     $('crosshair').style.display = 'none';
   } else document.exitPointerLock();
-  stopMusic();
   const record = score > profile.best;
   if (record) { profile.best = score; saveProfile(); }
   $('overlay').querySelector('h1').textContent = '💀 TU ES TOMBÉ';
@@ -6301,7 +6243,6 @@ addEventListener('popstate', () => {
     // Sortie propre vers l'accueil, sans recharger la page (ne coupe jamais
     // un duel/partie en cours à cause d'un événement involontaire)
     if (!IS_TOUCH) { try { document.exitPointerLock(); } catch (e) {} }
-    stopMusic();
     setScoped(false);
     gameStarted = false;
     duelMode = null; duelOver = true;
@@ -6395,8 +6336,7 @@ chkMusic.checked = musicOn;
 chkMusic.onchange = () => {
   musicOn = chkMusic.checked;
   localStorage.setItem('zh-music', musicOn ? '1' : '0');
-  if (musicOn && gameStarted && audioCtx) startMusic(); else stopMusic();
-  if (!gameStarted) { if (musicOn) { ensureAudio(); startMenuMusic(); } else stopMenuMusic(); } // musique d'accueil
+  if (!gameStarted) { if (musicOn) { ensureAudio(); startMenuMusic(); } else stopMenuMusic(); } // musique d'accueil seulement
 };
 
 // ---------- Sons d'interface + musique d'accueil + arrivée du signal au chargement ----------
