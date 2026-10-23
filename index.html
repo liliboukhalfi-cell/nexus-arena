@@ -1111,7 +1111,8 @@ scene.add(floor);
 // ================= Peaufinage : reflets, ombres de contact, ambiance vivante, halo =================
 // Tout est discret (« légèrement, n'abuse pas ») et réglé par FX (voir qualité graphique).
 // ── Ciel flou pour les reflets (nuit bleutée + éclat de lune) : sol humide, feuilles et métal le reflètent un peu
-const skyEnv = (() => {
+let skyEnvTex = null;   // créé à la première utilisation (jamais en qualité Basse)
+const getSkyEnv = () => skyEnvTex || (skyEnvTex = (() => {
   const envScene = new THREE.Scene();
   envScene.add(new THREE.Mesh(new THREE.SphereGeometry(50, 24, 16), new THREE.ShaderMaterial({
     side: THREE.BackSide,
@@ -1122,7 +1123,7 @@ const skyEnv = (() => {
   const rt = pm.fromScene(envScene, 0.03);
   pm.dispose();
   return rt.texture;
-})();
+})());
 // ── Sol humide : flaques lisses (qui renvoient la lampe, les balises et la lune) au milieu d'un sol rugueux
 const wetTex = canvasTex(512, (x, s) => {
   x.fillStyle = 'rgb(255,214,255)'; x.fillRect(0, 0, s, s);
@@ -1139,9 +1140,10 @@ const wetTex = canvasTex(512, (x, s) => {
 fxHooks.push(() => {
   const wet = FX.wet;
   floor.material.roughnessMap = wet ? wetTex : null; floor.material.roughness = wet ? 1 : 0.85;
-  floor.material.envMap = wet ? skyEnv : null; floor.material.envMapIntensity = 0.32;
-  hedgeMat.envMap = wet ? skyEnv : null; hedgeMat.envMapIntensity = 0.35;
-  leverMetal.envMap = leverDark.envMap = wet ? skyEnv : null; leverMetal.envMapIntensity = 0.7;
+  const env = wet ? getSkyEnv() : null;
+  floor.material.envMap = env; floor.material.envMapIntensity = 0.32;
+  hedgeMat.envMap = env; hedgeMat.envMapIntensity = 0.35;
+  leverMetal.envMap = leverDark.envMap = env; leverMetal.envMapIntensity = 0.7;
   floor.material.needsUpdate = hedgeMat.needsUpdate = leverMetal.needsUpdate = leverDark.needsUpdate = true;
   hedgeWindAmp.value = FX.wind ? 1 : 0;
 });
@@ -1348,7 +1350,7 @@ fxHooks.push(() => {
 function updatePolish(dt, tt) {
   hedgeWind.value = tt;
   if (FX.wind) hedgeWindAmp.value = 0.75 + 0.45 * Math.sin(tt * 0.21) + 0.2 * Math.sin(tt * 0.53 + 1.3);   // rafales
-  if (FX.lampShadow && typeof flashlight !== 'undefined') flashlight.shadow.autoUpdate = player.flashOn; // pas de passe d'ombre lampe éteinte
+  if (FX.lampShadow && typeof flashlight !== 'undefined') flashlight.shadow.autoUpdate = player.flashOn || spec.lamp; // pas de passe d'ombre lampe éteinte
   // Souffle : après une longue course, on s'essouffle (inspirations bruitées qui s'espacent quand on ralentit)
   sprintT = isSprinting && player.alive ? sprintT + dt : Math.max(0, sprintT - dt * 0.5);
   if (sprintT > 3.5 && player.alive) {
@@ -1992,7 +1994,7 @@ window.__maze = { build: buildExtinctionMaze, clear: clearExtinctionMaze, walls:
 window.__ext = () => ({ duelMode, gameStarted, extOver, monsters: [...monsterIds], moon: moon.intensity, fog: [scene.fog.near, scene.fog.far], mapT: extMapT, revealed: extRevealed.size, remotes: remotePlayers.size, freeze: extFreezeUntil - Date.now(),
   tags: [...remotePlayers].map(([id, r]) => ({ id, tag: !!r.tag, vis: r.tag && r.tag.visible, text: r.tagText, tagWorld: r.tag && r.tag.getWorldPosition(new THREE.Vector3()).toArray().map(v => +v.toFixed(2)), tagScale: r.tag && r.tag.scale.toArray().map(v => +v.toFixed(2)), cam: camera.position.toArray().map(v => +v.toFixed(2)), modelScale: r.rig && r.rig.model.scale.toArray(), rig: !!r.rig, pos: r.rig && r.rig.model.position.toArray().map(v => +v.toFixed(1)) })),
   decor: { hidden: arenaDecorHidden, obstaclesVisible: obstacleMeshes.filter(m => m.visible).length, obstaclesSolid: obstacles.filter(o => !o.off).length, walls: walls.filter(w => w.visible).length, lamps: lampObjs.filter(l => l.visible).length } });
-window.__lv = (cmd, a, b) => { // debug (tests) : état des leviers, téléportation, regard
+if (/[?&](silent|debug)\b/.test(location.search)) window.__lv = (cmd, a, b) => { // debug (tests, réservé à ?silent / ?debug) : état des leviers, téléportation, regard
   if (cmd === 'pos') { player.pos.set(a, EYE, b); return 1; }
   if (cmd === 'yaw') { yaw = a; return 1; }
   if (cmd === 'cell') return extCellOf(player.pos.x, player.pos.z);
@@ -2308,6 +2310,7 @@ function extAudio(dt) {
 }
 function extCheck(dt) {
   if (duelMode !== 'extinction' || !gameStarted || extOver) return;
+  if (!mazeReady) return;   // client : le labyrinthe n'est construit qu'à la réception des rôles (graine de l'hôte)
   extAudio(dt);
   updateLeverProgress(dt); updateLevers(dt);
   // ── Canalisation du soin ──
@@ -2408,8 +2411,7 @@ function specPick(dir) {
 function startSpectate() {
   if (duelMode !== 'extinction' || extOver || !gameStarted) return;
   spec.on = true; spec.id = null; spec.pos.copy(camera.position); spec.yaw = yaw; spec.pitch = pitch;
-  specPick(1);
-  if (spec.id) { /* position déjà posée par specPick */ } else spec.pos.copy(camera.position);
+  specPick(1);   // pose la caméra sur le premier survivant en vie (sinon on garde la vue de mort)
   $('spec-bar').classList.add('on');
   document.body.classList.remove('touch-playing');   // les commandes de jeu n'ont plus de sens : place au sélecteur
 }
@@ -6492,7 +6494,7 @@ function onMsg(conn, d) {
       break;
     }
     case 'ext_role': // mode Extinction : rôle public, tout le monde le reçoit
-      if (typeof d.seed === 'number') { if (mazeReady && mazeBuiltSeed !== d.seed) clearExtinctionMaze(); mazeSeed = d.seed; } // même labyrinthe que l'hôte
+      if (typeof d.seed === 'number') { if (mazeReady) clearExtinctionMaze(); mazeSeed = d.seed; } // même labyrinthe que l'hôte (et leviers remis à zéro)
       monsterIds = new Set(d.ids);
       if (d.nms) for (const k in d.nms) if (k !== myId) extNames.set(k, d.nms[k]);
       extStartCountdown(d.nms);
