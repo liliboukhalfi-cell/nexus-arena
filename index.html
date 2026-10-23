@@ -146,6 +146,15 @@
   #ext-hud .v { font-family: var(--font-ui); font-weight: 700; font-size: 44px; line-height: 1.05; color: #fff; min-width: 24px;
     text-shadow: 0 0 12px rgba(127,212,255,.65), 0 2px 4px #000; }
   #ext-hud .pill.safe { border-color: rgba(106,255,158,.6); } #ext-hud .pill.safe .k { color: #9dffbf; }
+  #ext-hud .pill.lev { border-color: rgba(255,120,90,.7); } #ext-hud .pill.lev .k { color: #ffb3a0; }
+  #ext-hud .pill.lev.done { border-color: rgba(106,255,158,.7); } #ext-hud .pill.lev.done .k { color: #9dffbf; }
+  /* Barre d'activation d'un levier (au-dessus du bas de l'écran, visible seulement près d'un levier) */
+  #lever-hud { position: absolute; left: 50%; bottom: 27%; transform: translateX(-50%); width: min(340px, 72vw); text-align: center;
+    opacity: 0; transition: opacity .18s; font-family: var(--font-ui); }
+  #lever-hud.on { opacity: 1; }
+  #lever-hud .t { font-size: 22px; font-weight: 600; letter-spacing: 3px; color: #ffd0b8; text-shadow: 0 0 12px rgba(255,90,40,.7), 0 2px 4px #000; margin-bottom: 4px; }
+  #lever-hud .bar { height: 14px; border: 2px solid rgba(255,170,130,.85); border-radius: 8px; background: rgba(0,0,0,.6); overflow: hidden; box-shadow: 0 0 14px rgba(255,90,40,.35); }
+  #lever-hud .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ff5a3a, #ffd24d, #6aff9e); }
   /* Début de partie Extinction : bannière de rôle en haut, gros compte à rebours au centre */
   #ext-banner { position: absolute; top: 124px; left: 0; right: 0; text-align: center; opacity: 0; transition: opacity .5s;
     font-family: var(--font-title); font-size: 64px; letter-spacing: 3px; color: #ff725c;
@@ -508,6 +517,7 @@
     <div class="wave">VAGUE <span id="wave">1</span></div>
     <div class="score">Score : <span id="score">0</span> · Ennemis restants : <span id="left">0</span></div>
     <div id="ext-hud">
+      <div class="pill lev" id="ext-lev-pill"><span class="k">⚡ LEVIERS</span><span class="v" id="ext-lev">0/3</span></div>
       <div class="pill"><span class="k">SURVIVANTS</span><span class="v" id="ext-surv">0</span></div>
       <div class="pill safe"><span class="k">À L'ABRI</span><span class="v" id="ext-safe">0</span></div>
     </div>
@@ -527,6 +537,7 @@
   <div id="msg"></div>
   <div id="ext-banner"></div>
   <div id="ext-count"></div>
+  <div id="lever-hud"><div class="t">⚡ ACTIVATION DU LEVIER…</div><div class="bar"><i id="lever-fill"></i></div></div>
   <div id="debug-panel" style="position:absolute;top:10px;left:10px;background:rgba(0,0,0,.75);color:#7fffb0;font:12px monospace;padding:8px 12px;border-radius:8px;white-space:pre;line-height:1.5;"></div>
 </div>
 <div id="home">
@@ -1216,6 +1227,159 @@ const mazeWalls = [];       // {x,z,hx,hz} AABB demi-tailles (collision)
 const mazeWallMeshes = [];
 let mazeGroup = null, mazePointA = null, mazePointB = null, mazeReady = false;
 
+// ---------- Leviers du mode Extinction ----------
+// 3 leviers cachés dans des culs-de-sac éloignés du départ, de B et les uns des autres. Rester à moins de 2,6 m pendant
+// 4 s (plus vite à plusieurs) en active un pour tout le monde ; quand les 3 sont activés, la barrière de B s'ouvre.
+// Chaque levier a une balise rouge qui clignote (visible de loin) et grésille de plus en plus près. Le monstre ne voit
+// un levier sur sa carte (et sa balise) que pendant 5 s après que quelqu'un l'a touché.
+const LEVER_R = 2.6, LEVER_T = 4, LEVER_COUNT = 3;
+const extLevers = [];                 // {i, x, z, on, prog, holdUntil, alertUntil, lastSend, + objets 3D}
+let extBOpen = false, bFlash = 0, leverSparkT = 0;
+let mazeBarrier = null, mazeBeamB = null, mazeGlowB = null;
+const leverMetal = new THREE.MeshStandardMaterial({ color: 0x4a515c, metalness: 0.4, roughness: 0.55 });
+const leverDark = new THREE.MeshStandardMaterial({ color: 0x23272e, metalness: 0.3, roughness: 0.7 });
+const LV_GEO = {
+  base: new THREE.CylinderGeometry(0.85, 0.95, 0.22, 20), post: new THREE.CylinderGeometry(0.13, 0.17, 1.35, 10),
+  box: new THREE.BoxGeometry(0.62, 0.6, 0.36), arm: new THREE.CylinderGeometry(0.06, 0.06, 0.85, 8),
+  knob: new THREE.SphereGeometry(0.14, 12, 10), lamp: new THREE.SphereGeometry(0.12, 12, 10), screen: new THREE.PlaneGeometry(0.42, 0.14),
+  beam: new THREE.CylinderGeometry(0.13, 0.13, 70, 8, 1, true), ring: new THREE.RingGeometry(LEVER_R - 0.12, LEVER_R, 48)
+};
+function makeLever(i, x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z);
+  const part = (geo, mat, px, py, pz) => { const m = new THREE.Mesh(geo, mat); m.position.set(px, py, pz); m.castShadow = true; g.add(m); return m; };
+  part(LV_GEO.base, leverDark, 0, 0.11, 0); part(LV_GEO.post, leverMetal, 0, 0.9, 0); part(LV_GEO.box, leverDark, 0, 1.75, 0);
+  const lampMat = new THREE.MeshStandardMaterial({ color: 0x220000, emissive: 0xff2a1a, emissiveIntensity: 2 });
+  part(LV_GEO.lamp, lampMat, 0, 2.18, 0);
+  const screen = new THREE.Mesh(LV_GEO.screen, lampMat); screen.position.set(0, 1.9, 0.185); g.add(screen);   // petit écran d'état au-dessus du levier
+  // levier : fixé sur la face avant du boîtier, relevé (éteint) puis tiré vers le bas (activé)
+  const pivot = new THREE.Group(); pivot.position.set(0, 1.75, 0.24); pivot.rotation.x = 0.35; g.add(pivot);
+  const arm = new THREE.Mesh(LV_GEO.arm, leverMetal); arm.position.y = 0.42; arm.castShadow = true; pivot.add(arm);
+  const knob = new THREE.Mesh(LV_GEO.knob, new THREE.MeshStandardMaterial({ color: 0x661111, emissive: 0xaa1100, emissiveIntensity: 0.9 })); knob.position.y = 0.88; pivot.add(knob);
+  const ringMat = new THREE.MeshBasicMaterial({ color: 0xff3a2a, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending });
+  const ring = new THREE.Mesh(LV_GEO.ring, ringMat); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.05; g.add(ring);
+  const beamMat = new THREE.MeshBasicMaterial({ color: 0xff3a2a, transparent: true, opacity: 0.3, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
+  const beam = new THREE.Mesh(LV_GEO.beam, beamMat); beam.position.y = 35; g.add(beam);
+  const light = new THREE.PointLight(0xff3020, 2.2, 9, 1.8); light.position.set(0, 2.6, 0.4); g.add(light);
+  mazeGroup.add(g);
+  return { i, x, z, on: false, prog: 0, holdUntil: 0, alertUntil: 0, lastSend: 0, arm: pivot, lampMat, ringMat, beamMat, beam, light, knob: knob.material };
+}
+function placeLevers(cells, n, c, ox, oz, clearingR) {
+  const cand = [];
+  for (let gy = 0; gy < n; gy++) for (let gx = 0; gx < n; gx++) {
+    const k = cells[gy][gx], walls = (k.n ? 1 : 0) + (k.s ? 1 : 0) + (k.e ? 1 : 0) + (k.w ? 1 : 0);
+    const p = { x: ox + gx * c + c / 2, z: oz + gy * c + c / 2 };
+    if (Math.abs(p.x) < clearingR * 1.6 && Math.abs(p.z) < clearingR * 1.6) continue;      // pas dans la clairière
+    const dA = Math.hypot(gx, gy), dB = Math.hypot(gx - (n - 1), gy - (n - 1));
+    if (dA < 6 || dB < 6) continue;                                                           // loin du départ et de B
+    cand.push({ gx, gy, p, dead: walls >= 3, dA, dB });
+  }
+  const dead = cand.filter(q => q.dead), from = dead.length >= LEVER_COUNT * 3 ? dead : cand; // de préférence des culs-de-sac
+  const picks = [];
+  while (picks.length < LEVER_COUNT) {                                                         // points les plus éloignés les uns des autres
+    let best = null, bd = -1;
+    for (const q of from) {
+      if (picks.includes(q)) continue;
+      let d = Math.min(q.dA, q.dB);
+      for (const pk of picks) d = Math.min(d, Math.hypot(q.gx - pk.gx, q.gy - pk.gy));
+      if (d > bd) { bd = d; best = q; }
+    }
+    if (!best) break;
+    picks.push(best);
+  }
+  picks.forEach((q, i) => extLevers.push(makeLever(i, q.p.x, q.p.z)));
+}
+// Barrière de B : rouge et fermée tant que les 3 leviers ne sont pas activés, puis verte (le monstre, lui, n'y entre jamais)
+function setBState(open) {
+  if (!mazeBarrier) return;
+  const col = open ? 0x4dff96 : 0xff3a2a;
+  mazeBarrier.material.color.setHex(col); mazeBarrier.material.opacity = open ? 0.16 : 0.3;
+  mazeBeamB.material.color.setHex(open ? 0x6aff9e : 0xff5a4a);
+  mazeGlowB.color.setHex(col);
+}
+function extOpenB() {
+  if (extBOpen) return;
+  extBOpen = true; bFlash = 1.2;
+  setBState(true);
+  showMsg('🔓 LE POINT B EST OUVERT ! COURS !', 3500);
+  sfx(330, 0.5, 'sawtooth', 0.2, 2.2); sfx(660, 0.6, 'triangle', 0.18, 2.6); sfxNoise(0.5, 0.2, 400, 5000);
+  buzz([60, 40, 60, 40, 140], 0, true);
+  updateHud();
+}
+function extLeversOn() { let k = 0; for (const lv of extLevers) if (lv.on) k++; return k; }
+// Activation (locale : j'ai tenu 4 s ; sinon : message d'un autre joueur)
+function extActivateLever(i, local) {
+  const lv = extLevers[i];
+  if (!lv || lv.on) return;
+  lv.on = true; lv.prog = 1; lv.holdUntil = 0;
+  sfx(110, 0.3, 'square', 0.3, 0.4); sfx(900, 0.25, 'triangle', 0.16, 1.9); sfxNoise(0.3, 0.22, 3500, 400);
+  const k = extLeversOn();
+  showMsg('⚡ Levier ' + k + '/' + extLevers.length + ' activé !', 2000);
+  if (local) { buzz([30, 40, 70], 0, true); netSend({ t: 'lever', i }); }
+  if (k === extLevers.length) extOpenB();
+  updateHud(); if (duelMode === 'extinction') drawExtMinimap();
+}
+// Progression du levier le plus proche : il faut rester à moins de LEVER_R ; les autres survivants proches accélèrent
+function updateLeverProgress(dt) {
+  const now = Date.now(), lh = $('lever-hud');
+  let near = null;
+  if (player.alive && !isMonster() && now >= extFreezeUntil && extHealT <= 0)
+    for (const lv of extLevers) if (!lv.on && Math.hypot(player.pos.x - lv.x, player.pos.z - lv.z) < LEVER_R) near = lv;
+  for (const lv of extLevers) {
+    if (lv.on) continue;
+    if (lv === near) {
+      let helpers = 0;
+      for (const [pid, r] of remotePlayers) {
+        const s = r.lastState;
+        if (!s || monsterIds.has(pid) || duelElim.has(pid)) continue;
+        if (Math.hypot(s.p[0] - lv.x, s.p[2] - lv.z) < LEVER_R + 0.5) helpers++;
+      }
+      lv.prog = Math.min(1, lv.prog + dt / LEVER_T * (1 + 0.5 * Math.min(2, helpers)));
+      lv.holdUntil = now + 350;
+      if (now - lv.lastSend > 400) { lv.lastSend = now; netSend({ t: 'lv_hold', i: lv.i }); }  // le monstre l'entend
+      if (lv.prog >= 1) extActivateLever(lv.i, true);
+    } else lv.prog = Math.max(0, lv.prog - dt / 8);
+  }
+  if (lh) {
+    lh.classList.toggle('on', !!near && !near.on);
+    if (near) $('lever-fill').style.width = Math.round(near.prog * 100) + '%';
+  }
+}
+// Animation des leviers (bras, lampes, balises), de la barrière de B, et grésillement qui guide vers le levier le plus proche
+function updateLevers(dt) {
+  const now = Date.now(), tt = performance.now() / 1000, monster = isMonster();
+  let nd = 1e9;
+  for (const lv of extLevers) {
+    const hold = lv.holdUntil > now, seen = !monster || lv.alertUntil > now;
+    const target = lv.on ? 2.4 : 0.35 + lv.prog * 2.05 + (hold ? Math.sin(tt * 30) * 0.04 : 0);   // le bras descend avec la progression
+    lv.arm.rotation.x += (target - lv.arm.rotation.x) * Math.min(1, dt * 9);
+    if (lv.on) {
+      lv.lampMat.emissive.setHex(0x37ff7a); lv.lampMat.emissiveIntensity = 1.8; lv.knob.emissive.setHex(0x1faa55);
+      lv.beamMat.color.setHex(0x37ff7a); lv.beamMat.opacity = 0.09; lv.ringMat.color.setHex(0x37ff7a); lv.ringMat.opacity = 0.3;
+      lv.light.color.setHex(0x37ff7a); lv.light.intensity = 2.2;
+    } else {
+      const blink = hold ? (Math.sin(tt * 40) > 0 ? 1 : 0.25) : (Math.sin(tt * 3.2 + lv.i * 2.1) > 0.35 ? 1 : 0.3);
+      lv.lampMat.emissiveIntensity = 0.5 + 2.4 * blink; lv.beamMat.opacity = 0.08 + 0.4 * blink;
+      lv.ringMat.opacity = 0.14 + 0.24 * blink; lv.light.intensity = 0.5 + 2.4 * blink;
+    }
+    lv.beam.visible = seen;                         // le monstre ne voit pas la balise d'un levier au repos
+    if (!lv.on) nd = Math.min(nd, Math.hypot(player.pos.x - lv.x, player.pos.z - lv.z));
+  }
+  if (!monster && player.alive && nd < 30) {       // étincelles : de plus en plus fréquentes et fortes en approchant
+    leverSparkT -= dt;
+    if (leverSparkT <= 0) {
+      const prox = 1 - nd / 30;
+      leverSparkT = 0.22 + nd / 16 + Math.random() * 0.3;
+      sfxNoise(0.05, 0.02 + 0.14 * prox * prox, 2500, 8000);
+      if (prox > 0.4) sfx(1500 + Math.random() * 1200, 0.03, 'square', 0.015 + 0.05 * prox, 0.4);
+    }
+  }
+  if (mazeBarrier) {                                // B : respire en rouge tant qu'il est fermé ; éclat vert à l'ouverture
+    if (bFlash > 0) bFlash = Math.max(0, bFlash - dt);
+    mazeBarrier.material.opacity = extBOpen ? 0.16 + 0.45 * Math.min(1, bFlash) : 0.26 + 0.08 * Math.sin(tt * 2.4);
+    mazeBeamB.material.opacity = extBOpen ? 0.3 + 0.4 * Math.min(1, bFlash) : 0.22 + 0.1 * Math.sin(tt * 2.4);
+  }
+}
+
 // Texture de haie taillée (type buis) : des milliers de petites feuilles
 // dessinées, avec reflet et nervure, raccord parfait quand elle se répète.
 const hedgeTexFallback = canvasTex(512, (x, s) => {
@@ -1250,7 +1414,11 @@ const hedgeMat = new THREE.MeshStandardMaterial({
 });
 // Petit générateur pseudo-aléatoire déterministe, indépendant de `rand()`
 // (celui-ci reste dédié aux obstacles de l'arène classique).
-const mazeRand = (() => { let s = 90210; return () => { s = (s * 48271) % 2147483647; return (s - 1) / 2147483646; }; })();
+// Graine du labyrinthe : l'hôte en tire une au hasard à chaque partie Extinction et la diffuse avec les rôles, donc tout
+// le monde reconstruit le même labyrinthe, et un nouveau à chaque partie. 90210 = graine par défaut (solo, tests).
+let mazeSeed = 90210, mazeBuiltSeed = null, mazeRandS = 90210;
+const seedMaze = s => { mazeRandS = Math.floor(Math.abs(s)) % 2147483646 || 90210; };
+const mazeRand = () => { mazeRandS = (mazeRandS * 48271) % 2147483647; return (mazeRandS - 1) / 2147483646; };
 
 // Labyrinthe « parfait » (un seul chemin entre deux cellules quelconques,
 // donc plein de détours) par parcours en profondeur avec retour arrière.
@@ -1384,6 +1552,8 @@ function mergeHedgeGeos(parts) {
 function buildExtinctionMaze() {
   if (mazeReady) return;
   const n = MAZE_N, c = MAZE_CELL;
+  seedMaze(mazeSeed); mazeBuiltSeed = mazeSeed;       // même graine = même labyrinthe chez tout le monde
+  extBOpen = false; extLevers.length = 0;
   const cells = generateMazeGrid(n);
   const half = (n * c) / 2;
   const originX = -half, originZ = -half;
@@ -1442,6 +1612,9 @@ function buildExtinctionMaze() {
   const safeGlow = new THREE.PointLight(0x4dff96, 10, 24, 1.6);
   safeGlow.position.set(mazePointB.x, 4, mazePointB.z);
   mazeGroup.add(safeGlow);
+  mazeBarrier = barrier; mazeBeamB = beam; mazeGlowB = safeGlow;
+  placeLevers(cells, n, c, originX, originZ, clearingR);   // 3 leviers dans des culs-de-sac éloignés
+  setBState(false);                                        // B fermé (rouge) tant que les leviers ne sont pas tous activés
   // Point A : simple balise bleue au départ
   const beaconA = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 5, 8),
     new THREE.MeshBasicMaterial({ color: 0x7fd4ff, transparent: true, opacity: 0.5 }));
@@ -1454,6 +1627,7 @@ function clearExtinctionMaze() {
   scene.remove(mazeGroup);
   for (const m of mazeWallMeshes) m.geometry.dispose();
   mazeGroup = null;
+  extLevers.length = 0; extBOpen = false; mazeBarrier = mazeBeamB = mazeGlowB = null;
   mazeWalls.length = 0;
   mazeWallMeshes.length = 0;
   mazeReady = false;
@@ -1462,6 +1636,12 @@ window.__maze = { build: buildExtinctionMaze, clear: clearExtinctionMaze, walls:
 window.__ext = () => ({ duelMode, gameStarted, extOver, monsters: [...monsterIds], moon: moon.intensity, fog: [scene.fog.near, scene.fog.far], mapT: extMapT, revealed: extRevealed.size, remotes: remotePlayers.size, freeze: extFreezeUntil - Date.now(),
   tags: [...remotePlayers].map(([id, r]) => ({ id, tag: !!r.tag, vis: r.tag && r.tag.visible, text: r.tagText, tagWorld: r.tag && r.tag.getWorldPosition(new THREE.Vector3()).toArray().map(v => +v.toFixed(2)), tagScale: r.tag && r.tag.scale.toArray().map(v => +v.toFixed(2)), cam: camera.position.toArray().map(v => +v.toFixed(2)), modelScale: r.rig && r.rig.model.scale.toArray(), rig: !!r.rig, pos: r.rig && r.rig.model.position.toArray().map(v => +v.toFixed(1)) })),
   decor: { hidden: arenaDecorHidden, obstaclesVisible: obstacleMeshes.filter(m => m.visible).length, obstaclesSolid: obstacles.filter(o => !o.off).length, walls: walls.filter(w => w.visible).length, lamps: lampObjs.filter(l => l.visible).length } });
+window.__lv = (cmd, a, b) => { // debug (tests) : état des leviers, téléportation, regard
+  if (cmd === 'pos') { player.pos.set(a, EYE, b); return 1; }
+  if (cmd === 'yaw') { yaw = a; return 1; }
+  if (cmd === 'cell') return extCellOf(player.pos.x, player.pos.z);
+  return { seed: mazeSeed, built: mazeBuiltSeed, bOpen: extBOpen, A: mazePointA, B: mazePointB, levers: extLevers.map(l => ({ i: l.i, x: Math.round(l.x), z: Math.round(l.z), on: l.on, prog: +l.prog.toFixed(2), beam: l.beam.visible })), freeze: extFreezeUntil - Date.now(), pos: [player.pos.x, player.pos.z].map(v => +v.toFixed(1)) };
+};
 window.__tick = n => { for (let i = 0; i < (n || 1); i++) animate(); }; // debug : force la boucle (le pane de test ne déclenche pas rAF)
 
 // Le monstre est un géant de plus de 3 m de long : un seul cercle de 0,7 m laisserait sa tête, ses bras et sa
@@ -1506,8 +1686,8 @@ function collide(px, pz, radius) {
         pz = o.z + cz + (ez / d) * radius;
       }
     }
-    // Barrière « magique » du point B : le monstre ne peut pas y entrer
-    if (isMonster() && mazePointB) {
+    // Barrière « magique » du point B : le monstre ne peut jamais y entrer ; les survivants seulement une fois les leviers activés
+    if (mazePointB && (isMonster() || !extBOpen)) {
       const dx = px - mazePointB.x, dz = pz - mazePointB.z;
       const d = Math.hypot(dx, dz);
       if (d < EXT_SAFE_R + 0.5 && d > 0.001) {
@@ -1768,6 +1948,7 @@ function extAudio(dt) {
 function extCheck(dt) {
   if (duelMode !== 'extinction' || !gameStarted || extOver) return;
   extAudio(dt);
+  updateLeverProgress(dt); updateLevers(dt);
   // ── Canalisation du soin ──
   if (extHealT > 0) {
     extHealT -= dt;
@@ -1882,15 +2063,32 @@ function drawExtMapContent(x2, k, big) {
   }
   // Départ A + objectif B : sur les deux cartes (sur la mini-carte, le clip rond
   // ne les montre que lorsqu'ils sont dans le rayon visible)
+  const bCol = extBOpen ? '#6aff9e' : '#ff5a4a';       // B : rouge (fermé) tant que les leviers ne sont pas tous activés
   x2.fillStyle = '#7fd4ff'; x2.beginPath(); x2.arc(mazePointA.x, mazePointA.z, 5 * px, 0, 7); x2.fill();
-  x2.fillStyle = '#6aff9e'; x2.beginPath(); x2.arc(mazePointB.x, mazePointB.z, 7 * px, 0, 7); x2.fill();
-  x2.strokeStyle = '#6aff9e'; x2.lineWidth = 2 * px;
+  x2.fillStyle = bCol; x2.beginPath(); x2.arc(mazePointB.x, mazePointB.z, 7 * px, 0, 7); x2.fill();
+  x2.strokeStyle = bCol; x2.lineWidth = 2 * px;
   x2.beginPath(); x2.arc(mazePointB.x, mazePointB.z, 12 * px, 0, 7); x2.stroke();
+  // Leviers : visibles dès le début pour les survivants (rouge = éteint, vert = activé) ; le monstre ne les voit que 5 s après une activation
+  const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 160);
+  for (const lv of extLevers) {
+    const alert = lv.alertUntil > Date.now();
+    if (isMonster() && !alert) continue;
+    const col = lv.on ? '#6aff9e' : '#ff5a3a', r = 7 * px;
+    x2.save(); x2.translate(lv.x, lv.z); if (!big) x2.rotate(-yaw);        // l'icône reste droite sur la mini-carte qui tourne
+    if (!lv.on && (lv.holdUntil > Date.now() || alert)) { x2.strokeStyle = '#ffd24d'; x2.lineWidth = 2 * px; x2.beginPath(); x2.arc(0, 0, r * (1.5 + pulse), 0, 7); x2.stroke(); }
+    x2.fillStyle = 'rgba(4,6,12,0.9)'; x2.beginPath(); x2.arc(0, 0, r, 0, 7); x2.fill();
+    x2.strokeStyle = col; x2.lineWidth = 1.8 * px; x2.beginPath(); x2.arc(0, 0, r, 0, 7); x2.stroke();
+    x2.fillStyle = col; x2.beginPath();                                   // éclair
+    x2.moveTo(0.15 * r, -0.75 * r); x2.lineTo(-0.45 * r, 0.1 * r); x2.lineTo(-0.05 * r, 0.1 * r); x2.lineTo(-0.2 * r, 0.75 * r);
+    x2.lineTo(0.45 * r, -0.15 * r); x2.lineTo(0.05 * r, -0.15 * r); x2.closePath(); x2.fill();
+    if (big) { x2.font = `bold ${11 * px}px sans-serif`; x2.textAlign = 'center'; x2.fillStyle = col; x2.fillText('L' + (lv.i + 1), 0, -r - 3 * px); }
+    x2.restore();
+  }
   if (big) { // contour du labyrinthe + lettres (lisibles seulement sur la carte fixe)
     x2.strokeStyle = 'rgba(255,255,255,0.18)'; x2.lineWidth = 2 * px;
     x2.strokeRect(-half, -half, half * 2, half * 2);
     x2.font = `bold ${14 * px}px sans-serif`; x2.textAlign = 'center';
-    x2.fillStyle = '#6aff9e'; x2.fillText('B', mazePointB.x, mazePointB.z - 18 * px);
+    x2.fillStyle = bCol; x2.fillText(extBOpen ? 'B' : '🔒 B', mazePointB.x, mazePointB.z - 18 * px);
     x2.fillStyle = '#7fd4ff'; x2.fillText('A', mazePointA.x, mazePointA.z - 10 * px);
   }
   // Joueurs : survivants → les autres survivants ; monstre → seulement les lampes allumées
@@ -1933,6 +2131,12 @@ function drawExtMap(cv, big) {
   x2.fillStyle = isMonster() ? '#ff6a5e' : '#ffffff';
   x2.beginPath(); x2.moveTo(0, -7); x2.lineTo(5, 5); x2.lineTo(0, 2); x2.lineTo(-5, 5); x2.closePath(); x2.fill();
   x2.restore();
+  if (big) { // légende en bas de la grande carte
+    const lOn = extLeversOn(), lAll = extLevers.length;
+    x2.font = 'bold 15px sans-serif'; x2.textAlign = 'center';
+    x2.fillStyle = extBOpen ? '#9dffbf' : '#ffb3a0';
+    x2.fillText(extBOpen ? '🔓 Point B ouvert : cours !' : '⚡ Leviers ' + lOn + '/' + lAll + ' — active-les tous pour ouvrir le point B', S / 2, S - 12);
+  }
   if (!big) {
     x2.strokeStyle = 'rgba(255,255,255,0.35)'; x2.lineWidth = 2;
     x2.beginPath(); x2.arc(S / 2, S / 2, S / 2 - 1, 0, 7); x2.stroke();
@@ -3784,7 +3988,7 @@ function extStartCountdown(nms) {
     } else {
       count.classList.remove('pop'); count.textContent = '';
       setTimeout(() => banner.classList.remove('on'), 1800);
-      showMsg(isMonster() ? '🩸 CHASSE-LES TOUS !' : '🏃 COURS AU POINT B !', 2500);
+      showMsg(isMonster() ? '🩸 CHASSE-LES TOUS !' : '⚡ ACTIVE LES 3 LEVIERS POUR OUVRIR LE POINT B !', 3500);
       sfx(120, 0.5, 'sawtooth', 0.2, 1.5);
       if (monsterIds.size) sfx(75, 1.3, 'sawtooth', 0.2, 0.3); // rugissement du monstre
     }
@@ -4088,6 +4292,9 @@ function updateHud() {
     const surv = ids.filter(id => !monsterIds.has(id) && !duelElim.has(id)).length;
     $('ext-surv').textContent = surv;
     $('ext-safe').textContent = extArrived.size;
+    const lOn = extLeversOn(), lAll = extLevers.length || LEVER_COUNT;
+    $('ext-lev').textContent = lOn + '/' + lAll;
+    $('ext-lev-pill').classList.toggle('done', lOn >= lAll);
     if (!isMonster()) player.clip = extItemSel === 0 ? Math.round(player.battery) : extHealCharges;
     $('clip').textContent = player.clip;
     // lampe : « % batterie / batteries restantes » ; soin : charges seules
@@ -5600,7 +5807,30 @@ function onMsg(conn, d) {
     case 'lp_wolf': // moi seul le reçois : je suis le loup
       wolfId = myId;
       break;
+    case 'lever': // un survivant a activé un levier
+      if (typeof d.i === 'number') extActivateLever(d.i, false);
+      if (authority) broadcastExcept(conn, d);
+      break;
+    case 'lv_hold': { // quelqu'un est en train d'activer un levier : le monstre l'entend et le voit 5 s sur sa carte
+      const lv = extLevers[d.i];
+      if (lv && !lv.on) {
+        lv.holdUntil = Date.now() + 700;
+        if (isMonster()) {
+          const fresh = lv.alertUntil < Date.now();
+          lv.alertUntil = Date.now() + 5000;
+          if (fresh) {
+            const vol = Math.max(0.2, 1 - Math.hypot(player.pos.x - lv.x, player.pos.z - lv.z) / 90);
+            showMsg('⚡ Un levier grince !', 1600);
+            sfx(160, 0.45, 'sawtooth', 0.2 * vol, 0.5); sfxNoise(0.35, 0.18 * vol, 3000, 600);
+            drawExtMinimap();
+          }
+        }
+      }
+      if (authority) broadcastExcept(conn, d);
+      break;
+    }
     case 'ext_role': // mode Extinction : rôle public, tout le monde le reçoit
+      if (typeof d.seed === 'number') { if (mazeReady && mazeBuiltSeed !== d.seed) clearExtinctionMaze(); mazeSeed = d.seed; } // même labyrinthe que l'hôte
       monsterIds = new Set(d.ids);
       if (d.nms) for (const k in d.nms) if (k !== myId) extNames.set(k, d.nms[k]);
       extStartCountdown(d.nms);
@@ -5754,7 +5984,11 @@ function beginGame(mode) {
     player.battery = 100; player.batteries = 2; extHealCharges = 1; extHealT = 0; extItemSel = 0;
     monsterHp = 100; monsterStamina = 100; monsterBlindT = 0;
     setFlashlight(false);
-    buildExtinctionMaze();
+    if (authority) { // l'hôte tire la graine du labyrinthe ; les clients construisent à la réception des rôles (même graine)
+      if (mazeReady) clearExtinctionMaze();
+      mazeSeed = 1 + ((Math.random() * 2147483000) | 0);
+      buildExtinctionMaze();
+    }
     gun.visible = false; // pas de fusil dans ce mode : lampe/soin ou griffes
     document.querySelector('#topbar .wave').textContent = '🔦 EXTINCTION';
     if (authority) {
@@ -5774,7 +6008,7 @@ function beginGame(mode) {
       const nms = {}; // pseudos connus, envoyés avec les rôles pour l'annonce
       nms[myId] = extPseudo();
       for (const [pid] of remotePlayers) if (extNames.has(pid)) nms[pid] = extNames.get(pid);
-      broadcast({ t: 'ext_role', ids: [...monsterIds], nms });
+      broadcast({ t: 'ext_role', ids: [...monsterIds], nms, seed: mazeSeed });
       extStartCountdown();
     }
   } else if (duelMode) { // duel : pas de vagues, 3 cœurs, positions opposées
