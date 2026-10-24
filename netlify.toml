@@ -6,3 +6,18 @@
 # La clé secrète Metered se règle dans l'interface Netlify
 # (Site settings → Environment variables → METERED_SECRET_KEY),
 # JAMAIS ici ni dans git.
+
+# --- Appli Android (APK) : fichier à télécharger depuis le bouton « Installer l'appli » ---
+[[headers]]
+  for = "/downloads/*.apk"
+  [headers.values]
+    Content-Type = "application/vnd.android.package-archive"
+    Content-Disposition = "attachment; filename=\"ZoneHostile.apk\""
+    Cache-Control = "no-cache"
+
+# Lien de confiance appli ↔ site (supprime la barre d'adresse dans l'appli Android)
+[[headers]]
+  for = "/.well-known/assetlinks.json"
+  [headers.values]
+    Content-Type = "application/json"
+    Access-Control-Allow-Origin = "*"

@@ -4,3 +4,8 @@ node_modules/
 *.log
 serve.ps1
 Jouer.bat
+
+# Clés de signature de l appli Android : JAMAIS dans git
+*.keystore
+*.jks
+signing-key-info.txt

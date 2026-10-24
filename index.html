@@ -716,6 +716,7 @@
     </div>
     <button class="menu-btn" id="btn-solo">🎯 Tutoriel / Hors ligne</button>
     <div id="home-status"></div>
+    <button class="menu-btn small" id="btn-install" style="display:none"></button>
   </div>
   <div id="duel-choice" style="display:none">
     <div class="box">
@@ -7794,6 +7795,29 @@ const pvClock = new THREE.Clock();
 })();
 
 // La partie démarre via le menu d'accueil (beginGame) ; la scène tourne en fond
+// ---------- Bouton « Installer l'appli » : Android → vraie appli (APK à télécharger) ; PC → web-app dans sa propre fenêtre ----------
+// L'APK (créé avec PWABuilder, voir GUIDE-APPLI.md) se dépose dans downloads/ZoneHostile.apk : tant qu'il n'existe pas, le bouton reste caché.
+const APK_URL = 'downloads/ZoneHostile.apk';
+(function installButton() {
+  const btn = $('btn-install'), ua = navigator.userAgent;
+  const isAndroid = /Android/i.test(ua), isIos = /iPhone|iPad|iPod/i.test(ua);
+  const inApp = (document.referrer || '').startsWith('android-app://') || matchMedia('(display-mode: fullscreen)').matches
+    || matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  if (inApp) return;                                   // on est déjà dans l'appli installée
+  let deferred = null;
+  const show = txt => { btn.textContent = txt; btn.style.display = ''; };
+  addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; if (!isAndroid) show('📲 Installer sur cet ordinateur'); });
+  if (isAndroid) {
+    fetch(APK_URL, { method: 'HEAD' }).then(r => { if (r.ok && !/text\/html/.test(r.headers.get('content-type') || '')) show('📲 Installer l\'appli (Android)'); }).catch(() => {});
+  } else if (isIos) show('📲 Ajouter à l\'écran d\'accueil');
+  btn.onclick = () => {
+    if (isAndroid) location.href = APK_URL;
+    else if (isIos) homeStatus('Sur iPhone : touche « Partager » puis « Sur l\'écran d\'accueil »');
+    else if (deferred) { deferred.prompt(); deferred = null; btn.style.display = 'none'; }
+  };
+  addEventListener('appinstalled', () => { btn.style.display = 'none'; });
+})();
+
 // ---------- Pseudo demandé avant d'entrer dans un salon (une fois par visite ; il reste modifiable dans le salon) ----------
 let pseudoOk = false, pseudoNext = null;
 function askPseudo(next) {
