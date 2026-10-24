@@ -293,7 +293,7 @@
   #home-left::-webkit-scrollbar { display: none; }
   #home-left .menu-btn { width: 100%; }
   #home-left .join-row { justify-content: center; }
-  /* Personnage en gros plan, ancré en bas, légèrement à droite du centre */
+  /* Personnage en entier (pieds visibles) à droite du centre, avec son nom juste en dessous des pieds */
   #skin-preview {
     position: absolute; left: 63%; transform: translateX(-50%); bottom: 0;
     height: 80vh; width: calc(80vh * 0.75);
@@ -310,7 +310,7 @@
   #btn-skin { bottom: 24px; left: 26px; }
   /* Nom du personnage : plaque sous l'aperçu, centrée sur le perso */
   #skin-name {
-    position: absolute; left: 63%; transform: translateX(-50%); bottom: 3vh;
+    position: absolute; left: 63%; transform: translateX(-50%); bottom: .8vh;
     padding: 7px 26px; font-size: 22px; font-weight: 800; letter-spacing: 3px;
     text-transform: uppercase; color: #fff; white-space: nowrap;
     background: linear-gradient(180deg, rgba(10,16,30,.2), rgba(10,16,30,.85));
@@ -384,19 +384,21 @@
   .chip.sel, .team-btn.sel, .wcard.sel { animation: selpop .32s cubic-bezier(.2, 1.6, .4, 1); }
   @keyframes selpop { 0% { transform: scale(.9); } 60% { transform: scale(1.06); } 100% { transform: scale(1); } }
   /* Bouton principal (Lancer / Rejouer) : dégradé lumineux qui respire */
-  .menu-btn.primary { background: linear-gradient(180deg, rgba(127,212,255,.42), rgba(47,143,214,.34)); border-color: #bfeaff;
-    text-shadow: 0 0 10px rgba(127,212,255,.8); animation: primpulse 2.2s ease-in-out infinite; }
-  @keyframes primpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(127,212,255,.45); } 50% { box-shadow: 0 0 24px 3px rgba(127,212,255,.42); } }
+  .menu-btn.primary { background: linear-gradient(180deg, rgba(127,212,255,.42), rgba(47,143,214,.34)); border-color: #bfeaff; text-shadow: 0 0 10px rgba(127,212,255,.8); }
+  /* lueur intérieure qui respire : seule l'opacité s'anime (fluide), pas une ombre portée recalculée à chaque image */
+  .menu-btn.primary::before { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0;
+    box-shadow: inset 0 0 20px 3px rgba(191,234,255,.6); animation: primglow 2.2s ease-in-out infinite; will-change: opacity; }
+  @keyframes primglow { 50% { opacity: 1; } }
   .menu-btn:disabled { opacity: .5; cursor: default; }
 
   /* ---------- Entrées en cascade (accueil, salon) et ambiance de fond ---------- */
   #home-left > * { animation: itemin .55s cubic-bezier(.2, .9, .3, 1) backwards; animation-delay: calc(var(--i, 0) * 60ms + .1s); }
   #lobby .lobby-body > * { animation: itemup .55s cubic-bezier(.2, .9, .3, 1) backwards; animation-delay: calc(var(--i, 0) * 70ms + .05s); }
   #lobby-actions { animation: itemup .5s cubic-bezier(.2, .9, .3, 1) .35s backwards; }
-  @keyframes itemin { from { opacity: 0; translate: -28px 0; filter: blur(3px); } }
-  @keyframes itemup { from { opacity: 0; translate: 0 18px; filter: blur(2px); } }
+  @keyframes itemin { from { opacity: 0; translate: -28px 0; } }
+  @keyframes itemup { from { opacity: 0; translate: 0 18px; } }
   #home h1 { animation: h1in 1s cubic-bezier(.2, .8, .3, 1) backwards, zhflicker 7s 1s infinite; }
-  @keyframes h1in { from { opacity: 0; letter-spacing: 20px; filter: blur(7px) drop-shadow(0 0 30px rgba(127,212,255,.9)); } }
+  @keyframes h1in { from { opacity: 0; scale: 1.18; } }
   #skin-preview { animation: previewin .9s cubic-bezier(.2, .8, .3, 1) .25s backwards; }
   #skin-name { animation: previewin .9s cubic-bezier(.2, .8, .3, 1) .5s backwards; }
   @keyframes previewin { from { opacity: 0; translate: 46px 0; } }
@@ -405,8 +407,8 @@
   @keyframes fadein { from { opacity: 0; } }
   #home::before, #lobby::before { content: ''; position: fixed; inset: -12%; pointer-events: none;
     background: radial-gradient(38% 34% at 18% 28%, rgba(70,130,210,.14), transparent 72%), radial-gradient(34% 40% at 82% 72%, rgba(150,45,70,.11), transparent 72%);
-    animation: fogdrift 20s ease-in-out infinite alternate; }
-  @keyframes fogdrift { from { transform: translate3d(-3%, -2%, 0) scale(1); } to { transform: translate3d(4%, 3%, 0) scale(1.1); } }
+    animation: fogdrift 24s ease-in-out infinite alternate; will-change: transform; }
+  @keyframes fogdrift { from { transform: translate3d(-3%, -2%, 0); } to { transform: translate3d(4%, 3%, 0); } }
   #home::after, #lobby::after { content: ''; position: fixed; inset: 0; pointer-events: none; opacity: .16;
     background: repeating-linear-gradient(0deg, rgba(0,0,0,.55) 0 1px, transparent 1px 3px); }
   /* Panneaux : sortie douce au lieu d'une disparition sèche */
@@ -425,7 +427,7 @@
   .slot.empty { border-style: dashed; border-color: rgba(127,212,255,.18); background: transparent; color: rgba(200,220,240,.36); font-weight: 500; }
   .slot.empty .av { background: transparent; box-shadow: none; border: 2px dashed rgba(127,212,255,.26); color: rgba(127,212,255,.4); }
   .slot.enter { animation: slotin .55s cubic-bezier(.2, 1.5, .4, 1); }
-  @keyframes slotin { 0% { opacity: 0; transform: scale(.55) translateY(12px); filter: brightness(2.8); } 60% { filter: brightness(1.7); } 100% { opacity: 1; transform: none; filter: none; } }
+  @keyframes slotin { 0% { opacity: 0; transform: scale(.6) translateY(12px); } 60% { opacity: 1; transform: scale(1.05); } 100% { opacity: 1; transform: none; } }
   .slot.leave { animation: slotout .25s ease-in forwards; }
   @keyframes slotout { to { opacity: 0; transform: scale(.8); } }
   #lobby .code { cursor: pointer; position: relative; user-select: none; transition: transform .15s, border-color .2s, box-shadow .2s; }
@@ -439,12 +441,12 @@
   #lobby-bar.on { opacity: 1; }
   #lobby-bar i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #ffe98a, #ff9d4a); transition: width 1s linear, background .3s; }
   #lobby-bar.hot i { background: linear-gradient(90deg, #ff6a5a, #ff3a2a); animation: hotpulse .5s ease-in-out infinite alternate; }
-  @keyframes hotpulse { to { filter: brightness(1.6); } }
+  @keyframes hotpulse { to { opacity: .6; } }
   #lobby-timer.tick { animation: numpop .4s ease-out; }
   @media (prefers-reduced-motion: reduce) {
     .menu-btn::after, .chip::after, .team-btn::after { display: none; }
     #home-left > *, #lobby .lobby-body > *, #lobby-actions, #home h1, #skin-preview, #skin-name, #home-level, .icon-btn, #home::before, #lobby::before,
-    .slot.enter, .menu-btn.primary, .chip.sel, .team-btn.sel, .wcard.sel, #lobby .code span, #lobby-bar.hot i { animation: none; }
+    .slot.enter, .menu-btn.primary::before, .chip.sel, .team-btn.sel, .wcard.sel, #lobby .code span, #lobby-bar.hot i { animation: none; }
   }
 
   /* ---------- Contrôles tactiles (mobile) ---------- */
@@ -522,13 +524,15 @@
   #glitch { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 200; pointer-events: none; display: none; image-rendering: pixelated; }
   body.glitching #home, body.glitching #lobby, body.glitching #hud, body.glitching #overlay, body.glitching #duel-choice {
     animation: gjit .22s steps(1) infinite; }
+  /* Secousse de l'écran pendant le brouillage : seulement des déplacements (les filtres drop-shadow / hue-rotate sur tout
+     l'écran forçaient un nouveau rendu complet à chaque pas et faisaient saccader ; l'effet RVB est déjà dans le calque de brouillage) */
   @keyframes gjit {
-    0%   { transform: translate(0, 0); filter: none; }
-    18%  { transform: translate(-7px, 1px) skewX(-2deg); filter: drop-shadow(5px 0 0 rgba(255,40,70,.6)) drop-shadow(-5px 0 0 rgba(40,220,255,.6)); }
-    36%  { transform: translate(5px, -1px); filter: drop-shadow(-4px 0 0 rgba(255,40,70,.55)) drop-shadow(4px 0 0 rgba(40,220,255,.55)); }
-    54%  { transform: translate(0, 2px) skewX(3deg); filter: hue-rotate(35deg); }
-    72%  { transform: translate(-4px, 0); filter: drop-shadow(3px 0 0 rgba(255,40,70,.5)) drop-shadow(-3px 0 0 rgba(40,220,255,.5)); }
-    90%  { transform: translate(3px, -1px) skewX(-1deg); filter: none; }
+    0%   { transform: translate(0, 0); }
+    18%  { transform: translate(-7px, 1px) skewX(-2deg); }
+    36%  { transform: translate(5px, -1px); }
+    54%  { transform: translate(0, 2px) skewX(3deg); }
+    72%  { transform: translate(-4px, 0); }
+    90%  { transform: translate(3px, -1px) skewX(-1deg); }
   }
   /* ---------- Porte d'entrée + intro horreur (chargement corrompu) ---------- */
   #gate { position: fixed; inset: 0; z-index: 300; background: #000; display: flex; flex-direction: column; align-items: center;
@@ -595,7 +599,7 @@
     #btn-settings { top: calc(var(--sat) + 8px); right: calc(var(--sar) + 10px); }
     #btn-fullscreen { top: calc(var(--sat) + 8px); right: calc(var(--sar) + 56px); }
     #btn-skin { bottom: calc(var(--sab) + 10px); left: calc(var(--sal) + 12px); }
-    #skin-preview { height: 74vh; width: calc(74vh * .75); left: 66%; }
+    #skin-preview { height: 72vh; width: calc(72vh * .75); left: 66%; bottom: 2vh; }
     #skin-name { font-size: 14px; padding: 3px 16px; bottom: 1vh; left: 66%; }
     #settings-panel { top: calc(var(--sat) + 54px); right: calc(var(--sar) + 10px); max-height: calc(100vh - var(--sat) - var(--sab) - 100px); max-height: calc(100dvh - var(--sat) - var(--sab) - 100px); overflow-y: auto; }
     #skin-panel { bottom: calc(var(--sab) + 56px); left: calc(var(--sal) + 12px); max-height: calc(100vh - var(--sat) - var(--sab) - 102px); max-height: calc(100dvh - var(--sat) - var(--sab) - 102px); overflow-y: auto; }
@@ -4828,6 +4832,18 @@ const topScoreEl = document.querySelector('#topbar .score');
 const glitchCv = $('glitch'), glitchCtx = glitchCv.getContext('2d');
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let glitchToken = 0, glitchRaf = 0, glitchT0 = 0, glitchCfg = null;
+const glitchNoisePat = (() => {   // tuile de bruit 128×128 : gris aléatoires, 55 % des pixels opaques
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const x = c.getContext('2d'), im = x.createImageData(128, 128), d = im.data;
+  for (let i = 0; i < d.length; i += 4) { const v = (Math.random() * 255) | 0; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = Math.random() < 0.55 ? 255 : 0; }
+  x.putImageData(im, 0, 0);
+  return glitchCtx.createPattern(c, 'repeat');
+})();
+const glitchScanPat = (() => {    // une ligne sombre sur deux
+  const c = document.createElement('canvas'); c.width = 1; c.height = 2;
+  const x = c.getContext('2d'); x.fillStyle = 'rgba(0,0,0,0.16)'; x.fillRect(0, 0, 1, 1);
+  return glitchCtx.createPattern(c, 'repeat');
+})();
 function drawGlitch(now) {
   const c = glitchCfg;
   if (!c || c.token !== glitchToken) return;
@@ -4841,9 +4857,13 @@ function drawGlitch(now) {
   g.clearRect(0, 0, w, h);
   g.fillStyle = c.fade ? `rgba(0,0,0,${cover})` : `rgba(2,4,10,${cover})`; g.fillRect(0, 0, w, h);
   if (!reduceMotion) {
-    const img = g.createImageData(w, h), d = img.data, a = Math.floor(255 * Math.min(0.5, inten * 0.34 + cover * (c.fade ? 0.05 : 0.14)));
-    for (let i = 0; i < d.length; i += 4) { const v = (Math.random() * 255) | 0; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = Math.random() < 0.55 ? a : 0; }
-    g.putImageData(img, 0, 0);
+    // Grain : une petite tuile de bruit précalculée, posée à un décalage aléatoire (au lieu de tirer des centaines de milliers de
+    // pixels au hasard et d'allouer une image entière à chaque image : c'était ce qui saccadait pendant les transitions)
+    g.save();
+    g.globalAlpha = Math.min(0.5, inten * 0.34 + cover * (c.fade ? 0.05 : 0.14));
+    g.translate((Math.random() * 128) | 0, (Math.random() * 128) | 0);
+    g.fillStyle = glitchNoisePat; g.fillRect(-128, -128, w + 256, h + 256);
+    g.restore();
     g.globalCompositeOperation = 'lighter';
     const bars = 3 + Math.floor(inten * 11);
     for (let i = 0; i < bars; i++) { // barres horizontales décalées, rouge / cyan / blanc doux
@@ -4852,7 +4872,7 @@ function drawGlitch(now) {
       g.fillRect((Math.random() - 0.5) * w * 0.12 * inten, y, w, bh);
     }
     g.globalCompositeOperation = 'source-over';
-    g.fillStyle = 'rgba(0,0,0,0.16)'; for (let y = 0; y < h; y += 2) g.fillRect(0, y, w, 1); // lignes de balayage
+    g.fillStyle = glitchScanPat; g.fillRect(0, 0, w, h); // lignes de balayage
   }
   if (t < c.out + c.hold + c.inn) glitchRaf = requestAnimationFrame(drawGlitch);
 }
@@ -6712,11 +6732,15 @@ function rosterEntries() {
   for (let i = list.length; i < 1 + conns.length; i++) list.push({ id: 'anon' + i, name: 'Joueur…' });   // connexion annoncée, état pas encore reçu
   return list;
 }
-function resetRoster() { rosterEls.clear(); rosterPrevN = 0; const b = document.getElementById('lobby-roster'); if (b) b.innerHTML = ''; }
+let rosterSig = '';
+function resetRoster() { rosterEls.clear(); rosterPrevN = 0; rosterSig = ''; const b = document.getElementById('lobby-roster'); if (b) b.innerHTML = ''; }
 function renderRoster() {
   const box = document.getElementById('lobby-roster');
   if (!box || document.getElementById('lobby').style.display === 'none') return;
   const list = rosterEntries(), max = Math.max(list.length, Math.min(10, maxPlayers()));
+  const sig = max + '|' + list.map(e => e.id + ':' + e.name + (e.host ? 'h' : '')).join(',');
+  if (sig === rosterSig) return;                 // rien n'a changé : on ne touche pas au DOM (pas de relance d'animations)
+  rosterSig = sig;
   const ids = new Set(list.map(e => e.id));
   for (const [id, el] of rosterEls) if (!ids.has(id)) { rosterEls.delete(id); el.classList.add('leave'); setTimeout(() => el.remove(), 260); }
   list.forEach((e, i) => {
@@ -7236,7 +7260,7 @@ let monsterPreview = false, titleClicks = [];
 function framePreview(monster) {
   pvRig.model.scale.setScalar(monster ? 0.47 : 1);
   if (monster) { pvCam.position.set(0.35, 0.8, 3.3); pvCam.lookAt(0, 0.68, 0); }    // plein cadre sur le géant, cornes comprises
-  else { pvCam.position.set(0.55, 1.1, 3.15); pvCam.lookAt(0, 0.95, 0); }          // cadrage normal des personnages
+  else { pvCam.position.set(0.55, 0.95, 3.2); pvCam.lookAt(0, 0.79, 0); }          // cadrage normal : corps entier (≈1,55 m), pieds visibles au-dessus du nom
 }
 document.querySelector('#home h1').addEventListener('click', () => {
   const now = Date.now();
@@ -7673,8 +7697,8 @@ pvRenderer.setSize(480, 640, false); // la taille affichée est gérée par le C
 pvRenderer.toneMapping = THREE.ACESFilmicToneMapping;
 const pvScene = new THREE.Scene();
 const pvCam = new THREE.PerspectiveCamera(32, 480 / 640, 0.1, 10);
-pvCam.position.set(0.55, 1.1, 3.15); // léger 3/4 héroïque, corps quasi entier
-pvCam.lookAt(0, 0.95, 0);
+pvCam.position.set(0.55, 0.95, 3.2); // léger 3/4 héroïque, corps entier avec les pieds
+pvCam.lookAt(0, 0.79, 0);
 pvScene.add(new THREE.HemisphereLight(0xbdd4ff, 0x33291f, 1.2));
 const pvSun = new THREE.DirectionalLight(0xffffff, 2.4);
 pvSun.position.set(2.5, 3, 2.5);
