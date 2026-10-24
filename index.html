@@ -415,8 +415,17 @@
   .panel.open.closing { animation: panelout .17s ease-in both; }
   @keyframes panelout { to { opacity: 0; transform: translateY(8px) scale(.97); } }
 
+  /* Demande du pseudo avant d'entrer dans un salon */
+  #pseudo-modal { position: fixed; inset: 0; z-index: 60; align-items: center; justify-content: center; background: rgba(2,4,10,.78); }
+  #pseudo-modal .box { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 22px 30px; width: min(380px, 90vw); box-sizing: border-box;
+    background: rgba(8,12,24,.97); border: 2px solid rgba(127,212,255,.45); border-radius: 16px; animation: panelin .26s ease-out; }
+  #pseudo-modal h2 { margin: 0; font-family: var(--font-title); font-weight: 400; font-size: 34px; letter-spacing: 3px; color: #7fd4ff; }
+  #pm-input { width: 100%; box-sizing: border-box; padding: 11px 14px; text-align: center; font-size: 22px; font-family: var(--font-ui); letter-spacing: 1px; color: #fff;
+    background: rgba(255,255,255,.07); border: 2px solid rgba(255,242,216,.45); border-radius: 12px; }
+  #pm-input:focus { outline: none; border-color: #ffe98a; box-shadow: 0 0 16px rgba(255,233,138,.25); }
+  #pseudo-modal .menu-btn { width: 100%; }
   /* ---------- Salon : joueurs présents, code copiable, compte à rebours en barre ---------- */
-  #lobby-roster { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; width: min(720px, 94vw); margin: 2px 0; }
+  #lobby-roster { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; width: min(820px, 94vw); margin: 2px 0; }
   .slot { display: flex; align-items: center; gap: 10px; padding: 6px 12px; min-height: 44px; border-radius: 12px; text-align: left;
     border: 2px solid rgba(127,212,255,.32); background: rgba(127,212,255,.07); font-family: var(--font-ui); font-size: 22px; font-weight: 600; letter-spacing: .5px; }
   .slot .av { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 18px; font-weight: 700;
@@ -608,6 +617,9 @@
     #lobby .lobby-body { gap: 8px; }
     #lobby-players { font-size: 15px; }
     #lobby-timer { font-size: 16px; min-height: 18px; }
+    .slot { font-size: 15px; min-height: 32px; padding: 3px 8px; gap: 6px; border-width: 1.5px; }
+    .slot .av { width: 22px; height: 22px; font-size: 12px; } .slot .tag { font-size: 10px; letter-spacing: 1px; }
+    #lobby-roster { gap: 5px; }
     .wcard { width: 28vw; max-width: 168px; padding: 6px; }
     .wcard .wimg { font-size: 26px; padding: 4px 0; margin-bottom: 4px; }
     .wcard .wdesc { font-size: 10px; }
@@ -771,6 +783,15 @@
     <button class="menu-btn primary" id="btn-start" style="display:none">🚀 Lancer la partie</button>
     <button class="menu-btn small" id="btn-lobby-invite">🔗 Inviter</button>
     <button class="menu-btn small" id="btn-lobby-leave">↩ Quitter</button>
+  </div>
+</div>
+<div id="pseudo-modal" style="display:none">
+  <div class="box">
+    <div class="opt-label">Avant d'entrer dans le salon</div>
+    <h2>Ton pseudo</h2>
+    <input id="pm-input" maxlength="14" placeholder="Ton pseudo" autocomplete="off">
+    <button class="menu-btn primary" id="pm-ok">Continuer</button>
+    <button class="chip" id="pm-cancel">Annuler</button>
   </div>
 </div>
 <canvas id="glitch"></canvas>
@@ -6469,7 +6490,7 @@ function updateRemote(d, conn) {
   }
   if (conn) r.conn = conn;
   r.lastState = d;
-  if (d.nm && extNames.get(d.id) !== d.nm) { extNames.set(d.id, d.nm); if (!gameStarted) renderRoster(); } // pseudo le plus récent (Extinction)
+  if (d.nm && extNames.get(d.id) !== d.nm) { extNames.set(d.id, d.nm); if (!gameStarted) { if (isRoomHost) updateLobby(); else renderRoster(); } } // pseudo le plus récent
   if (r.rig && typeof d.sk === 'number' && r.rig.skinIdx !== d.sk) applySkinToRig(r.rig, d.sk);
   // Dernière position réseau connue : le rendu s'en approche par lissage
   // exponentiel (voir la boucle animate) — jamais de saut, quelle que soit
@@ -6614,7 +6635,11 @@ function onMsg(conn, d) {
       extStartCountdown(d.nms);
       break;
     case 'name': // pseudo échangé dans le salon Extinction
-      if (d.id && d.id !== myId) { extNames.set(d.id, d.nm); if (!gameStarted) renderRoster(); }
+      if (d.id && d.id !== myId) {
+        extNames.set(d.id, d.nm);
+        if (isRoomHost && conn && !conn.relayId) conn.pid = d.id;   // PeerJS : on associe cette connexion à son joueur
+        if (!gameStarted) { if (isRoomHost) updateLobby(); else renderRoster(); }
+      }
       if (authority) broadcastExcept(conn, d);
       break;
     case 'ext_map': // une cellule du labyrinthe vient d'être explorée (partagé)
@@ -6655,6 +6680,7 @@ function onMsg(conn, d) {
       if (gameStarted) break; // déjà dans la partie : un « bienvenue » tardif ne doit jamais nous renvoyer à l'accueil
       relayWelcomed = true;
       homeStatus('');
+      announceName();   // l'hôte me connaît maintenant : il relaie mon pseudo à tout le monde
       if (pendingMode === 'duel') {
         if ((d.duel || null) !== duelMode) { retourAccueil('⚠ Ce code ne correspond pas à un duel ' + duelMode); break; }
         if (d.started) { retourAccueil('⚠ Ce duel a déjà commencé'); break; }
@@ -6676,6 +6702,7 @@ function onMsg(conn, d) {
     case 'lobby': {
       const el = document.getElementById('lobby-players');
       if (el) el.textContent = lobbyCountText(d.n);
+      if (!isRoomHost && Array.isArray(d.ros)) { lobbyRos = d.ros; if (!gameStarted) renderRoster(); }
       break;
     }
   }
@@ -6718,27 +6745,45 @@ function updateLobby() {
   const el = document.getElementById('lobby-players');
   if (el) el.textContent = lobbyCountText(n);
   renderRoster();
-  if (isRoomHost && !gameStarted) broadcast({ t: 'lobby', n });
+  if (isRoomHost && !gameStarted) broadcast({ t: 'lobby', n, ros: rosterEntries().map(e => [e.id, e.name]) });
 }
 // Liste des joueurs du salon : une carte par joueur (qui apparaît avec un petit éclat), des places vides en pointillés
 const rosterEls = new Map();
 let rosterPrevN = 0;
 const AV_COLORS = ['#7fd4ff', '#ffe98a', '#ff8a7a', '#8affb0', '#c9a0ff', '#ffb86b', '#7ae0d4', '#ff9ad0'];
 const hashStr = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); };
+let lobbyRos = null;   // client : liste [[id, pseudo], …] envoyée par l'hôte (c'est lui qui connaît tout le monde)
 function rosterEntries() {
-  const myName = duelMode === 'extinction' ? extPseudo() : ((myPseudo || '').trim() || 'Toi');
-  const list = [{ id: myId, name: myName, me: true, host: isRoomHost }];
-  for (const id of remotePlayers.keys()) list.push({ id, name: extNames.get(id) || 'Joueur-' + id.slice(-3).toUpperCase() });
-  for (let i = list.length; i < 1 + conns.length; i++) list.push({ id: 'anon' + i, name: 'Joueur…' });   // connexion annoncée, état pas encore reçu
+  if (!isRoomHost && lobbyRos) {   // un client affiche la liste de l'hôte : tout le monde voit les mêmes joueurs
+    const list = lobbyRos.map(([id, name], i) => ({ id, name: id === myId ? extPseudo() : name, me: id === myId, host: i === 0 }));
+    if (!list.some(e => e.me)) list.push({ id: myId, name: extPseudo(), me: true });
+    return list;
+  }
+  // Hôte : chaque connexion = un joueur (son id vient du relais, ou du 1er message « name » en PeerJS) ; les fantômes disparaissent avec la connexion
+  const list = [{ id: myId, name: extPseudo(), me: true, host: isRoomHost }], seen = new Set([myId]);
+  const add = id => { seen.add(id); list.push({ id, name: extNames.get(id) || 'Joueur-' + id.slice(-3).toUpperCase() }); };
+  for (const c of conns) { const id = c.relayId || c.pid; if (id && !seen.has(id)) add(id); else if (!id) list.push({ id: 'anon' + list.length, name: 'Joueur…' }); }
+  for (const id of remotePlayers.keys()) if (!seen.has(id)) add(id);
   return list;
 }
+function announceName() {   // diffuse mon pseudo (l'hôte le relaie à tous et met à jour la liste)
+  netSelf({ t: 'name', id: myId, nm: extPseudo() });
+  if (isRoomHost) { broadcast({ t: 'name', id: myId, nm: extPseudo() }); updateLobby(); }
+}
 let rosterSig = '';
-function resetRoster() { rosterEls.clear(); rosterPrevN = 0; rosterSig = ''; const b = document.getElementById('lobby-roster'); if (b) b.innerHTML = ''; }
+function resetRoster() { rosterEls.clear(); rosterPrevN = 0; rosterSig = ''; lobbyRos = null; const b = document.getElementById('lobby-roster'); if (b) b.innerHTML = ''; }
+// Colonnes symétriques : on prend le plus grand diviseur du nombre de places qui tient dans la largeur (10 → 5×2, 4 → 4×1, 2 → 2×1…)
+function rosterCols(max) {
+  const W = innerWidth || 1024, avail = Math.min(820, W * 0.94), minW = W < 700 ? 112 : 130;
+  for (let d = max; d >= 1; d--) if (max % d === 0 && d * minW + (d - 1) * 8 <= avail) return d;
+  return 1;
+}
 function renderRoster() {
   const box = document.getElementById('lobby-roster');
   if (!box || document.getElementById('lobby').style.display === 'none') return;
   const list = rosterEntries(), max = Math.max(list.length, Math.min(10, maxPlayers()));
-  const sig = max + '|' + list.map(e => e.id + ':' + e.name + (e.host ? 'h' : '')).join(',');
+  box.style.gridTemplateColumns = 'repeat(' + rosterCols(max) + ', minmax(0, 1fr))';
+  const sig = max + '|' + innerWidth + '|' + list.map(e => e.id + ':' + e.name + (e.host ? 'h' : '')).join(',');
   if (sig === rosterSig) return;                 // rien n'a changé : on ne touche pas au DOM (pas de relance d'animations)
   rosterSig = sig;
   const ids = new Set(list.map(e => e.id));
@@ -6869,6 +6914,9 @@ function openLobbyScreen(opts) {
   document.getElementById('loup-row').style.display = 'none';
   document.getElementById('lobby-title').textContent = opts.title;
   resetRoster();
+  document.getElementById('pseudo-row').classList.add('on');        // le pseudo se modifie dans tous les salons
+  document.getElementById('pseudo-input').value = myPseudo;
+  announceName();                                                    // tout le monde voit mon pseudo dès mon arrivée
   const codeEl = document.getElementById('lobby-code');
   codeEl.style.display = opts.code ? '' : 'none';
   if (opts.code) codeEl.innerHTML = [...opts.code].map((ch, i) => '<span style="--i:' + i + '">' + ch + '</span>').join('');   // les lettres tombent une à une
@@ -7095,21 +7143,12 @@ function openDuelLobby(code, host) {
   document.getElementById('team-row').classList.toggle('on', duelSel === '2v2');
   document.getElementById('loadout-row').style.display = (duelSel === 'loup' || duelSel === 'extinction') ? 'none' : 'flex';
   document.getElementById('loup-row').style.display = duelSel === 'loup' ? 'flex' : 'none';
-  // Extinction : choix du pseudo dans le salon, diffusé aux autres joueurs
-  document.getElementById('pseudo-row').classList.toggle('on', duelSel === 'extinction');
-  if (duelSel === 'extinction') {
-    const pi = document.getElementById('pseudo-input');
-    pi.value = myPseudo;
-    netSelf({ t: 'name', id: myId, nm: extPseudo() });
-    if (isRoomHost) broadcast({ t: 'name', id: myId, nm: extPseudo() });
-  }
   updateTeamRow();
 }
 document.getElementById('pseudo-input').addEventListener('input', e => {
   myPseudo = e.target.value;
   localStorage.setItem('zh-pseudo', myPseudo);
-  netSelf({ t: 'name', id: myId, nm: extPseudo() });
-  if (isRoomHost) broadcast({ t: 'name', id: myId, nm: extPseudo() });
+  announceName();
   renderRoster();
 });
 // Clic sur le code du salon : copié dans le presse-papiers, avec un « COPIÉ ✓ » qui s'affiche une seconde
@@ -7762,6 +7801,33 @@ const pvClock = new THREE.Clock();
 })();
 
 // La partie démarre via le menu d'accueil (beginGame) ; la scène tourne en fond
+// ---------- Pseudo demandé avant d'entrer dans un salon (une fois par visite ; il reste modifiable dans le salon) ----------
+let pseudoOk = false, pseudoNext = null;
+function askPseudo(next) {
+  if (pseudoOk) { next(); return; }
+  pseudoNext = next;
+  $('pm-input').value = myPseudo;
+  $('pseudo-modal').style.display = 'flex';
+  setTimeout(() => { const i = $('pm-input'); i.focus(); i.select(); }, 80);
+}
+function pseudoDone(ok) {
+  $('pseudo-modal').style.display = 'none';
+  const next = pseudoNext; pseudoNext = null;
+  if (!ok || !next) return;
+  myPseudo = ($('pm-input').value || '').trim().slice(0, 14);
+  localStorage.setItem('zh-pseudo', myPseudo);
+  pseudoOk = true;
+  next();
+}
+$('pm-ok').onclick = () => pseudoDone(true);
+$('pm-cancel').onclick = () => pseudoDone(false);
+$('pm-input').addEventListener('keydown', e => { if (e.key === 'Enter') pseudoDone(true); else if (e.key === 'Escape') pseudoDone(false); });
+$('pseudo-modal').addEventListener('click', e => { if (e.target === $('pseudo-modal')) pseudoDone(false); });
+for (const id of ['btn-loup', 'btn-extinction', 'btn-create', 'btn-join']) {   // tout ce qui mène à un salon passe d'abord par le pseudo
+  const el = $(id), orig = el.onclick;
+  el.onclick = e => (id === 'btn-join' && $('join-code').value.trim().length < 4) ? orig.call(el, e) : askPseudo(() => orig.call(el, e));
+}
+document.querySelectorAll('[data-dmode]').forEach(b => { const orig = b.onclick; b.onclick = e => askPseudo(() => orig.call(b, e)); });
 const OVERLAY0 = { h1: $('overlay').querySelector('h1').textContent, intro: $('intro').innerHTML, go: $('go-label').textContent };   // textes d'origine de l'écran de départ
 initEndUi();
 applyFx(quality);   // tous les modules d'effets sont définis : on règle les effets selon la qualité
