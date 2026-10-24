@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.netlify.zonehostile.twa",
+        "sha256_cert_fingerprints": ["25:CC:F0:5D:89:91:8E:9D:E2:F6:C9:CC:C3:D0:AD:9C:09:A3:52:8C:4D:B7:F1:4F:C6:8E:19:DB:EB:12:A3:94"]
+      }
+    }]
