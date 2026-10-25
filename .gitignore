@@ -9,3 +9,9 @@ Jouer.bat
 *.keystore
 *.jks
 signing-key-info.txt
+
+# Appli Android : fichiers générés pendant le build GitHub
+app/www/
+app/android/
+app/node_modules/
+app/package-lock.json
