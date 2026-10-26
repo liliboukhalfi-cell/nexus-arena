@@ -2570,12 +2570,9 @@ function recapHtml(d) {
   if (monsterIds.size) rows.push(['🐺', 'Monstre', [...monsterIds].map(nm).join(', ')], ['💥', 'Dégâts', d.dmg + ' / ' + d.hp + ' PV']);
   return '<div class="recap">' + rows.map(([i, k, v]) => '<i>' + i + '</i><span>' + k + '</span><b>' + v + '</b>').join('') + '</div>';
 }
-// Appli Android (Capacitor) : le jeu tourne depuis les fichiers embarqués ; les liens et le relais TURN visent le site public
-const IN_APP = !!window.Capacitor, PUBLIC_SITE = 'https://zonehostile.netlify.app/';
 function inviteUrl() {
   const code = ($('lobby-code').textContent || '').trim();
-  const base = IN_APP ? PUBLIC_SITE : location.origin + location.pathname;
-  return /^[A-Z0-9]{4,8}$/i.test(code) ? base + '?code=' + encodeURIComponent(code) : null;
+  return /^[A-Z0-9]{4,8}$/i.test(code) ? location.origin + location.pathname + '?code=' + encodeURIComponent(code) : null;
 }
 async function shareInvite(statusEl) {
   const url = inviteUrl();
@@ -6968,7 +6965,7 @@ let icePromise = null;
 function loadIceServers() {
   if (icePromise) return icePromise;
   if (LAN_MODE) { icePromise = Promise.resolve(); return icePromise; }
-  icePromise = fetch((IN_APP ? PUBLIC_SITE : '/') + '.netlify/functions/get-turn')
+  icePromise = fetch('/.netlify/functions/get-turn')
     .then(r => r.json())
     .then(d => {
       if (d && Array.isArray(d.iceServers) && d.iceServers.length) {
@@ -7806,7 +7803,7 @@ const APK_URL = 'downloads/ZoneHostile.apk';
   const isAndroid = /Android/i.test(ua), isIos = /iPhone|iPad|iPod/i.test(ua);
   const inApp = (document.referrer || '').startsWith('android-app://') || matchMedia('(display-mode: fullscreen)').matches
     || matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-  if (inApp || IN_APP) return;                         // on est déjà dans l'appli installée
+  if (inApp) return;                                   // on est déjà dans l'appli installée
   let deferred = null;
   const show = txt => { btn.textContent = txt; btn.style.display = ''; };
   addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; if (!isAndroid) show('📲 Installer sur cet ordinateur'); });
