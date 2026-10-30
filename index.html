@@ -441,6 +441,64 @@
   @keyframes slotin { 0% { opacity: 0; transform: scale(.6) translateY(12px); } 60% { opacity: 1; transform: scale(1.05); } 100% { opacity: 1; transform: none; } }
   .slot.leave { animation: slotout .25s ease-in forwards; }
   @keyframes slotout { to { opacity: 0; transform: scale(.8); } }
+  .slot .who { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.05; }
+  .slot .ti { font-size: .52em; font-weight: 500; letter-spacing: .5px; color: #ffe98a; opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .slot .ti:empty { display: none; }
+  /* Cadres du salon (cosmétique) */
+  .slot.fr-1 { border-style: dashed; border-color: #9aa4b0; box-shadow: inset 0 0 0 2px rgba(10,12,16,.9), inset 0 0 0 3px rgba(154,164,176,.5); }
+  .slot.fr-2 { border-color: #bfeaff; box-shadow: 0 0 12px rgba(191,234,255,.45), inset 0 0 14px rgba(191,234,255,.18); }
+  .slot.fr-3 { border-color: #ff7a2a; box-shadow: 0 0 14px rgba(255,90,20,.5), inset 0 -10px 16px rgba(255,90,20,.18); }
+  .slot.fr-4 { border-color: #b8913a; background: linear-gradient(135deg, rgba(184,145,58,.18), rgba(60,44,12,.25)); box-shadow: inset 0 0 0 1px rgba(255,220,140,.35); }
+  .slot.fr-5 { border-color: #000; background: radial-gradient(circle at 20% 50%, rgba(120,60,200,.25), rgba(0,0,0,.6)); box-shadow: 0 0 16px rgba(110,40,200,.55), inset 0 0 18px #000; }
+  /* Niveau + titre à l'accueil (cliquable : ouvre le profil) */
+  #home-level { cursor: pointer; text-align: right; z-index: 4; }
+  #home-level small { display: block; font-size: 12px; font-weight: 500; color: #fff2d8; opacity: .8; letter-spacing: .5px; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #home-level:hover { filter: brightness(1.2); }
+  #btn-profile { bottom: 24px; left: 78px; }
+  /* XP gagnée pendant la partie (écran de fin) */
+  #match-xp { display: none; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 6px 14px; margin-top: 10px; font-family: var(--font-ui); font-size: 20px; letter-spacing: .5px; color: #cfe9ff; }
+  #match-xp b { color: #ffe98a; font-size: 26px; } #match-xp .neg { color: #ff8a7a; }
+  #match-xp small { width: 100%; text-align: center; font-size: 15px; opacity: .7; }
+  /* ---------- Profil : compte, titres, badges, style, classement ---------- */
+  #profile-modal { position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center; background: rgba(2,4,10,.8); }
+  #profile-modal.on { display: flex; }
+  #profile-modal .box { display: flex; flex-direction: column; gap: 12px; width: min(640px, 94vw); max-height: min(88vh, 760px); max-height: min(88dvh, 760px); box-sizing: border-box;
+    padding: 18px 20px; background: rgba(8,12,24,.97); border: 2px solid rgba(127,212,255,.45); border-radius: 16px; animation: panelin .26s ease-out; }
+  #pf-head { display: flex; align-items: center; gap: 12px; }
+  #pf-head .lv { font-family: var(--font-ui); font-size: 40px; font-weight: 700; line-height: 1; color: #ffe98a; min-width: 54px; text-align: center; }
+  #pf-head .who { flex: 1; min-width: 0; }
+  #pf-head .nm { font-family: var(--font-ui); font-size: 26px; font-weight: 600; letter-spacing: 1px; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #pf-head .ti { font-size: 13px; color: #ffe98a; opacity: .85; }
+  #pf-head .bar { height: 7px; margin-top: 6px; border-radius: 5px; background: rgba(255,255,255,.1); overflow: hidden; }
+  #pf-head .bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffd24d, #ffe98a); }
+  #pf-close { flex: 0 0 auto; }
+  #pf-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  #pf-tabs .chip.sel { border-color: #ffe98a; color: #ffe98a; }
+  #pf-body { overflow-y: auto; overscroll-behavior: contain; min-height: 160px; display: flex; flex-direction: column; gap: 10px; padding-right: 4px;
+    scrollbar-width: thin; scrollbar-color: rgba(127,212,255,.45) transparent; font-size: 14px; color: #dfe9f5; }
+  #pf-body .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  #pf-body input { flex: 1; min-width: 160px; padding: 9px 12px; font-size: 15px; font-family: inherit; color: #fff; background: rgba(255,255,255,.07); border: 2px solid rgba(255,242,216,.35); border-radius: 10px; }
+  #pf-body input:focus { outline: none; border-color: #ffe98a; }
+  #pf-body .err { color: #ff8a7a; min-height: 18px; } #pf-body .ok { color: #8affb0; }
+  #pf-body .muted { opacity: .65; font-size: 13px; }
+  .pf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+  .pf-item { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 10px; border: 1.5px solid rgba(127,212,255,.25); background: rgba(127,212,255,.05); text-align: left; color: #fff; font-family: inherit; font-size: 13px; }
+  button.pf-item { cursor: pointer; } button.pf-item:hover:not(:disabled) { border-color: #bfeaff; background: rgba(127,212,255,.12); }
+  .pf-item.sel { border-color: #ffe98a; background: rgba(255,233,138,.12); }
+  .pf-item.lock { opacity: .42; filter: grayscale(1); cursor: default; }
+  .pf-item .ic { font-size: 24px; flex: 0 0 auto; } .pf-item b { display: block; font-size: 14px; } .pf-item small { opacity: .75; }
+  .pf-item .sw { width: 22px; height: 22px; border-radius: 50%; flex: 0 0 auto; box-shadow: 0 0 10px currentColor; background: currentColor; }
+  .pf-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; }
+  .pf-stats div { padding: 6px 8px; border-radius: 8px; background: rgba(255,255,255,.05); font-size: 12px; opacity: .9; }
+  .pf-stats b { display: block; font-family: var(--font-ui); font-size: 22px; color: #fff; }
+  .pf-lb { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .pf-lb td { padding: 6px 6px; border-bottom: 1px solid rgba(255,255,255,.07); }
+  .pf-lb td:first-child { width: 34px; color: #7fd4ff; font-weight: 700; } .pf-lb td:last-child { text-align: right; color: #ffe98a; white-space: nowrap; }
+  .pf-lb tr.me td { background: rgba(255,233,138,.1); }
+  .pf-lb small { display: block; opacity: .6; font-size: 11px; }
+  .chip.locked { opacity: .45; filter: grayscale(.8); }
+  .gbtn { display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .gbtn svg { width: 18px; height: 18px; }
   #lobby .code { cursor: pointer; position: relative; user-select: none; transition: transform .15s, border-color .2s, box-shadow .2s; }
   #lobby .code span { display: inline-block; animation: charin .55s cubic-bezier(.2, 1.4, .4, 1) backwards; animation-delay: calc(var(--i, 0) * 75ms + .25s); }
   @keyframes charin { from { opacity: 0; transform: translateY(-16px) rotateX(80deg); } }
@@ -610,6 +668,10 @@
     #btn-settings { top: calc(var(--sat) + 8px); right: calc(var(--sar) + 10px); }
     #btn-fullscreen { top: calc(var(--sat) + 8px); right: calc(var(--sar) + 56px); }
     #btn-skin { bottom: calc(var(--sab) + 10px); left: calc(var(--sal) + 12px); }
+    #btn-profile { bottom: calc(var(--sab) + 10px); left: calc(var(--sal) + 60px); }
+    #home-level small { font-size: 10px; max-width: 180px; }
+    #profile-modal .box { padding: 10px 14px; gap: 8px; max-height: 94vh; max-height: 94dvh; }
+    #pf-head .lv { font-size: 30px; } #pf-head .nm { font-size: 20px; }
     #skin-preview { height: 72vh; width: calc(72vh * .75); left: 66%; bottom: 2vh; }
     #skin-name { font-size: 14px; padding: 3px 16px; bottom: 1vh; left: 66%; }
     #settings-panel { top: calc(var(--sat) + 54px); right: calc(var(--sar) + 10px); max-height: calc(100vh - var(--sat) - var(--sab) - 100px); max-height: calc(100dvh - var(--sat) - var(--sab) - 100px); overflow-y: auto; }
@@ -647,7 +709,7 @@
     #home-status { font-size: 20px; min-height: 26px; }
     #home-level { top: 39px; right: 156px; font-size: 19px; }
     .icon-btn { width: 46px; height: 46px; font-size: 22px; }
-    #btn-settings { top: 28px; right: 36px; } #btn-fullscreen { top: 28px; right: 92px; } #btn-skin { bottom: 34px; left: 36px; }
+    #btn-settings { top: 28px; right: 36px; } #btn-fullscreen { top: 28px; right: 92px; } #btn-skin { bottom: 34px; left: 36px; } #btn-profile { bottom: 34px; left: 94px; }
     #skin-name { font-size: 30px; }
     #lobby h1 { font-size: 58px; }
     #lobby .code { font-size: 72px; }
@@ -733,6 +795,7 @@
   <button class="icon-btn" id="btn-settings" title="Paramètres">⚙</button>
   <button class="icon-btn" id="btn-fullscreen" title="Plein écran">⛶</button>
   <button class="icon-btn" id="btn-skin" title="Choisir ton personnage">🎭</button>
+  <button class="icon-btn" id="btn-profile" title="Profil, récompenses et classement">👤</button>
   <div id="skin-name"></div>
   <div class="panel" id="settings-panel">
     <div class="opt-label">Graphismes</div>
@@ -797,6 +860,23 @@
     <button class="chip" id="pm-cancel">Annuler</button>
   </div>
 </div>
+<div id="profile-modal">
+  <div class="box">
+    <div id="pf-head">
+      <div class="lv"></div>
+      <div class="who"><div class="nm"></div><div class="ti"></div><div class="bar"><i></i></div></div>
+      <button class="chip" id="pf-close">✕</button>
+    </div>
+    <div id="pf-tabs">
+      <button class="chip" data-pf="compte">👤 Compte</button>
+      <button class="chip" data-pf="titres">🏷 Titres</button>
+      <button class="chip" data-pf="badges">🏅 Badges</button>
+      <button class="chip" data-pf="style">🎨 Style</button>
+      <button class="chip" data-pf="classement">🏆 Classement</button>
+    </div>
+    <div id="pf-body"></div>
+  </div>
+</div>
 <canvas id="glitch"></canvas>
 <canvas id="intro-cv"></canvas>
 <div id="gate">
@@ -829,6 +909,7 @@
   <h1>⚔ ZONE HOSTILE</h1>
   <p id="intro">Des vagues de robots hostiles attaquent l'arène. Survis le plus longtemps possible.<br>
   ZQSD / WASD : bouger · Souris : viser · Clic : tirer · R : recharger · Maj : courir · Espace : sauter · V : vue 1ʳᵉ/3ᵉ personne</p>
+  <div id="match-xp"></div>
   <div class="go" id="go-label">Clique pour combattre</div>
   <div id="end-actions" style="display:none">
     <button class="menu-btn primary" id="btn-replay">🔁 Rejouer</button>
@@ -1772,7 +1853,11 @@ function extActivateLever(i, local, by) {
   sfx(110, 0.3, 'square', 0.3, 0.4); sfx(900, 0.25, 'triangle', 0.16, 1.9); sfxNoise(0.3, 0.22, 3500, 400);
   const k = extLeversOn();
   showMsg('⚡ Levier ' + k + '/' + extLevers.length + ' activé !', 2000);
-  if (local) { buzz([30, 40, 70], 0, true); netSend({ t: 'lever', i, by: myId }); }
+  if (local) {
+    buzz([30, 40, 70], 0, true); netSend({ t: 'lever', i, by: myId });
+    gainXp(XP.lever, 'Leviers'); bumpStat('levers');
+    if (++extGame.levers >= 3 && !extGame.hurt) earnBadge('lever3');
+  }
   feed('⚡ ' + (by === myId || local ? 'Tu as' : by ? extNameOf(by) + ' a' : 'Un survivant a') + ' activé le levier ' + (i + 1) + ' (' + k + '/' + extLevers.length + ')', 'gold');
   if (k === extLevers.length) extOpenB();
   updateHud(); if (duelMode === 'extinction') drawExtMinimap();
@@ -2402,6 +2487,7 @@ function extAudio(dt) {
       if (dd < dMin) { dMin = dd; mnx = r.lastState.p[0]; mnz = r.lastState.p[2]; }
     }
   }
+  if (dMin < 6) extGame.close = true;   // le monstre était collé à moi (badge « A vu les yeux… »)
   const nearNow = dMin < 32 ? 1 - dMin / 32 : 0;
   extNear += (nearNow - extNear) * Math.min(1, dt * 1.5);   // lissé : la tension monte et retombe doucement
   extPulse *= Math.exp(-dt * 6);                            // chaque battement s'éteint vite
@@ -2452,6 +2538,7 @@ function extCheck(dt) {
     if (dB < EXT_SAFE_R && !extArrived.has(myId)) {
       extArrived.add(myId);
       netSend({ t: 'ext_arrive', id: myId });
+      if (!extGame.escaped) { extGame.escaped = true; gainXp(XP.escape, 'Point B'); bumpStat('escapes'); }
       showMsg('🏁 Tu es à l\'abri ! (tu peux repartir aider… à tes risques)', 2500);
       sfx(700, 0.3, 'triangle', 0.15, 1.6);
       updateHud();
@@ -2503,6 +2590,10 @@ function applyExtEnd(d) {
     ? '🔦 Les survivants ont abattu le monstre !'
     : '🐺 Le monstre a survécu à la nuit…';
   $('intro').innerHTML = '<span class="verdict">' + verdict + '</span>' + recapHtml(d);
+  if (monsterIds.size) {   // partie solo sans monstre : ni victoire ni défaite, on garde juste l'XP gagnée
+    if (!isMonster() && extArrived.has(myId) && extGame.close) earnBadge('eyes');
+    matchResult(jaiGagne);
+  } else showMatchXp();
   $('go-label').textContent = 'Clique pour revenir à l\'accueil';
   const ea = $('end-actions'), rp = $('btn-replay');
   ea.style.display = 'flex'; rp.disabled = !authority;
@@ -2561,8 +2652,9 @@ function initEndUi() {
 }
 
 // ---------- Récapitulatif de fin de partie, Rejouer, lien d'invitation ----------
+const extGame = { levers: 0, hurt: false, close: false, escaped: false, eats: 0 };   // mes exploits de la partie en cours (badges)
 const extStats = { leversBy: {}, eaten: [] };   // qui a activé combien de leviers, qui a été dévoré (dans l'ordre)
-function extStatsReset() { extStats.leversBy = {}; extStats.eaten = []; }
+function extStatsReset() { extStats.leversBy = {}; extStats.eaten = []; Object.assign(extGame, { levers: 0, hurt: false, close: false, escaped: false, eats: 0 }); }
 function recapHtml(d) {
   const secs = Math.max(0, Math.round((Date.now() - extFreezeUntil) / 1000)), time = Math.floor(secs / 60) + ':' + String(secs % 60).padStart(2, '0');
   const nm = id => extNameOf(id);
@@ -2829,37 +2921,140 @@ function damageEnemy(e, point, dmg = 1) {
     e.dead = true;
     e.deathT = 0;
     score += e.tough ? 250 : 100;
-    gainXp(e.tough ? 25 : 10);
+    gainXp(e.tough ? XP.botTough : XP.bot, 'Robots');
     sfx(120, 0.35, 'sawtooth', 0.15, 0.3);
     burst(e.mesh.position, e.tough ? 0xb266ff : 0x66ccff, 18);
   }
   updateHud();
 }
 
-// ---------- Progression : XP & niveaux (sauvegardés entre les parties) ----------
+// ---------- Progression : XP, niveaux, titres, badges, cosmétiques ----------
+// Tout est gardé dans le navigateur ; avec un compte (Firebase, plus bas) c'est aussi sauvegardé en ligne.
 const xpForLevel = lvl => 100 + (lvl - 1) * 60; // XP requis pour passer le niveau
+const totalXpOf = (lvl, xp) => { let t = xp; for (let l = 1; l < lvl; l++) t += xpForLevel(l); return t; };
+// Barème : une défaite fait perdre de l'XP, mais jamais un niveau déjà gagné
+const XP = { bot: 5, botTough: 10, kill: 15, devour: 50, win: 120, loss: -40, lever: 40, escape: 80 };
+const TITLES = [ // [niveau requis, titre]
+  [1, 'Signal faible'], [3, 'Pas encore mangé'], [5, 'Ne regarde pas derrière'], [8, 'Lampe torche, cœur battant'],
+  [10, 'A survécu à la première nuit'], [15, 'Odeur de batterie brûlée'], [20, 'Le labyrinthe connaît ton nom'],
+  [25, 'Statique dans les murs'], [30, 'Ce qui rôde t\'évite'], [40, 'Fréquence fantôme'],
+  [50, 'Ils racontent ton histoire à voix basse'], [60, 'Dernier signal capté'], [75, 'Erreur 404 : peur introuvable'],
+  [100, 'Tu es devenu la Zone']
+];
+const BADGES = [ // id, icône, nom, comment l'obtenir
+  ['first', '🩸', 'Premier sang', 'Élimine un autre joueur'],
+  ['lever3', '⚡', 'Trois leviers, zéro égratignure', 'Active 3 leviers dans la même partie sans être blessé'],
+  ['almost', '🚪', 'Dévoré à 2 mètres de la sortie', 'Te faire dévorer tout près du point B'],
+  ['eyes', '👁', 'A vu les yeux et a survécu', 'Atteins le point B après avoir eu le monstre collé à toi'],
+  ['glutton', '🍖', 'Appétit insatiable', 'En monstre, dévore 3 survivants dans la même partie'],
+  ['wolf', '🐺', 'Le loup ne dort jamais', 'Gagne une partie de Loup en étant le loup'],
+  ['cold', '🧊', 'Sang-froid', 'Gagne un duel sans perdre un seul cœur'],
+  ['wave10', '🤖', 'Fantôme du tutoriel', 'Atteins la vague 10 hors ligne'],
+  ['lvl10', '🕯', 'Habitué des cauchemars', 'Atteins le niveau 10'],
+  ['hundred', '💀', 'Cent silhouettes', 'Élimine 100 joueurs'],
+  ['insomnia', '🌙', 'Insomniaque', 'Joue 50 parties en ligne'],
+  ['sweaty', '💧', 'Mains moites', 'Perds 10 parties (ça forge)']
+];
+// Cosmétiques : [niveau requis, nom, couleur]
+const COS = {
+  tracer: [[1, 'Ambre', 0xffd27a], [4, 'Néon glacé', 0x7fe8ff], [12, 'Sang neuf', 0xff3a3a], [22, 'Vide', 0xb266ff], [35, 'Radioactif', 0x8aff5a], [50, 'Statique', -1]],
+  lamp:   [[1, 'Chaude', 0xfff2d8], [6, 'Blanc clinique', 0xf4fbff], [14, 'Lune morte', 0xa8c8ff], [28, 'Chambre noire', 0xff5a4a], [45, 'Vision de nuit', 0x9aff8a]],
+  kfx:    [[1, 'Étincelles', 0xffb84d], [9, 'Cendres', 0x5a5a5a], [18, 'Glitch', 0x00f0ff], [33, 'Âmes', 0xcfeaff]],
+  frame:  [[1, 'Aucun', 0], [8, 'Barbelés', 0], [16, 'Givre', 0], [26, 'Braise', 0], [40, 'Or terni', 0], [60, 'Néant', 0]]
+};
+const COS_LABEL = { tracer: 'Traçantes', lamp: 'Lampe torche', kfx: 'Effet d\'élimination', frame: 'Cadre dans le salon' };
+const jsonLS = (k, def) => { try { return Object.assign(def, JSON.parse(localStorage.getItem(k) || '{}')); } catch (e) { return def; } };
 const profile = {
   level: parseInt(localStorage.getItem('zh-level'), 10) || 1,
   xp: parseInt(localStorage.getItem('zh-xp'), 10) || 0,
-  best: parseInt(localStorage.getItem('zh-best'), 10) || 0
+  best: parseInt(localStorage.getItem('zh-best'), 10) || 0,
+  title: parseInt(localStorage.getItem('zh-title'), 10) || 1,
+  badges: (() => { try { return JSON.parse(localStorage.getItem('zh-badges') || '[]'); } catch (e) { return []; } })(),
+  stats: jsonLS('zh-stats', { kills: 0, bots: 0, wins: 0, losses: 0, games: 0, levers: 0, escapes: 0, devoured: 0 }),
+  cos: jsonLS('zh-cos', { tracer: 0, lamp: 0, kfx: 0, frame: 0 })
 };
-function saveProfile() {
+const titleText = (lvl = profile.title) => (TITLES.find(t => t[0] === lvl) || TITLES[0])[1];
+function saveProfile(local = false) {
   localStorage.setItem('zh-level', profile.level);
   localStorage.setItem('zh-xp', profile.xp);
   localStorage.setItem('zh-best', profile.best);
+  localStorage.setItem('zh-title', profile.title);
+  localStorage.setItem('zh-badges', JSON.stringify(profile.badges));
+  localStorage.setItem('zh-stats', JSON.stringify(profile.stats));
+  localStorage.setItem('zh-cos', JSON.stringify(profile.cos));
+  if (!local) cloudSave();
 }
-function gainXp(amount) {
-  profile.xp += amount;
-  let leveled = false;
-  while (profile.xp >= xpForLevel(profile.level)) {
-    profile.xp -= xpForLevel(profile.level);
-    profile.level++;
-    leveled = true;
+// Ce que chaque niveau débloque (titres, cosmétiques, personnages)
+function unlocksAt(lvl) {
+  const out = [];
+  for (const [l, t] of TITLES) if (l === lvl) out.push('titre « ' + t + ' »');
+  for (const k in COS) for (const [l, n] of COS[k]) if (l === lvl && l > 1) out.push(COS_LABEL[k].toLowerCase() + ' « ' + n + ' »');
+  for (const s of SKINS) if (s.lvl === lvl) out.push('personnage ' + s.name);
+  return out;
+}
+// XP gagnée pendant la partie en cours (récapitulatif à l'écran de fin)
+let matchXp = [], matchDone = false;
+function gainXp(amount, why = '') {
+  if (why) { const e = matchXp.find(x => x[0] === why); if (e) e[1] += amount; else matchXp.push([why, amount]); }
+  if (amount < 0) {
+    profile.xp = Math.max(0, profile.xp + amount); // on perd de l'XP, jamais le niveau
+    showMsg('📉 ' + amount + ' XP', 1500);
+  } else {
+    profile.xp += amount;
+    const before = profile.level;
+    while (profile.xp >= xpForLevel(profile.level)) {
+      profile.xp -= xpForLevel(profile.level);
+      profile.level++;
+    }
+    if (profile.level > before) {
+      const news = [];
+      for (let l = before + 1; l <= profile.level; l++) news.push(...unlocksAt(l));
+      showMsg('⭐ NIVEAU ' + profile.level + ' !', 2200);
+      if (news.length) feed('🎁 Débloqué : ' + news.join(', '), 'gold');
+      sfx(660, 0.25, 'triangle', 0.14, 2);
+      if (profile.level >= 10) earnBadge('lvl10');
+    }
   }
-  if (leveled) { showMsg('⭐ NIVEAU ' + profile.level + ' !', 1800); sfx(660, 0.25, 'triangle', 0.14, 2); }
   saveProfile();
   updateXpHud();
 }
+function earnBadge(id) {
+  if (profile.badges.includes(id)) return;
+  const b = BADGES.find(x => x[0] === id);
+  if (!b) return;
+  profile.badges.push(id);
+  feed('🏅 Badge : ' + b[1] + ' ' + b[2], 'gold');
+  sfx(880, 0.2, 'triangle', 0.12, 1.5);
+  saveProfile();
+}
+function bumpStat(k, n = 1) {
+  profile.stats[k] = (profile.stats[k] || 0) + n;
+  const s = profile.stats;
+  if (s.kills >= 1) earnBadge('first');
+  if (s.kills >= 100) earnBadge('hundred');
+  if (s.games >= 50) earnBadge('insomnia');
+  if (s.losses >= 10) earnBadge('sweaty');
+  saveProfile();
+}
+// Fin d'une partie en ligne (une seule fois par partie) : victoire +XP, défaite −XP, puis récapitulatif
+function matchResult(won) {
+  if (matchDone) return;
+  matchDone = true;
+  bumpStat('games'); bumpStat(won ? 'wins' : 'losses');
+  gainXp(won ? XP.win : XP.loss, won ? 'Victoire' : 'Défaite');
+  showMatchXp();
+}
+function showMatchXp() {
+  const el = $('match-xp');
+  if (!el) return;
+  if (!matchXp.length) { el.style.display = 'none'; return; }
+  const tot = matchXp.reduce((a, e) => a + e[1], 0);
+  el.innerHTML = matchXp.map(([w, n]) => '<span class="' + (n < 0 ? 'neg' : '') + '">' + w + ' ' + (n > 0 ? '+' : '') + n + '</span>').join('')
+    + '<b class="' + (tot < 0 ? 'neg' : '') + '">' + (tot > 0 ? '+' : '') + tot + ' XP</b>'
+    + '<small>Niv. ' + profile.level + ' · ' + profile.xp + ' / ' + xpForLevel(profile.level) + '</small>';
+  el.style.display = 'flex';
+}
+function resetMatchXp() { matchXp = []; matchDone = false; const el = $('match-xp'); if (el) el.style.display = 'none'; }
 function updateXpHud() {
   const need = xpForLevel(profile.level);
   const bar = $('xp-bar-fill');
@@ -2867,7 +3062,16 @@ function updateXpHud() {
   const lab = $('xp-label');
   if (lab) lab.textContent = 'Niv. ' + profile.level + ' · ' + profile.xp + '/' + need + ' XP';
   const hl = $('home-level');
-  if (hl) hl.textContent = '⭐ Niveau ' + profile.level;
+  if (hl) { hl.innerHTML = '⭐ Niveau ' + profile.level + '<small></small>'; hl.querySelector('small').textContent = titleText(); }
+}
+// Cosmétiques équipés
+const cosVal = k => (COS[k][profile.cos[k]] || COS[k][0])[2];
+function myTracerColor() { const c = cosVal('tracer'); return c < 0 ? new THREE.Color().setHSL(Math.random(), 1, 0.6).getHex() : c; }
+function killFx(p) {
+  if (!p) return;
+  const pos = new THREE.Vector3(p[0], p[1], p[2]), k = profile.cos.kfx;
+  if (k === 2) { burst(pos, 0x00f0ff, 14); burst(pos, 0xff2bd6, 14); }
+  else burst(pos, cosVal('kfx'), k === 1 ? 26 : k === 3 ? 30 : 16);
 }
 
 // ---------- Ennemis côté client (multijoueur) : simple rendu piloté par l'hôte ----------
@@ -4433,10 +4637,10 @@ function burst(pos, color, n = 10) {
 
 // ---------- Traçantes ----------
 const tracers = [];
-function addTracer(from, to) {
+function addTracer(from, to, color = 0xffd27a) {   // couleur = cosmétique « Traçantes » du tireur
   const geo = new THREE.BufferGeometry().setFromPoints([from, to]);
   const line = new THREE.Line(geo, new THREE.LineBasicMaterial({
-    color: 0xffd27a, transparent: true, opacity: 0.85
+    color, transparent: true, opacity: 0.85
   }));
   scene.add(line);
   tracers.push({ line, life: 0.07, maxLife: 0.07 });
@@ -4831,6 +5035,7 @@ function loupEnd(wolfWon) { // host décide, tout le monde applique
 }
 function applyLoupEnd(wolfWon) {
   const jaiGagne = isWolf() ? wolfWon : !wolfWon;
+  if (isWolf() && wolfWon) earnBadge('wolf');
   duelEnd(jaiGagne);
   $('intro').innerHTML = (wolfWon ? '🐺 Le loup a dévoré tout le monde !' : '🛡️ Les survivants ont tenu bon !')
     + '<br>Score final — Loup ' + loupScoreW + ' · Survivants ' + loupScoreS;
@@ -5511,8 +5716,9 @@ function shoot() {
     const endDist = Math.min(dE, dO, w.range);
     const endPoint = camera.position.clone().addScaledVector(dir, endDist);
     if (p === 0 || w.pellets <= 3 || p % 2 === 0) { // limite le trafic réseau des gerbes
-      addTracer(muzzleWorld, endPoint);
-      netSend({ t: 'shot', a: muzzleWorld.toArray(), b: endPoint.toArray() });
+      const tc = myTracerColor();
+      addTracer(muzzleWorld, endPoint, tc);
+      netSend({ t: 'shot', a: muzzleWorld.toArray(), b: endPoint.toArray(), c: tc });
     }
     if (dE < dO && dE <= w.range) {
       const hit = hitsE[0];
@@ -5551,6 +5757,7 @@ function hurt(dmg, src) {
   if (player.invuln > 0) return; // invulnérable juste après un respawn (duel)
   if (shieldUntil > Date.now()) { showMsg('🛡️ Bouclier !', 600); sfx(900, 0.1, 'triangle', 0.1, 1.4); return; }
   player.hp -= dmg;
+  if (duelMode === 'extinction') extGame.hurt = true;
   shakeT = 0.35;
   showDmgDir(src);
   buzz(Math.round(Math.min(100, 30 + dmg * 1.5)), 120, true); // touché : vibration proportionnelle aux dégâts (5 → 38 ms, 40 → 90 ms)
@@ -5608,7 +5815,9 @@ function duelEnd(won) {
   h1.classList.toggle('dead', !won);
   $('intro').innerHTML = won ? 'Tu as remporté le duel !' : 'Ton adversaire a gagné ce duel.';
   $('go-label').textContent = 'Clique pour revenir au menu';
-  if (won) { gainXp(60); sfx(660, 0.5, 'triangle', 0.16, 2); }
+  if (won) sfx(660, 0.5, 'triangle', 0.16, 2);
+  if (won && duelMode !== 'loup' && player.lives >= 3) earnBadge('cold');
+  matchResult(won);
 }
 // ---------- Sang à l'écran + jump scare ----------
 const bloodCv = $('blood'), bloodCtx = bloodCv.getContext('2d');
@@ -5667,9 +5876,19 @@ function startJumpScare() {                   // la caméra se retourne vers le 
   sfxScream(); bloodSplat(1.3);
   return true;
 }
+// Qui m'a touché en dernier (dans les 10 dernières secondes) : c'est lui qui gagne l'XP de l'élimination
+let lastHitBy = null, lastHitAt = 0;
+function creditKiller() {
+  if (!duelMode || !lastHitBy || Date.now() - lastHitAt > 10000) return;
+  netSend({ t: 'kcred', to: lastHitBy, p: [player.pos.x, player.pos.y - 0.6, player.pos.z] });
+  lastHitBy = null;
+}
 function die() {
   setScoped(false);
   buzz([90, 50, 220], 0, true);
+  creditKiller();
+  if (duelMode === 'extinction' && mazePointB && Math.hypot(player.pos.x - mazePointB.x, player.pos.z - mazePointB.z) < EXT_SAFE_R + 6) earnBadge('almost');
+  if (!duelMode && wave >= 10) earnBadge('wave10');
   if (duelMode !== 'extinction') glitchPulse(); // le signal se brouille à la mort
   if (duelMode === 'extinction') { // dévoré : une seule vie, on spectate
     player.alive = false;
@@ -6563,7 +6782,7 @@ function onMsg(conn, d) {
       break;
     }
     case 'shot':
-      addTracer(new THREE.Vector3(...d.a), new THREE.Vector3(...d.b));
+      addTracer(new THREE.Vector3(...d.a), new THREE.Vector3(...d.b), typeof d.c === 'number' ? d.c : undefined);
       sfx(650 + Math.random() * 150, 0.05, 'square', 0.03, 0.2);
       if (authority) broadcastExcept(conn, d);
       break;
@@ -6572,7 +6791,18 @@ function onMsg(conn, d) {
     case 'pvp': // dégâts joueur-contre-joueur (duel)
       if (d.to === myId && duelMode && !duelOver) {
         if (duelMode === '2v2' && conn && conn.relayId && teamOf(conn.relayId) === myTeam) break; // anti tir allié
+        if (d.from) { lastHitBy = d.from; lastHitAt = Date.now(); }
         hurt(d.d || 10, srcOf(d.from));
+      }
+      if (authority && d.to !== myId) broadcastExcept(conn, d); // hôte PeerJS : relaie à la cible
+      break;
+    case 'kcred': // j'ai éliminé quelqu'un (ou, en monstre, dévoré un survivant) : XP + effet d'élimination
+      if (d.to === myId && duelMode && gameStarted) {
+        if (duelMode === 'extinction' && isMonster()) {
+          gainXp(XP.devour, 'Dévorés'); bumpStat('devoured');
+          if (++extGame.eats >= 3) earnBadge('glutton');
+        } else { gainXp(XP.kill, 'Éliminations'); bumpStat('kills'); }
+        killFx(d.p);
       }
       if (authority && d.to !== myId) broadcastExcept(conn, d); // hôte PeerJS : relaie à la cible
       break;
@@ -6633,6 +6863,7 @@ function onMsg(conn, d) {
     case 'name': // pseudo échangé dans le salon Extinction
       if (d.id && d.id !== myId) {
         extNames.set(d.id, d.nm);
+        if (typeof d.lv === 'number') extMeta.set(d.id, { lv: d.lv, ti: d.ti | 0, fr: d.fr | 0 });
         if (isRoomHost && conn && !conn.relayId) conn.pid = d.id;   // PeerJS : on associe cette connexion à son joueur
         if (!gameStarted) { if (isRoomHost) updateLobby(); else renderRoster(); }
       }
@@ -6698,7 +6929,11 @@ function onMsg(conn, d) {
     case 'lobby': {
       const el = document.getElementById('lobby-players');
       if (el) el.textContent = lobbyCountText(d.n);
-      if (!isRoomHost && Array.isArray(d.ros)) { lobbyRos = d.ros; if (!gameStarted) renderRoster(); }
+      if (!isRoomHost && Array.isArray(d.ros)) {
+        lobbyRos = d.ros;
+        for (const [id, , lv, ti, fr] of d.ros) if (id !== myId && lv) extMeta.set(id, { lv, ti, fr });
+        if (!gameStarted) renderRoster();
+      }
       break;
     }
   }
@@ -6741,7 +6976,7 @@ function updateLobby() {
   const el = document.getElementById('lobby-players');
   if (el) el.textContent = lobbyCountText(n);
   renderRoster();
-  if (isRoomHost && !gameStarted) broadcast({ t: 'lobby', n, ros: rosterEntries().map(e => [e.id, e.name]) });
+  if (isRoomHost && !gameStarted) broadcast({ t: 'lobby', n, ros: rosterEntries().map(e => { const m = metaOf(e.id); return [e.id, e.name, m.lv | 0, m.ti | 0, m.fr | 0]; }) });
 }
 // Liste des joueurs du salon : une carte par joueur (qui apparaît avec un petit éclat), des places vides en pointillés
 const rosterEls = new Map();
@@ -6762,10 +6997,13 @@ function rosterEntries() {
   for (const id of remotePlayers.keys()) if (!seen.has(id)) add(id);
   return list;
 }
-function announceName() {   // diffuse mon pseudo (l'hôte le relaie à tous et met à jour la liste)
-  netSelf({ t: 'name', id: myId, nm: extPseudo() });
-  if (isRoomHost) { broadcast({ t: 'name', id: myId, nm: extPseudo() }); updateLobby(); }
+function announceName() {   // diffuse mon pseudo + niveau, titre et cadre (l'hôte le relaie à tous et met à jour la liste)
+  const m = { t: 'name', id: myId, nm: extPseudo(), lv: profile.level, ti: profile.title, fr: profile.cos.frame };
+  netSelf(m);
+  if (isRoomHost) { broadcast(m); updateLobby(); }
 }
+const extMeta = new Map();   // id → { lv, ti, fr } des autres joueurs du salon
+const metaOf = id => id === myId ? { lv: profile.level, ti: profile.title, fr: profile.cos.frame } : (extMeta.get(id) || {});
 let rosterSig = '';
 function resetRoster() { rosterEls.clear(); rosterPrevN = 0; rosterSig = ''; lobbyRos = null; const b = document.getElementById('lobby-roster'); if (b) b.innerHTML = ''; }
 // Colonnes symétriques : on prend le plus grand diviseur du nombre de places qui tient dans la largeur (10 → 5×2, 4 → 4×1, 2 → 2×1…)
@@ -6779,7 +7017,7 @@ function renderRoster() {
   if (!box || document.getElementById('lobby').style.display === 'none') return;
   const list = rosterEntries(), max = Math.max(list.length, Math.min(10, maxPlayers()));
   box.style.gridTemplateColumns = 'repeat(' + rosterCols(max) + ', minmax(0, 1fr))';
-  const sig = max + '|' + innerWidth + '|' + list.map(e => e.id + ':' + e.name + (e.host ? 'h' : '')).join(',');
+  const sig = max + '|' + innerWidth + '|' + list.map(e => { const m = metaOf(e.id); return e.id + ':' + e.name + (e.host ? 'h' : '') + m.lv + '/' + m.ti + '/' + m.fr; }).join(',');
   if (sig === rosterSig) return;                 // rien n'a changé : on ne touche pas au DOM (pas de relance d'animations)
   rosterSig = sig;
   const ids = new Set(list.map(e => e.id));
@@ -6788,7 +7026,7 @@ function renderRoster() {
     let el = rosterEls.get(e.id);
     if (!el) {
       el = document.createElement('div'); el.className = 'slot enter';
-      el.innerHTML = '<span class="av"></span><span class="nm"></span><span class="tag"></span>';
+      el.innerHTML = '<span class="av"></span><span class="who"><span class="nm"></span><span class="ti"></span></span><span class="tag"></span>';
       rosterEls.set(e.id, el); box.appendChild(el);
       setTimeout(() => el.classList.remove('enter'), 650);
     }
@@ -6796,6 +7034,9 @@ function renderRoster() {
     av.textContent = (e.name.replace(/[^\p{L}\p{N}]/gu, '')[0] || '?').toUpperCase();
     av.style.setProperty('--c', AV_COLORS[hashStr(e.id) % AV_COLORS.length]);
     el.querySelector('.nm').textContent = e.name;
+    const m = metaOf(e.id);
+    el.querySelector('.ti').textContent = m.lv ? 'Niv. ' + m.lv + ' · ' + titleText(m.ti) : '';
+    el.className = el.className.replace(/\bfr-\d+\b/g, '').trim() + (m.fr ? ' fr-' + m.fr : '');
     el.querySelector('.tag').textContent = e.host ? '👑' : e.me ? 'TOI' : '';
     el.classList.toggle('me', !!e.me);
     el.style.order = i;
@@ -6814,6 +7055,7 @@ function beginGame(mode) {
   gameMode = mode;
   authority = mode !== 'client';
   gameStarted = true;
+  resetMatchXp(); lastHitBy = null;
   stopMenuMusic(); // la musique d'accueil s'éteint, l'ambiance de jeu prend le relais
   transition(() => { // le salon se brouille, puis la partie apparaît
     document.getElementById('home').style.display = 'none';
@@ -7146,6 +7388,7 @@ document.getElementById('pseudo-input').addEventListener('input', e => {
   localStorage.setItem('zh-pseudo', myPseudo);
   announceName();
   renderRoster();
+  cloudSave();
 });
 // Clic sur le code du salon : copié dans le presse-papiers, avec un « COPIÉ ✓ » qui s'affiche une seconde
 document.getElementById('lobby-code').addEventListener('click', async e => {
@@ -7319,7 +7562,9 @@ SKINS.forEach((s, i) => {
   const b = document.createElement('button');
   b.className = 'chip' + (i === mySkin ? ' sel' : '');
   b.innerHTML = `<span class="dot" style="background:#${(s.chip !== undefined ? s.chip : s.zones.top).toString(16).padStart(6, '0')}"></span>${s.name}`;
+  if (s.lvl > profile.level) { b.classList.add('locked'); b.title = 'Débloqué au niveau ' + s.lvl; b.insertAdjacentText('beforeend', ' 🔒' + s.lvl); }
   b.onclick = () => {
+    if (s.lvl > profile.level) { homeStatus('🔒 ' + s.name + ' se débloque au niveau ' + s.lvl); return; }
     mySkin = i;
     localStorage.setItem('zh-skin', i);
     skinRow.querySelectorAll('.chip').forEach((c, j) => c.classList.toggle('sel', j === i));
@@ -7397,6 +7642,7 @@ addEventListener('popstate', () => {
     return;
   }
   if (ctrlEditing) { closeCtrlEdit(false); return; } // éditeur de commandes : fermer sans garder
+  if (pfTab) { closeProfile(); return; }              // fenêtre Profil
   // panneaux de l'accueil (duel, paramètres, skins) : les refermer
   for (const id of ['settings-panel', 'skin-panel'])
     setPanel(document.getElementById(id), false);
@@ -7835,6 +8081,7 @@ function pseudoDone(ok) {
   if (!ok || !next) return;
   myPseudo = ($('pm-input').value || '').trim().slice(0, 14);
   localStorage.setItem('zh-pseudo', myPseudo);
+  cloudSave();
   pseudoOk = true;
   next();
 }
@@ -7847,6 +8094,208 @@ for (const id of ['btn-loup', 'btn-extinction', 'btn-create', 'btn-join']) {   /
   el.onclick = e => (id === 'btn-join' && $('join-code').value.trim().length < 4) ? orig.call(el, e) : askPseudo(() => orig.call(el, e));
 }
 document.querySelectorAll('[data-dmode]').forEach(b => { const orig = b.onclick; b.onclick = e => askPseudo(() => orig.call(b, e)); });
+// ---------- Comptes (Firebase) : connexion Google / e-mail, progression en ligne, classement ----------
+// Ces identifiants sont publics par nature (ils identifient le projet) : la sécurité vient des règles Firestore.
+const FB_CFG = {
+  apiKey: 'AIzaSyAYO4uaiPAZjhgc034Cjmm2oQXA4V_YwDU',
+  authDomain: 'zone-hostile.firebaseapp.com',
+  projectId: 'zone-hostile',
+  storageBucket: 'zone-hostile.firebasestorage.app',
+  messagingSenderId: '372486520385',
+  appId: '1:372486520385:web:ee07334b416366e72150c0'
+};
+const FB_URL = 'https://www.gstatic.com/firebasejs/10.12.2/';
+let fb = null, fbUser = null, fbLoading = null, cloudT = 0;
+function fbInit() {   // chargé à la demande : le jeu marche sans (hors ligne, Firebase bloqué…)
+  if (!fbLoading) fbLoading = (async () => {
+    try {
+      const [app, au, fs] = await Promise.all([import(FB_URL + 'firebase-app.js'), import(FB_URL + 'firebase-auth.js'), import(FB_URL + 'firebase-firestore.js')]);
+      const a = app.initializeApp(FB_CFG);
+      fb = { au, fs, auth: au.getAuth(a), db: fs.getFirestore(a) };
+      fb.auth.languageCode = 'fr';
+      au.onAuthStateChanged(fb.auth, onFbUser);
+      au.getRedirectResult(fb.auth).catch(e => pfError(e));
+    } catch (e) { console.warn('Firebase indisponible', e); fb = null; }
+    return fb;
+  })();
+  return fbLoading;
+}
+const cloudName = () => (myPseudo || '').trim().slice(0, 14) || (fbUser && fbUser.displayName || '').split(' ')[0].slice(0, 14) || 'Agent';
+function cloudData() {
+  return {
+    name: cloudName(), level: profile.level | 0, xp: profile.xp | 0, total: totalXpOf(profile.level, profile.xp) | 0,
+    best: profile.best | 0, title: profile.title | 0, badges: profile.badges.slice(0, 64), stats: profile.stats, cos: profile.cos,
+    upd: fb.fs.serverTimestamp()
+  };
+}
+function cloudSave(now = false) {   // regroupe les sauvegardes (au plus une toutes les 2 s)
+  if (!fb || !fbUser) return;
+  clearTimeout(cloudT);
+  const go = () => fb.fs.setDoc(fb.fs.doc(fb.db, 'players', fbUser.uid), cloudData()).catch(e => console.warn('Sauvegarde en ligne refusée', e));
+  if (now) go(); else cloudT = setTimeout(go, 2000);
+}
+async function onFbUser(u) {
+  fbUser = u;
+  if (u) {
+    try {   // compte existant : sa progression fait foi ; nouveau compte : on y verse la progression de cet appareil
+      const snap = await fb.fs.getDoc(fb.fs.doc(fb.db, 'players', u.uid));
+      if (snap.exists()) {
+        const d = snap.data();
+        profile.level = Math.max(1, d.level | 0); profile.xp = Math.max(0, d.xp | 0); profile.best = d.best | 0;
+        profile.title = d.title | 0 || 1;
+        profile.badges = Array.isArray(d.badges) ? d.badges : [];
+        Object.assign(profile.stats, d.stats || {}); Object.assign(profile.cos, d.cos || {});
+        if (!myPseudo && d.name) { myPseudo = d.name; localStorage.setItem('zh-pseudo', myPseudo); }
+        saveProfile(true);
+      } else cloudSave(true);
+    } catch (e) { console.warn('Lecture du profil en ligne impossible', e); }
+    applyCos(); updateXpHud();
+  }
+  if (pfTab) renderProfile();
+}
+// Erreurs Firebase → phrases claires
+const FB_ERR = {
+  'auth/invalid-email': 'Adresse e-mail invalide.',
+  'auth/invalid-credential': 'E-mail ou mot de passe incorrect.',
+  'auth/wrong-password': 'E-mail ou mot de passe incorrect.',
+  'auth/user-not-found': 'Aucun compte avec cet e-mail.',
+  'auth/email-already-in-use': 'Un compte existe déjà avec cet e-mail : connecte-toi.',
+  'auth/weak-password': 'Mot de passe trop court (6 caractères minimum).',
+  'auth/missing-password': 'Entre ton mot de passe.',
+  'auth/too-many-requests': 'Trop d\'essais : réessaie dans quelques minutes.',
+  'auth/network-request-failed': 'Pas de connexion internet.',
+  'auth/popup-closed-by-user': 'Fenêtre Google fermée.',
+  'auth/cancelled-popup-request': '',
+  'auth/unauthorized-domain': 'Ce site n\'est pas encore autorisé dans Firebase (Domaines autorisés).',
+  'auth/operation-not-allowed': 'Cette méthode de connexion n\'est pas activée dans Firebase.'
+};
+function pfError(e) {
+  const el = document.querySelector('#pf-body .err');
+  const msg = e ? (FB_ERR[e.code] !== undefined ? FB_ERR[e.code] : 'Erreur : ' + (e.code || e.message)) : '';
+  if (el) { el.classList.remove('ok'); el.textContent = msg; }
+}
+async function fbGoogle() {
+  if (!await fbInit()) return pfError({ code: 'auth/network-request-failed' });
+  const prov = new fb.au.GoogleAuthProvider();
+  try { await fb.au.signInWithPopup(fb.auth, prov); }
+  catch (e) {
+    if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') fb.au.signInWithRedirect(fb.auth, prov);
+    else pfError(e);
+  }
+}
+async function fbEmail(create) {
+  const em = ($('pf-email').value || '').trim(), pw = $('pf-pass').value || '';
+  if (!await fbInit()) return pfError({ code: 'auth/network-request-failed' });
+  try {
+    if (create) await fb.au.createUserWithEmailAndPassword(fb.auth, em, pw);
+    else await fb.au.signInWithEmailAndPassword(fb.auth, em, pw);
+  } catch (e) { pfError(e); }
+}
+async function fbReset() {
+  const em = ($('pf-email').value || '').trim();
+  if (!em) return pfError({ code: 'auth/invalid-email' });
+  if (!await fbInit()) return;
+  try {
+    await fb.au.sendPasswordResetEmail(fb.auth, em);
+    const el = document.querySelector('#pf-body .err'); el.textContent = '📧 E-mail de réinitialisation envoyé à ' + em; el.classList.add('ok');
+  } catch (e) { pfError(e); }
+}
+// Cosmétiques appliqués au jeu
+function applyCos() { flashlight.color.setHex(cosVal('lamp')); }
+// Fenêtre Profil
+let pfTab = null;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+function openProfile(tab = 'compte') { pfTab = tab; $('profile-modal').classList.add('on'); fbInit(); renderProfile(); }
+function closeProfile() { pfTab = null; $('profile-modal').classList.remove('on'); }
+function nextRewards() {
+  const out = [];
+  for (let l = profile.level + 1; l <= profile.level + 40 && out.length < 3; l++) { const u = unlocksAt(l); if (u.length) out.push('Niv. ' + l + ' : ' + u.join(', ')); }
+  return out;
+}
+async function renderProfile() {
+  if (!pfTab) return;
+  const need = xpForLevel(profile.level), head = $('pf-head');
+  head.querySelector('.lv').textContent = profile.level;
+  head.querySelector('.nm').textContent = cloudName();
+  head.querySelector('.ti').textContent = '« ' + titleText() + ' » · ' + profile.xp + ' / ' + need + ' XP';
+  head.querySelector('.bar i').style.width = Math.min(100, profile.xp / need * 100) + '%';
+  document.querySelectorAll('#pf-tabs [data-pf]').forEach(b => b.classList.toggle('sel', b.dataset.pf === pfTab));
+  const body = $('pf-body'), lv = profile.level;
+  if (pfTab === 'compte') {
+    const s = profile.stats, nx = nextRewards();
+    const stats = '<div class="pf-stats">' + [['Victoires', s.wins], ['Défaites', s.losses], ['Éliminations', s.kills], ['Dévorés (monstre)', s.devoured],
+      ['Leviers', s.levers], ['Point B atteint', s.escapes], ['Parties', s.games], ['Badges', profile.badges.length + ' / ' + BADGES.length]]
+      .map(([k, v]) => '<div><b>' + (v || 0) + '</b>' + k + '</div>').join('') + '</div>';
+    const rules = '<div class="muted">Victoire +' + XP.win + ' · Défaite ' + XP.loss + ' (sans perdre de niveau) · Élimination +' + XP.kill
+      + ' · Levier +' + XP.lever + ' · Point B +' + XP.escape + ' · Survivant dévoré +' + XP.devour + '</div>';
+    const next = nx.length ? '<div><b>Prochaines récompenses</b><br>' + nx.map(esc).join('<br>') + '</div>' : '';
+    if (fbUser) {
+      body.innerHTML = '<div class="ok">✅ Connecté : ' + esc(fbUser.email || fbUser.displayName || 'compte') + ' — ta progression est sauvegardée en ligne.</div>'
+        + stats + next + rules + '<div class="row"><button class="chip" id="pf-logout">Se déconnecter</button></div>';
+      $('pf-logout').onclick = () => fb.au.signOut(fb.auth);
+    } else {
+      body.innerHTML = '<div>Connecte-toi pour <b>sauvegarder ta progression en ligne</b>, la retrouver sur tous tes appareils et <b>apparaître au classement</b>.</div>'
+        + '<button class="menu-btn small gbtn" id="pf-google"><svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continuer avec Google</button>'
+        + '<div class="muted" style="text-align:center">— ou avec un e-mail —</div>'
+        + '<div class="row"><input id="pf-email" type="email" placeholder="E-mail" autocomplete="email"></div>'
+        + '<div class="row"><input id="pf-pass" type="password" placeholder="Mot de passe (6 caractères min.)" autocomplete="current-password"></div>'
+        + '<div class="row"><button class="menu-btn small" id="pf-login">Se connecter</button><button class="menu-btn small" id="pf-signup">Créer un compte</button><button class="chip" id="pf-reset">Mot de passe oublié ?</button></div>'
+        + '<div class="err"></div>' + stats + next + rules;
+      $('pf-google').onclick = fbGoogle;
+      $('pf-login').onclick = () => fbEmail(false);
+      $('pf-signup').onclick = () => fbEmail(true);
+      $('pf-reset').onclick = fbReset;
+      $('pf-pass').addEventListener('keydown', e => { if (e.key === 'Enter') fbEmail(false); });
+    }
+  } else if (pfTab === 'titres') {
+    body.innerHTML = '<div class="muted">Ton titre s\'affiche sous ton pseudo dans les salons.</div><div class="pf-grid">'
+      + TITLES.map(([l, t]) => '<button class="pf-item' + (l > lv ? ' lock' : '') + (l === profile.title ? ' sel' : '') + '" data-ti="' + l + '"' + (l > lv ? ' disabled' : '') + '>'
+        + '<span class="ic">' + (l > lv ? '🔒' : '🏷') + '</span><span><b>' + esc(t) + '</b><small>Niveau ' + l + '</small></span></button>').join('') + '</div>';
+    body.querySelectorAll('[data-ti]').forEach(b => b.onclick = () => { profile.title = +b.dataset.ti; saveProfile(); updateXpHud(); announceName(); renderProfile(); });
+  } else if (pfTab === 'badges') {
+    body.innerHTML = '<div class="pf-grid">' + BADGES.map(([id, ic, n, how]) => {
+      const has = profile.badges.includes(id);
+      return '<div class="pf-item' + (has ? ' sel' : ' lock') + '"><span class="ic">' + ic + '</span><span><b>' + esc(n) + '</b><small>' + esc(how) + '</small></span></div>';
+    }).join('') + '</div>';
+  } else if (pfTab === 'style') {
+    body.innerHTML = Object.keys(COS).map(k => '<div><b>' + COS_LABEL[k] + '</b></div><div class="pf-grid">'
+      + COS[k].map(([l, n, c], i) => '<button class="pf-item' + (l > lv ? ' lock' : '') + (profile.cos[k] === i ? ' sel' : '') + '" data-cos="' + k + '" data-i="' + i + '"' + (l > lv ? ' disabled' : '') + '>'
+        + (k === 'frame' ? '<span class="ic">🖼</span>' : '<span class="sw" style="color:' + (c < 0 ? '#fff' : '#' + c.toString(16).padStart(6, '0')) + (c < 0 ? ';background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)' : '') + '"></span>')
+        + '<span><b>' + esc(n) + '</b><small>' + (l > lv ? '🔒 Niveau ' + l : 'Débloqué') + '</small></span></button>').join('') + '</div>').join('');
+    body.querySelectorAll('[data-cos]').forEach(b => b.onclick = () => {
+      profile.cos[b.dataset.cos] = +b.dataset.i; saveProfile(); applyCos();
+      if (b.dataset.cos === 'frame') announceName();
+      renderProfile();
+    });
+  } else if (pfTab === 'classement') {
+    body.innerHTML = '<div class="muted">Chargement du classement…</div>';
+    const f = await fbInit();
+    if (pfTab !== 'classement') return;
+    if (!f) { body.innerHTML = '<div class="err">Classement indisponible (pas de connexion).</div>'; return; }
+    try {
+      const q = f.fs.query(f.fs.collection(f.db, 'players'), f.fs.orderBy('total', 'desc'), f.fs.limit(30));
+      const snap = await f.fs.getDocs(q);
+      if (pfTab !== 'classement') return;
+      let i = 0, rows = '';
+      snap.forEach(d => {
+        const p = d.data(); i++;
+        rows += '<tr' + (fbUser && d.id === fbUser.uid ? ' class="me"' : '') + '><td>' + (i <= 3 ? ['🥇', '🥈', '🥉'][i - 1] : i) + '</td><td>' + esc(p.name || 'Agent')
+          + '<small>' + esc(titleText(p.title | 0)) + '</small></td><td>Niv. ' + (p.level | 0) + '</td></tr>';
+      });
+      body.innerHTML = (rows ? '<table class="pf-lb">' + rows + '</table>' : '<div class="muted">Personne au classement pour l\'instant : sois le premier !</div>')
+        + (fbUser ? '' : '<div class="muted">Connecte-toi (onglet Compte) pour y apparaître.</div>');
+    } catch (e) { body.innerHTML = '<div class="err">Classement indisponible (' + esc(e.code || e.message) + ').</div>'; }
+  }
+}
+$('btn-profile').onclick = () => openProfile();
+$('home-level').onclick = () => openProfile();
+$('pf-close').onclick = closeProfile;
+$('profile-modal').addEventListener('click', e => { if (e.target === $('profile-modal')) closeProfile(); });
+document.querySelectorAll('#pf-tabs [data-pf]').forEach(b => b.onclick = () => { pfTab = b.dataset.pf; renderProfile(); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && pfTab) closeProfile(); });
+applyCos();
+setTimeout(fbInit, 2500);   // reconnecte la session sans ralentir le chargement du jeu
+
 const OVERLAY0 = { h1: $('overlay').querySelector('h1').textContent, intro: $('intro').innerHTML, go: $('go-label').textContent };   // textes d'origine de l'écran de départ
 initEndUi();
 applyFx(quality);   // tous les modules d'effets sont définis : on règle les effets selon la qualité

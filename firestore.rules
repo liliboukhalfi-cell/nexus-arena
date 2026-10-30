@@ -1,0 +1,23 @@
+rules_version = '2';
+// Règles de la base Firestore de Zone Hostile (à coller dans Firebase → Firestore → Règles → Publier).
+// Tout le monde peut lire le classement ; chaque joueur ne peut écrire QUE sa propre fiche.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function valid(d) {
+      return d.name is string && d.name.size() <= 20
+        && d.level is int && d.level >= 1 && d.level <= 500
+        && d.xp is int && d.xp >= 0
+        && d.total is int && d.total >= 0
+        && d.title is int
+        && d.badges is list && d.badges.size() <= 64;
+    }
+    match /players/{uid} {
+      allow read: if true;
+      allow create: if request.auth != null && request.auth.uid == uid && valid(request.resource.data);
+      // pas plus de 20 000 XP d'un coup entre deux sauvegardes (anti-triche simple)
+      allow update: if request.auth != null && request.auth.uid == uid && valid(request.resource.data)
+        && request.resource.data.total <= resource.data.total + 20000;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
