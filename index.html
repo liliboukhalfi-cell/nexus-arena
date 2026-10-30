@@ -497,8 +497,8 @@
   .wd-card.sel { border-color: #ffe98a; background: rgba(255,233,138,.12); box-shadow: 0 0 14px rgba(255,233,138,.25); }
   .wd-card .tag { position: absolute; top: 5px; right: 7px; font-size: 13px; }
   #wardrobe .wd-bottom { display: flex; gap: 10px; align-items: center; }
-  #wd-info { flex: 1; font-size: 13px; color: #dfe9f5; min-width: 0; }
-  #wd-info b { font-family: var(--font-ui); font-size: 22px; letter-spacing: 1px; color: #fff; display: block; }
+  #wd-info { flex: 1; min-width: 0; font-family: var(--font-ui); font-size: 32px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #fff;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 0 12px rgba(127,212,255,.45); }
   #wd-equip { flex: 0 0 auto; min-width: 150px; }
   #wd-back { flex: 0 0 auto; }
   /* ---------- Passe de combat : piste des récompenses + quêtes ---------- */
@@ -749,7 +749,7 @@
     #wardrobe h2 { font-size: 22px; }
     #wd-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
     .wd-card { padding: 6px 4px; } .wd-card .av { width: 36px; height: 36px; font-size: 18px; } .wd-card b { font-size: 17px; }
-    #wd-info b { font-size: 17px; } #wd-info { font-size: 11px; } #wd-equip { min-width: 96px; padding: 6px 10px; font-size: 15px; } #wd-back { padding: 6px 8px; font-size: 14px; }
+    #wd-info { font-size: 22px; } #wd-equip { min-width: 96px; padding: 6px 10px; font-size: 15px; } #wd-back { padding: 6px 8px; font-size: 14px; }
     .ps-lv { flex-basis: 100px; min-height: 120px; padding: 6px; }
     #home-level small { font-size: 10px; max-width: 180px; }
     .zh-modal .box { padding: 10px 14px; gap: 8px; max-height: 94vh; max-height: 94dvh; }
@@ -8016,9 +8016,7 @@ function renderWardrobe() {
     grid.appendChild(b);
   });
   const s = SKINS[wardSel], own = skinOwned(wardSel), eq = $('wd-equip');
-  $('wd-info').innerHTML = '<b></b><span></span>';
-  $('wd-info').querySelector('b').textContent = s ? s.name : '';
-  $('wd-info').querySelector('span').textContent = !s ? '' : own ? (wardSel === mySkin ? 'Ton personnage actuel' : 'Débloqué : prêt à équiper') : 'Pour le débloquer : ' + skinHow(s);
+  $('wd-info').textContent = s ? s.name : '';
   eq.disabled = !own || wardSel === mySkin;
   eq.textContent = !own ? '🔒 Verrouillé' : wardSel === mySkin ? '✅ Équipé' : 'Équiper';
 }
