@@ -5002,16 +5002,17 @@ const SKINS = [
   // ── 10 personnages débloqués par niveau (licences vérifiées dans chaque fichier : CC0, ou licence VRoid/VRM
   //    qui autorise tout le monde, l'usage commercial et la violence) ──
   ...[
-    ['Perle', 'vroid/beta/Victoria_Rubin.vrm', 10, 0xf3dbe6, 0xf6f0f2],
-    ['Givre', 'vroid/beta/Vita.vrm', 20, 0x2f5fd0, 0x1c2f7a],
-    ['Noisette', 'vroid/beta/Vivi.vrm', 30, 0x9cc65a, 0x7a4a2a],
-    ['Cube', 'cryptovoxels.vrm', 40, 0x4fae6a, 0x283a2c],
-    ['Aiko', 'vroid/stable/AvatarSample_A.vrm', 50, 0xb0705a, 0x2c2220],
-    ['Violette', 'vroid/stable/AvatarSample_B.vrm', 60, 0x9a6ad8, 0xe8a0c0],
-    ['Kenji', 'vroid/stable/AvatarSample_C.vrm', 70, 0x3a3f48, 0x1d2027],
-    ['Lune', 'vroid/fem_vroid.vrm', 80, 0x8fb8d8, 0x23262c],
-    ['Axel', 'vroid/masc_vroid.vrm', 90, 0x6b5a45, 0x1f1d1a],
-    ['Spectre', 'https://cdn.jsdelivr.net/gh/pixiv/three-vrm@v3.1.0/packages/three-vrm/examples/models/VRM1_Constraint_Twist_Sample.vrm', 100, 0xe9e4f2, 0x26232e]
+    ['Noisette', 'vroid/beta/Vivi.vrm', 10, 0x9cc65a, 0x7a4a2a],
+    ['Cube', 'cryptovoxels.vrm', 20, 0x4fae6a, 0x283a2c],
+    ['Aiko', 'vroid/stable/AvatarSample_A.vrm', 30, 0xb0705a, 0x2c2220],
+    ['Lune', 'vroid/fem_vroid.vrm', 40, 0x8fb8d8, 0x23262c],
+    ['Axel', 'vroid/masc_vroid.vrm', 50, 0x6b5a45, 0x1f1d1a],
+    ['Spectre', 'https://cdn.jsdelivr.net/gh/pixiv/three-vrm@v3.1.0/packages/three-vrm/examples/models/VRM1_Constraint_Twist_Sample.vrm', 60, 0xe9e4f2, 0x26232e],
+    // les 4 plus durs à obtenir
+    ['Perle', 'vroid/beta/Victoria_Rubin.vrm', 70, 0xf3dbe6, 0xf6f0f2],
+    ['Givre', 'vroid/beta/Vita.vrm', 80, 0x2f5fd0, 0x1c2f7a],
+    ['Kenji', 'vroid/stable/AvatarSample_C.vrm', 90, 0x3a3f48, 0x1d2027],
+    ['Violette', 'vroid/stable/AvatarSample_B.vrm', 100, 0x9a6ad8, 0xe8a0c0]
   ].map(([name, file, lvl, top, pants]) => ({
     name, lvl, vrm: file.startsWith('http') ? file : VRM_BASE + file, h: 1.0, morph: {}, chip: top,
     zones: { hair: 0x2a2420, skin: 0xe9c6a8, top, sleeves: top, pants, boots: 0x1b1b1f }
