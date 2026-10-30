@@ -3308,9 +3308,10 @@ const profile = {
   quests: jsonLS('zh-quests', { day: '', p: [0, 0, 0], done: [] })
 };
 // Mode créateur : un code secret tapé dans le champ CODE débloque tout (persos, titres, style) sans toucher au
-// niveau ni au classement ; avec un compte, c'est gardé en ligne. Le code fait 12 caractères : il ne peut jamais
-// être un code de partie (toujours 6). Seule son empreinte SHA-256 est dans le code public.
-const OWNER_HASH = 'c11ac3aca6b2985767b9398d945f78b2d2e96901791bf2c748076f0fb4eb8a68';
+// niveau ni au classement ; avec un compte, c'est gardé en ligne. Les codes créateur font plus de 6 caractères ou
+// contiennent un signe (« . ») : ils ne peuvent jamais être un code de partie (6 lettres/chiffres). Seules leurs
+// empreintes SHA-256 sont dans le code public.
+const OWNER_HASH = ['c11ac3aca6b2985767b9398d945f78b2d2e96901791bf2c748076f0fb4eb8a68', 'a42f2dc90f4e7dea3c8e460954346f84eb711f16a526c9a73833cf714d1ff519'];
 let ownerMode = localStorage.getItem('zh-owner') === '1';
 const unlockLv = () => ownerMode ? 9999 : profile.level;
 const titleText = (lvl = profile.title) => (TITLES.find(t => t[0] === lvl) || TITLES[0])[1];
@@ -8554,7 +8555,7 @@ $('pm-input').addEventListener('keydown', e => { if (e.key === 'Enter') pseudoDo
 $('pseudo-modal').addEventListener('click', e => { if (e.target === $('pseudo-modal')) pseudoDone(false); });
 for (const id of ['btn-loup', 'btn-extinction', 'btn-create', 'btn-join']) {   // tout ce qui mène à un salon passe d'abord par le pseudo
   const el = $(id), orig = el.onclick;
-  el.onclick = e => { const n = $('join-code').value.trim().length; return (id === 'btn-join' && (n < 4 || n > 6)) ? orig.call(el, e) : askPseudo(() => orig.call(el, e)); };
+  el.onclick = e => { const v = $('join-code').value.trim(), n = v.length; return (id === 'btn-join' && (n < 4 || n > 6 || /[^a-z0-9]/i.test(v))) ? orig.call(el, e) : askPseudo(() => orig.call(el, e)); };
 }
 document.querySelectorAll('[data-dmode]').forEach(b => { const orig = b.onclick; b.onclick = e => askPseudo(() => orig.call(b, e)); });
 // ---------- Comptes (Firebase) : connexion Google / e-mail, progression en ligne, classement ----------
@@ -8614,9 +8615,9 @@ function setOwnerMode(on) {
 // Code tapé dans le champ CODE : true si c'est le code créateur (alors il est appliqué)
 async function tryOwnerCode(raw) {
   const c = (raw || '').trim().toUpperCase();
-  if (c.length <= 6) return false;   // un code de partie : jamais le code créateur
+  if (c.length <= 6 && /^[A-Z0-9]+$/.test(c)) return false;   // un code de partie (6 lettres/chiffres) : jamais un code créateur
   let ok = false;
-  try { ok = await sha256Hex('zh-createur:' + c) === OWNER_HASH; } catch (e) {}
+  try { ok = OWNER_HASH.includes(await sha256Hex('zh-createur:' + c)); } catch (e) {}
   if (ok) { setOwnerMode(true); homeStatus('👑 Mode créateur activé : tout est débloqué'); uiConfirm(); }
   else homeStatus('Code invalide');
   return true;
