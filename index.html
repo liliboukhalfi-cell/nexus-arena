@@ -866,7 +866,7 @@
     <button class="menu-btn" id="btn-extinction">🔦 Extinction</button>
     <button class="menu-btn" id="btn-create">👥 Créer une partie privée</button>
     <div class="join-row">
-      <input id="join-code" maxlength="6" placeholder="CODE" autocomplete="off">
+      <input id="join-code" maxlength="16" placeholder="CODE" autocomplete="off">
       <button class="menu-btn small" id="btn-join">Rejoindre</button>
     </div>
     <button class="menu-btn" id="btn-solo">🧟 Survival</button>
@@ -3307,9 +3307,10 @@ const profile = {
   cos: jsonLS('zh-cos', { tracer: 0, lamp: 0, kfx: 0, frame: 0 }),
   quests: jsonLS('zh-quests', { day: '', p: [0, 0, 0], done: [] })
 };
-// Compte du créateur du jeu : tout est débloqué (persos, titres, style) sans toucher au niveau ni au classement.
-// On ne garde que l'empreinte SHA-256 de l'e-mail (l'adresse n'apparaît pas dans le code public).
-const OWNER_HASH = '6b0fbc928fc00552b455fecab771288a2c2dfffc778480945d3a5d66c1989a41';
+// Mode créateur : un code secret tapé dans le champ CODE débloque tout (persos, titres, style) sans toucher au
+// niveau ni au classement ; avec un compte, c'est gardé en ligne. Le code fait 12 caractères : il ne peut jamais
+// être un code de partie (toujours 6). Seule son empreinte SHA-256 est dans le code public.
+const OWNER_HASH = 'c11ac3aca6b2985767b9398d945f78b2d2e96901791bf2c748076f0fb4eb8a68';
 let ownerMode = localStorage.getItem('zh-owner') === '1';
 const unlockLv = () => ownerMode ? 9999 : profile.level;
 const titleText = (lvl = profile.title) => (TITLES.find(t => t[0] === lvl) || TITLES[0])[1];
@@ -7927,7 +7928,9 @@ document.getElementById('btn-team-1').onclick = () => { myTeam = 1; sendTeam(); 
 document.getElementById('btn-create').onclick = async () => { await loadIceServers(); if (hasNet() || LAN_MODE) createRoom(); };
 // Un seul champ CODE : le 1er caractère du code dit de quel mode il s'agit
 document.getElementById('btn-join').onclick = async () => {
-  const c = document.getElementById('join-code').value.trim().toUpperCase().replace(/I/g, '1'); // « I » jamais utilisé : c'est un « 1 » mal lu
+  const raw = document.getElementById('join-code').value;
+  if (await tryOwnerCode(raw)) { document.getElementById('join-code').value = ''; return; }   // code créateur (plus long qu'un code de partie)
+  const c = raw.trim().toUpperCase().replace(/I/g, '1'); // « I » jamais utilisé : c'est un « 1 » mal lu
   if (c.length < 4) { homeStatus('Entre le code de la partie'); return; }
   await loadIceServers();
   const mode = CODE_MODE[c[0]];
@@ -8550,7 +8553,7 @@ $('pm-input').addEventListener('keydown', e => { if (e.key === 'Enter') pseudoDo
 $('pseudo-modal').addEventListener('click', e => { if (e.target === $('pseudo-modal')) pseudoDone(false); });
 for (const id of ['btn-loup', 'btn-extinction', 'btn-create', 'btn-join']) {   // tout ce qui mène à un salon passe d'abord par le pseudo
   const el = $(id), orig = el.onclick;
-  el.onclick = e => (id === 'btn-join' && $('join-code').value.trim().length < 4) ? orig.call(el, e) : askPseudo(() => orig.call(el, e));
+  el.onclick = e => { const n = $('join-code').value.trim().length; return (id === 'btn-join' && (n < 4 || n > 6)) ? orig.call(el, e) : askPseudo(() => orig.call(el, e)); };
 }
 document.querySelectorAll('[data-dmode]').forEach(b => { const orig = b.onclick; b.onclick = e => askPseudo(() => orig.call(b, e)); });
 // ---------- Comptes (Firebase) : connexion Google / e-mail, progression en ligne, classement ----------
@@ -8584,7 +8587,7 @@ function cloudData() {
   return {
     name: cloudName(), level: profile.level | 0, xp: profile.xp | 0, total: totalXpOf(profile.level, profile.xp) | 0,
     best: profile.best | 0, title: profile.title | 0, badges: profile.badges.slice(0, 64), stats: profile.stats, cos: profile.cos,
-    quests: profile.quests, skin: mySkin | 0,
+    quests: profile.quests, skin: mySkin | 0, owner: ownerMode,
     upd: fb.fs.serverTimestamp()
   };
 }
@@ -8598,18 +8601,27 @@ async function sha256Hex(s) {
   const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
   return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
 }
+function setOwnerMode(on) {
+  if (on === ownerMode) return;
+  ownerMode = on;
+  localStorage.setItem('zh-owner', on ? '1' : '0');
+  if (!on && !skinOwned(mySkin)) equipSkin(SKIN_START);
+  if ($('wardrobe').classList.contains('on')) renderWardrobe();
+  if (pfTab) renderProfile();
+  cloudSave();
+}
+// Code tapé dans le champ CODE : true si c'est le code créateur (alors il est appliqué)
+async function tryOwnerCode(raw) {
+  const c = (raw || '').trim().toUpperCase();
+  if (c.length <= 6) return false;   // un code de partie : jamais le code créateur
+  let ok = false;
+  try { ok = await sha256Hex('zh-createur:' + c) === OWNER_HASH; } catch (e) {}
+  if (ok) { setOwnerMode(true); homeStatus('👑 Mode créateur activé : tout est débloqué'); uiConfirm(); }
+  else homeStatus('Code invalide');
+  return true;
+}
 async function onFbUser(u) {
   fbUser = u;
-  // mode créateur : seulement avec l'e-mail vérifié du propriétaire (connexion Google, ou e-mail confirmé)
-  let owner = false;
-  try { owner = !!(u && u.email && u.emailVerified && await sha256Hex(u.email.trim().toLowerCase()) === OWNER_HASH); } catch (e) {}
-  if (owner !== ownerMode) {
-    ownerMode = owner;
-    localStorage.setItem('zh-owner', owner ? '1' : '0');
-    if (owner) feed('👑 Mode créateur : tout est débloqué', 'gold');
-    else if (!skinOwned(mySkin)) equipSkin(SKIN_START);
-    if ($('wardrobe').classList.contains('on')) renderWardrobe();
-  }
   if (u) {
     try {   // compte existant : sa progression fait foi ; nouveau compte : on y verse la progression de cet appareil
       const snap = await fb.fs.getDoc(fb.fs.doc(fb.db, 'players', u.uid));
@@ -8620,6 +8632,7 @@ async function onFbUser(u) {
         profile.badges = Array.isArray(d.badges) ? d.badges : [];
         Object.assign(profile.stats, d.stats || {}); Object.assign(profile.cos, d.cos || {});
         if (d.quests && d.quests.day) profile.quests = d.quests;
+        if (d.owner) setOwnerMode(true);   // compte créateur : retrouvé sur n'importe quel appareil
         if (typeof d.skin === 'number' && skinOwned(d.skin) && d.skin !== mySkin) equipSkin(d.skin);
         if (!myPseudo && d.name) { myPseudo = d.name; localStorage.setItem('zh-pseudo', myPseudo); }
         saveProfile(true);
