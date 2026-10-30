@@ -500,6 +500,7 @@
   #wd-info { flex: 1; font-size: 13px; color: #dfe9f5; min-width: 0; }
   #wd-info b { font-family: var(--font-ui); font-size: 22px; letter-spacing: 1px; color: #fff; display: block; }
   #wd-equip { flex: 0 0 auto; min-width: 150px; }
+  #wd-back { flex: 0 0 auto; }
   /* ---------- Passe de combat : piste des récompenses + quêtes ---------- */
   .zh-modal .box.wide { width: min(900px, 96vw); }
   #ps-head .lv { color: #ffd24d; }
@@ -748,7 +749,7 @@
     #wardrobe h2 { font-size: 22px; }
     #wd-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
     .wd-card { padding: 6px 4px; } .wd-card .av { width: 36px; height: 36px; font-size: 18px; } .wd-card b { font-size: 17px; }
-    #wd-info b { font-size: 17px; } #wd-info { font-size: 11px; } #wd-equip { min-width: 110px; padding: 6px 10px; font-size: 15px; }
+    #wd-info b { font-size: 17px; } #wd-info { font-size: 11px; } #wd-equip { min-width: 96px; padding: 6px 10px; font-size: 15px; } #wd-back { padding: 6px 8px; font-size: 14px; }
     .ps-lv { flex-basis: 100px; min-height: 120px; padding: 6px; }
     #home-level small { font-size: 10px; max-width: 180px; }
     .zh-modal .box { padding: 10px 14px; gap: 8px; max-height: 94vh; max-height: 94dvh; }
@@ -968,7 +969,7 @@
 <div id="wardrobe">
   <div class="wd-top"><h2>VESTIAIRE</h2><button class="chip" id="wd-close">✕</button></div>
   <div id="wd-grid"></div>
-  <div class="wd-bottom"><div id="wd-info"></div><button class="menu-btn primary" id="wd-equip">Équiper</button></div>
+  <div class="wd-bottom"><div id="wd-info"></div><button class="menu-btn small" id="wd-back">↩ Retour</button><button class="menu-btn primary" id="wd-equip">Équiper</button></div>
 </div>
 <div id="profile-modal" class="zh-modal">
   <div class="box">
@@ -7940,7 +7941,7 @@ document.getElementById('btn-start').onclick = () => {
 
 // Nom du personnage sélectionné, affiché sous l'aperçu 3D
 const skinNameEl = document.getElementById('skin-name');
-const updateSkinName = () => { skinNameEl.innerHTML = '<span></span><small>👆 ' + (IS_TOUCH ? 'touche' : 'clique') + ' le perso : vestiaire</small>'; skinNameEl.firstChild.textContent = (SKINS[mySkin] || {}).name || ''; };
+const updateSkinName = () => { skinNameEl.textContent = (SKINS[mySkin] || {}).name || ''; };
 updateSkinName();
 // Aperçu secret : 5 clics rapides sur le titre montrent le Monstre sur l'accueil (re-5 clics ou
 // choisir un skin pour revenir). Ne touche ni mySkin ni la sauvegarde.
@@ -8031,6 +8032,7 @@ function closeWardrobe() {
 }
 $('wd-equip').onclick = () => { equipSkin(wardSel); renderWardrobe(); };
 $('wd-close').onclick = closeWardrobe;
+$('wd-back').onclick = closeWardrobe;
 
 // Bouton plein écran (accueil) — bascule et adapte l'icône
 const btnFs = document.getElementById('btn-fullscreen');
