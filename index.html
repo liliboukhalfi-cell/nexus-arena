@@ -350,7 +350,6 @@
     #home h1 { letter-spacing: 3px; left: 14px; transform: none; top: 14px; font-size: clamp(28px, 7.4vw, 50px); }
     .icon-btn { width: 44px; height: 44px; font-size: 20px; }
     #btn-settings { top: 14px; right: 12px; } #btn-fullscreen { top: 14px; right: 64px; }
-    #home-level { top: 66px; right: 14px; font-size: 15px; }   /* sous les boutons ronds, plus sur le titre */
   }
   #home-status { min-height: 22px; color: #ffb86b; font-size: 15px; }
   #lobby .code {
@@ -454,33 +453,107 @@
   #home-level { cursor: pointer; text-align: right; z-index: 4; }
   #home-level small { display: block; font-size: 12px; font-weight: 500; color: #fff2d8; opacity: .8; letter-spacing: .5px; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #home-level:hover { filter: brightness(1.2); }
-  #btn-profile { bottom: 24px; left: 78px; }
+  #btn-profile { top: 20px; right: 130px; }
+  /* Passe de combat : grand bouton rectangulaire en bas à droite (niveau, XP, quêtes du jour) */
+  #btn-pass { position: absolute; right: 26px; bottom: 24px; z-index: 4; width: 250px; display: flex; flex-direction: column; gap: 3px; padding: 9px 14px 10px;
+    text-align: left; color: #fff; cursor: pointer; font-family: var(--font-ui); border-radius: 12px; overflow: hidden; -webkit-tap-highlight-color: transparent;
+    background: linear-gradient(135deg, rgba(255,210,77,.2), rgba(120,60,10,.28) 55%, rgba(8,12,24,.85)); border: 2px solid rgba(255,214,110,.75);
+    box-shadow: 0 6px 22px rgba(0,0,0,.45), inset 0 0 18px rgba(255,200,80,.12); transition: transform .16s cubic-bezier(.2,.9,.3,1.35), box-shadow .2s;
+    animation: fadein .8s ease .6s backwards; }
+  #btn-pass::after { content: ''; position: absolute; top: 0; left: -70%; width: 45%; height: 100%; pointer-events: none;
+    background: linear-gradient(100deg, transparent, rgba(255,240,200,.3), transparent); transform: skewX(-18deg); animation: btnshine 3.8s ease-in-out 2s infinite; }
+  #btn-pass:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(255,190,60,.28), inset 0 0 18px rgba(255,200,80,.2); }
+  #btn-pass:active { transform: scale(.97); }
+  #btn-pass .pt { font-size: 19px; font-weight: 700; letter-spacing: 2px; color: #ffe08a; text-shadow: 0 0 10px rgba(255,200,80,.5); }
+  #btn-pass .pl { display: flex; justify-content: space-between; align-items: baseline; font-size: 16px; letter-spacing: .5px; }
+  #btn-pass .pl b { font-size: 22px; color: #fff; } #btn-pass .pl span { opacity: .8; }
+  #btn-pass .pb { height: 6px; border-radius: 4px; background: rgba(0,0,0,.45); overflow: hidden; }
+  #btn-pass .pb i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ffb400, #ffe98a); box-shadow: 0 0 8px #ffd24d; transition: width .4s; }
+  #btn-pass .pq { font-size: 14px; letter-spacing: .5px; color: #bfeaff; opacity: .9; }
+  #btn-pass .pq:empty { display: none; }
+  /* Le perso de l'accueil se touche pour ouvrir le vestiaire */
+  #skin-name small { display: block; font-size: 11px; font-weight: 500; letter-spacing: 1.5px; opacity: .65; text-transform: none; }
+  /* ---------- Vestiaire : panneau à gauche, le personnage reste visible à droite ---------- */
+  #wardrobe { position: absolute; left: 26px; top: 24px; bottom: 24px; width: min(540px, 50vw); z-index: 7; display: none; flex-direction: column; gap: 10px;
+    padding: 14px 16px; box-sizing: border-box; background: rgba(8,12,24,.94); border: 2px solid rgba(127,212,255,.45); border-radius: 16px; animation: panelin .26s ease-out; }
+  #wardrobe.on { display: flex; }
+  body.wd-open #home-left, body.wd-open #btn-pass, body.wd-open #home h1 { visibility: hidden; }
+  #wardrobe .wd-top { display: flex; justify-content: space-between; align-items: center; }
+  #wardrobe h2 { margin: 0; font-family: var(--font-title); font-weight: 400; font-size: 30px; letter-spacing: 3px; color: #7fd4ff; }
+  #wd-grid { flex: 1; overflow-y: auto; overscroll-behavior: contain; display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; align-content: start;
+    padding-right: 4px; scrollbar-width: thin; scrollbar-color: rgba(127,212,255,.45) transparent; }
+  .wd-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px 8px; border-radius: 12px; cursor: pointer; color: #fff;
+    font-family: var(--font-ui); background: rgba(127,212,255,.06); border: 2px solid rgba(127,212,255,.22); transition: transform .14s, border-color .15s, background .15s; }
+  .wd-card:hover { transform: translateY(-2px); border-color: rgba(191,234,255,.7); }
+  .wd-card .av { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; font-size: 26px; font-weight: 700; color: #05080f;
+    background: radial-gradient(circle at 35% 30%, #fff, var(--c) 55%, #000 140%); box-shadow: 0 0 14px var(--c); }
+  .wd-card b { font-size: 21px; letter-spacing: 1px; line-height: 1; }
+  .wd-card small { font-family: 'Segoe UI', sans-serif; font-size: 10.5px; line-height: 1.25; text-align: center; opacity: .75; }
+  .wd-card .qb { width: 90%; height: 4px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
+  .wd-card .qb i { display: block; height: 100%; background: #7fd4ff; }
+  .wd-card.lock .av { filter: grayscale(1) brightness(.45); box-shadow: none; }
+  .wd-card.lock b { opacity: .6; }
+  .wd-card.eq { border-color: #8affb0; background: rgba(138,255,176,.08); }
+  .wd-card.sel { border-color: #ffe98a; background: rgba(255,233,138,.12); box-shadow: 0 0 14px rgba(255,233,138,.25); }
+  .wd-card .tag { position: absolute; top: 5px; right: 7px; font-size: 13px; }
+  #wardrobe .wd-bottom { display: flex; gap: 10px; align-items: center; }
+  #wd-info { flex: 1; font-size: 13px; color: #dfe9f5; min-width: 0; }
+  #wd-info b { font-family: var(--font-ui); font-size: 22px; letter-spacing: 1px; color: #fff; display: block; }
+  #wd-equip { flex: 0 0 auto; min-width: 150px; }
+  /* ---------- Passe de combat : piste des récompenses + quêtes ---------- */
+  .zh-modal .box.wide { width: min(900px, 96vw); }
+  #ps-head .lv { color: #ffd24d; }
+  .ps-track { display: flex; gap: 8px; overflow-x: auto; overscroll-behavior: contain; padding: 6px 2px 12px; scroll-snap-type: x proximity;
+    scrollbar-width: thin; scrollbar-color: rgba(255,214,110,.5) transparent; }
+  .ps-lv { flex: 0 0 116px; scroll-snap-align: center; display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 12px; position: relative;
+    background: rgba(255,255,255,.04); border: 2px solid rgba(255,255,255,.1); min-height: 150px; }
+  .ps-lv .n { font-family: var(--font-ui); font-size: 22px; font-weight: 700; color: #ffd24d; line-height: 1; }
+  .ps-lv.done { border-color: rgba(138,255,176,.45); background: rgba(138,255,176,.06); }
+  .ps-lv.done .n::after { content: ' ✓'; color: #8affb0; font-size: 16px; }
+  .ps-lv.cur { border-color: #ffd24d; box-shadow: 0 0 16px rgba(255,210,77,.35); background: rgba(255,210,77,.1); }
+  .ps-lv.big { border-color: rgba(201,160,255,.6); background: linear-gradient(180deg, rgba(160,100,255,.16), rgba(255,255,255,.03)); }
+  .ps-rw { display: flex; gap: 6px; align-items: center; font-size: 11.5px; line-height: 1.2; }
+  .ps-rw .i { font-size: 18px; flex: 0 0 auto; }
+  .ps-rw .av { width: 34px; height: 34px; border-radius: 50%; flex: 0 0 auto; background: radial-gradient(circle at 35% 30%, #fff, var(--c) 55%, #000 140%); box-shadow: 0 0 10px var(--c); }
+  .ps-lv:not(.done) .ps-rw { opacity: .7; }
+  .ps-q { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 12px; background: rgba(127,212,255,.05); border: 1.5px solid rgba(127,212,255,.2); }
+  .ps-q .i { font-size: 26px; flex: 0 0 auto; }
+  .ps-q .t { flex: 1; min-width: 0; }
+  .ps-q .t b { display: block; font-size: 14px; }
+  .ps-q .t small { opacity: .7; font-size: 12px; }
+  .ps-q .qb { height: 6px; margin-top: 5px; border-radius: 4px; background: rgba(255,255,255,.1); overflow: hidden; }
+  .ps-q .qb i { display: block; height: 100%; background: linear-gradient(90deg, #4fb8ff, #7fd4ff); }
+  .ps-q .r { flex: 0 0 auto; font-family: var(--font-ui); font-size: 20px; color: #ffe98a; text-align: right; }
+  .ps-q.ok { border-color: rgba(138,255,176,.5); background: rgba(138,255,176,.07); }
+  .ps-q.ok .qb i { background: #8affb0; }
+  .ps-h { font-family: var(--font-ui); font-size: 20px; letter-spacing: 2px; color: #7fd4ff; margin-top: 4px; display: flex; justify-content: space-between; align-items: baseline; }
+  .ps-h small { font-family: 'Segoe UI', sans-serif; font-size: 12px; letter-spacing: 0; opacity: .7; color: #dfe9f5; }
   /* XP gagnée pendant la partie (écran de fin) */
   #match-xp { display: none; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 6px 14px; margin-top: 10px; font-family: var(--font-ui); font-size: 20px; letter-spacing: .5px; color: #cfe9ff; }
   #match-xp b { color: #ffe98a; font-size: 26px; } #match-xp .neg { color: #ff8a7a; }
   #match-xp small { width: 100%; text-align: center; font-size: 15px; opacity: .7; }
   /* ---------- Profil : compte, titres, badges, style, classement ---------- */
-  #profile-modal { position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center; background: rgba(2,4,10,.8); }
-  #profile-modal.on { display: flex; }
-  #profile-modal .box { display: flex; flex-direction: column; gap: 12px; width: min(640px, 94vw); max-height: min(88vh, 760px); max-height: min(88dvh, 760px); box-sizing: border-box;
+  .zh-modal { position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center; background: rgba(2,4,10,.8); }
+  .zh-modal.on { display: flex; }
+  .zh-modal .box { display: flex; flex-direction: column; gap: 12px; width: min(640px, 94vw); max-height: min(88vh, 760px); max-height: min(88dvh, 760px); box-sizing: border-box;
     padding: 18px 20px; background: rgba(8,12,24,.97); border: 2px solid rgba(127,212,255,.45); border-radius: 16px; animation: panelin .26s ease-out; }
-  #pf-head { display: flex; align-items: center; gap: 12px; }
-  #pf-head .lv { font-family: var(--font-ui); font-size: 40px; font-weight: 700; line-height: 1; color: #ffe98a; min-width: 54px; text-align: center; }
-  #pf-head .who { flex: 1; min-width: 0; }
-  #pf-head .nm { font-family: var(--font-ui); font-size: 26px; font-weight: 600; letter-spacing: 1px; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #pf-head .ti { font-size: 13px; color: #ffe98a; opacity: .85; }
-  #pf-head .bar { height: 7px; margin-top: 6px; border-radius: 5px; background: rgba(255,255,255,.1); overflow: hidden; }
-  #pf-head .bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffd24d, #ffe98a); }
-  #pf-close { flex: 0 0 auto; }
-  #pf-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
-  #pf-tabs .chip.sel { border-color: #ffe98a; color: #ffe98a; }
-  #pf-body { overflow-y: auto; overscroll-behavior: contain; min-height: 160px; display: flex; flex-direction: column; gap: 10px; padding-right: 4px;
+  .zh-head { display: flex; align-items: center; gap: 12px; }
+  .zh-head .lv { font-family: var(--font-ui); font-size: 40px; font-weight: 700; line-height: 1; color: #ffe98a; min-width: 54px; text-align: center; }
+  .zh-head .who { flex: 1; min-width: 0; }
+  .zh-head .nm { font-family: var(--font-ui); font-size: 26px; font-weight: 600; letter-spacing: 1px; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .zh-head .ti { font-size: 13px; color: #ffe98a; opacity: .85; }
+  .zh-head .bar { height: 7px; margin-top: 6px; border-radius: 5px; background: rgba(255,255,255,.1); overflow: hidden; }
+  .zh-head .bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffd24d, #ffe98a); }
+  .zh-close { flex: 0 0 auto; }
+  .zh-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .zh-tabs .chip.sel { border-color: #ffe98a; color: #ffe98a; }
+  .zh-body { overflow-y: auto; overscroll-behavior: contain; min-height: 160px; display: flex; flex-direction: column; gap: 10px; padding-right: 4px;
     scrollbar-width: thin; scrollbar-color: rgba(127,212,255,.45) transparent; font-size: 14px; color: #dfe9f5; }
-  #pf-body .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  #pf-body input { flex: 1; min-width: 160px; padding: 9px 12px; font-size: 15px; font-family: inherit; color: #fff; background: rgba(255,255,255,.07); border: 2px solid rgba(255,242,216,.35); border-radius: 10px; }
-  #pf-body input:focus { outline: none; border-color: #ffe98a; }
-  #pf-body .err { color: #ff8a7a; min-height: 18px; } #pf-body .ok { color: #8affb0; }
-  #pf-body .muted { opacity: .65; font-size: 13px; }
+  .zh-body .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .zh-body input { flex: 1; min-width: 160px; padding: 9px 12px; font-size: 15px; font-family: inherit; color: #fff; background: rgba(255,255,255,.07); border: 2px solid rgba(255,242,216,.35); border-radius: 10px; }
+  .zh-body input:focus { outline: none; border-color: #ffe98a; }
+  .zh-body .err { color: #ff8a7a; min-height: 18px; } .zh-body .ok { color: #8affb0; }
+  .zh-body .muted { opacity: .65; font-size: 13px; }
   .pf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
   .pf-item { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 10px; border: 1.5px solid rgba(127,212,255,.25); background: rgba(127,212,255,.05); text-align: left; color: #fff; font-family: inherit; font-size: 13px; }
   button.pf-item { cursor: pointer; } button.pf-item:hover:not(:disabled) { border-color: #bfeaff; background: rgba(127,212,255,.12); }
@@ -668,12 +741,21 @@
     #btn-settings { top: calc(var(--sat) + 8px); right: calc(var(--sar) + 10px); }
     #btn-fullscreen { top: calc(var(--sat) + 8px); right: calc(var(--sar) + 56px); }
     #btn-skin { bottom: calc(var(--sab) + 10px); left: calc(var(--sal) + 12px); }
-    #btn-profile { bottom: calc(var(--sab) + 10px); left: calc(var(--sal) + 60px); }
+    #btn-profile { top: calc(var(--sat) + 8px); right: calc(var(--sar) + 102px); }
+    #btn-pass { right: calc(var(--sar) + 10px); bottom: calc(var(--sab) + 8px); width: 180px; padding: 5px 10px 6px; gap: 1px; }
+    #btn-pass .pt { font-size: 15px; } #btn-pass .pl { font-size: 13px; } #btn-pass .pl b { font-size: 17px; } #btn-pass .pq { font-size: 12px; }
+    #wardrobe { left: calc(var(--sal) + 8px); top: calc(var(--sat) + 6px); bottom: calc(var(--sab) + 6px); width: 54vw; padding: 8px 10px; gap: 6px; }
+    #wardrobe h2 { font-size: 22px; }
+    #wd-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+    .wd-card { padding: 6px 4px; } .wd-card .av { width: 36px; height: 36px; font-size: 18px; } .wd-card b { font-size: 17px; }
+    #wd-info b { font-size: 17px; } #wd-info { font-size: 11px; } #wd-equip { min-width: 110px; padding: 6px 10px; font-size: 15px; }
+    .ps-lv { flex-basis: 100px; min-height: 120px; padding: 6px; }
     #home-level small { font-size: 10px; max-width: 180px; }
-    #profile-modal .box { padding: 10px 14px; gap: 8px; max-height: 94vh; max-height: 94dvh; }
-    #pf-head .lv { font-size: 30px; } #pf-head .nm { font-size: 20px; }
-    #skin-preview { height: 72vh; width: calc(72vh * .75); left: 66%; bottom: 2vh; }
-    #skin-name { font-size: 14px; padding: 3px 16px; bottom: 1vh; left: 66%; }
+    .zh-modal .box { padding: 10px 14px; gap: 8px; max-height: 94vh; max-height: 94dvh; }
+    .zh-head .lv { font-size: 30px; } .zh-head .nm { font-size: 20px; }
+    #skin-preview { height: 72vh; width: calc(72vh * .75); left: 60%; bottom: 2vh; }
+    #skin-name { font-size: 14px; padding: 3px 16px; bottom: 1vh; left: 60%; }
+    #skin-name small { font-size: 9px; }
     #settings-panel { top: calc(var(--sat) + 54px); right: calc(var(--sar) + 10px); max-height: calc(100vh - var(--sat) - var(--sab) - 100px); max-height: calc(100dvh - var(--sat) - var(--sab) - 100px); overflow-y: auto; }
     #skin-panel { bottom: calc(var(--sab) + 56px); left: calc(var(--sal) + 12px); max-height: calc(100vh - var(--sat) - var(--sab) - 102px); max-height: calc(100dvh - var(--sat) - var(--sab) - 102px); overflow-y: auto; }
     #lobby h1 { font-size: 30px; margin: 0 0 4px; }
@@ -709,7 +791,9 @@
     #home-status { font-size: 20px; min-height: 26px; }
     #home-level { top: 39px; right: 156px; font-size: 19px; }
     .icon-btn { width: 46px; height: 46px; font-size: 22px; }
-    #btn-settings { top: 28px; right: 36px; } #btn-fullscreen { top: 28px; right: 92px; } #btn-skin { bottom: 34px; left: 36px; } #btn-profile { bottom: 34px; left: 94px; }
+    #btn-settings { top: 28px; right: 36px; } #btn-fullscreen { top: 28px; right: 92px; } #btn-profile { top: 28px; right: 148px; }
+    #btn-pass { right: 36px; bottom: 34px; width: 290px; } #btn-pass .pt { font-size: 22px; } #btn-pass .pl b { font-size: 26px; }
+    #wardrobe { left: 36px; top: 34px; bottom: 34px; }
     #skin-name { font-size: 30px; }
     #lobby h1 { font-size: 58px; }
     #lobby .code { font-size: 72px; }
@@ -718,8 +802,15 @@
     .panel { max-width: min(540px, 88vw); } .opt-label { font-size: 15px; } .chip { font-size: 16px; }
   }
   /* Fenêtre PC un peu étroite : le titre (84 px) arriverait sous le niveau → le niveau passe sous les boutons ronds */
-  @media (min-width: 1000px) and (max-width: 1179px) and (min-height: 640px) and (pointer: fine) {
-    #home-level { top: 84px; right: 36px; }
+  /* Fenêtre moyenne : le passe remonterait sur le nom du perso → il passe sous les boutons ronds */
+  @media (max-width: 990px) and (min-height: 501px) { #btn-pass { top: 84px; bottom: auto; } }
+  @media (min-width: 1000px) and (max-width: 1250px) and (min-height: 640px) and (pointer: fine) { #btn-pass { width: 240px; } }
+  /* Téléphone en portrait : passe sous les boutons ronds, vestiaire en bas */
+  @media (max-width: 700px) and (min-height: 501px) {
+    #btn-profile { top: 14px; right: 116px; }
+    #btn-pass { top: 66px; bottom: auto; right: 12px; width: 190px; padding: 5px 10px; }
+    #btn-pass .pt { font-size: 14px; } #btn-pass .pq { display: none; }
+    #wardrobe { left: 8px; right: 8px; width: auto; top: auto; bottom: 8px; height: 55vh; }
   }
 </style>
 </head>
@@ -767,7 +858,6 @@
 </div>
 <div id="home">
   <h1>ZONE HOSTILE</h1>
-  <div id="home-level">⭐ Niveau 1</div>
   <canvas id="skin-preview" width="480" height="640"></canvas>
   <div id="home-left">
     <button class="menu-btn" id="btn-duel">⚔ Duel</button>
@@ -778,7 +868,7 @@
       <input id="join-code" maxlength="6" placeholder="CODE" autocomplete="off">
       <button class="menu-btn small" id="btn-join">Rejoindre</button>
     </div>
-    <button class="menu-btn" id="btn-solo">🎯 Tutoriel / Hors ligne</button>
+    <button class="menu-btn" id="btn-solo">🧟 Survival</button>
     <div id="home-status"></div>
     <button class="menu-btn small" id="btn-install" style="display:none"></button>
   </div>
@@ -794,8 +884,13 @@
   </div>
   <button class="icon-btn" id="btn-settings" title="Paramètres">⚙</button>
   <button class="icon-btn" id="btn-fullscreen" title="Plein écran">⛶</button>
-  <button class="icon-btn" id="btn-skin" title="Choisir ton personnage">🎭</button>
-  <button class="icon-btn" id="btn-profile" title="Profil, récompenses et classement">👤</button>
+  <button class="icon-btn" id="btn-profile" title="Compte, titres, badges et classement">👤</button>
+  <button id="btn-pass" title="Passe de combat : récompenses et quêtes">
+    <span class="pt">🎖 PASSE DE COMBAT</span>
+    <span class="pl"><b id="pass-lv">Niv. 1</b><span id="pass-xp">0 / 100 XP</span></span>
+    <span class="pb"><i id="pass-fill"></i></span>
+    <span class="pq" id="pass-q"></span>
+  </button>
   <div id="skin-name"></div>
   <div class="panel" id="settings-panel">
     <div class="opt-label">Graphismes</div>
@@ -815,10 +910,6 @@
     <button class="chip pc-only" id="keys-reset">Touches par défaut</button>
     <label class="check-line"><input type="checkbox" id="chk-music"> Musique d'accueil</label>
     <label class="check-line"><input type="checkbox" id="chk-fps"> Afficher FPS et infos techniques</label>
-  </div>
-  <div class="panel" id="skin-panel">
-    <div class="opt-label">Ton personnage</div>
-    <div id="skin-row"></div>
   </div>
 </div>
 <div id="lobby" style="display:none">
@@ -860,21 +951,40 @@
     <button class="chip" id="pm-cancel">Annuler</button>
   </div>
 </div>
-<div id="profile-modal">
+<div id="pass-modal" class="zh-modal">
+  <div class="box wide">
+    <div class="zh-head" id="ps-head">
+      <div class="lv"></div>
+      <div class="who"><div class="nm">PASSE DE COMBAT</div><div class="ti"></div><div class="bar"><i></i></div></div>
+      <button class="chip zh-close" id="ps-close">✕</button>
+    </div>
+    <div class="zh-tabs" id="ps-tabs">
+      <button class="chip" data-ps="recompenses">🎁 Récompenses</button>
+      <button class="chip" data-ps="quetes">📜 Quêtes</button>
+    </div>
+    <div class="zh-body" id="ps-body"></div>
+  </div>
+</div>
+<div id="wardrobe">
+  <div class="wd-top"><h2>VESTIAIRE</h2><button class="chip" id="wd-close">✕</button></div>
+  <div id="wd-grid"></div>
+  <div class="wd-bottom"><div id="wd-info"></div><button class="menu-btn primary" id="wd-equip">Équiper</button></div>
+</div>
+<div id="profile-modal" class="zh-modal">
   <div class="box">
-    <div id="pf-head">
+    <div id="pf-head" class="zh-head">
       <div class="lv"></div>
       <div class="who"><div class="nm"></div><div class="ti"></div><div class="bar"><i></i></div></div>
-      <button class="chip" id="pf-close">✕</button>
+      <button class="chip zh-close" id="pf-close">✕</button>
     </div>
-    <div id="pf-tabs">
+    <div id="pf-tabs" class="zh-tabs">
       <button class="chip" data-pf="compte">👤 Compte</button>
       <button class="chip" data-pf="titres">🏷 Titres</button>
       <button class="chip" data-pf="badges">🏅 Badges</button>
       <button class="chip" data-pf="style">🎨 Style</button>
       <button class="chip" data-pf="classement">🏆 Classement</button>
     </div>
-    <div id="pf-body"></div>
+    <div id="pf-body" class="zh-body"></div>
   </div>
 </div>
 <canvas id="glitch"></canvas>
@@ -907,7 +1017,7 @@
 </div>
 <div id="overlay" style="display:none">
   <h1>⚔ ZONE HOSTILE</h1>
-  <p id="intro">Des vagues de robots hostiles attaquent l'arène. Survis le plus longtemps possible.<br>
+  <p id="intro">SURVIVAL — des vagues de créatures de plus en plus nombreuses : Rôdeurs qui crachent de l'acide, Rampants qui bondissent, Brutes qui frappent fort. Tiens le plus longtemps possible.<br>
   ZQSD / WASD : bouger · Souris : viser · Clic : tirer · R : recharger · Maj : courir · Espace : sauter · V : vue 1ʳᵉ/3ᵉ personne</p>
   <div id="match-xp"></div>
   <div class="go" id="go-label">Clique pour combattre</div>
@@ -2887,23 +2997,246 @@ function makeEnemyRig(tough) {
   if (rig.ready) rig.postBuild(rig);
   return rig;
 }
+// ---------- Créatures du mode Survival ----------
+// Trois espèces : le Rôdeur (grand, voûté, crache de l'acide), la Brute (énorme, lente, frappe très fort) et le
+// Rampant (à quatre pattes, très rapide, bondit). Géométries partagées par espèce, fusionnées pour limiter les
+// appels de dessin ; chaque créature a ses propres matériaux (flash rouge quand on la touche).
+const CR_TYPES = [
+  { name: 'Rôdeur', flesh: 0x8d978a, dark: 0x30352f, eye: 0xff3322, hipY: 1.3, lean: 0.42, thigh: 0.6, shin: 0.64, legR: 0.075,
+    up: 0.62, fore: 0.72, armR: 0.052, sh: 0.82, shX: 0.3, scale: 1, fat: false, headY: 0.98 },
+  { name: 'Brute', flesh: 0x7a4a44, dark: 0x2c1c1a, eye: 0xffa020, hipY: 1.1, lean: 0.3, thigh: 0.5, shin: 0.56, legR: 0.13,
+    up: 0.6, fore: 0.7, armR: 0.11, sh: 0.86, shX: 0.52, scale: 1.3, fat: true, headY: 1.0, headZ: 0.22 },
+  { name: 'Rampant', flesh: 0x6c7682, dark: 0x262a31, eye: 0xc8f4ff, hipY: 0.66, lean: 1.3, thigh: 0.38, shin: 0.4, legR: 0.06,
+    up: 0.4, fore: 0.44, armR: 0.05, sh: 0.8, shX: 0.22, scale: 1, fat: false, headY: 0.95 }
+];
+// Fusionne des morceaux [géométrie, x, y, z, rx, ry, rz, sx, sy, sz] en une seule géométrie
+function mergeGeos(parts) {
+  const geos = parts.map(([g, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1]) => {
+    const m = new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)), new THREE.Vector3(sx, sy, sz));
+    return (g.index ? g.toNonIndexed() : g.clone()).applyMatrix4(m);
+  });
+  let n = 0; for (const g of geos) n += g.attributes.position.count;
+  const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), uv = new Float32Array(n * 2);
+  let o = 0;
+  for (const g of geos) {
+    const c = g.attributes.position.count;
+    pos.set(g.attributes.position.array, o * 3); nor.set(g.attributes.normal.array, o * 3);
+    if (g.attributes.uv) uv.set(g.attributes.uv.array, o * 2);
+    o += c; g.dispose();
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  out.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  out.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  out.computeBoundingSphere();
+  return out;
+}
+const crBoneMat = new THREE.MeshStandardMaterial({ color: 0xd8cfb8, roughness: 0.6 });
+const crDarkMat = new THREE.MeshBasicMaterial({ color: 0x050303 });
+const crGeoCache = [];
+function crGeos(ty) {
+  if (crGeoCache[ty]) return crGeoCache[ty];
+  const T = CR_TYPES[ty];
+  const cap = (r, l) => new THREE.CapsuleGeometry(r, Math.max(0.01, l - r), 4, 8);
+  const sph = (r, ws = 10, hs = 8) => new THREE.SphereGeometry(r, ws, hs);
+  const box = (x, y, z) => new THREE.BoxGeometry(x, y, z);
+  const cone = (r, h) => new THREE.ConeGeometry(r, h, 6);
+  const G = {};
+  G.thigh = mergeGeos([[cap(T.legR, T.thigh), 0, -T.thigh / 2], [sph(T.legR * 1.15), 0, -T.thigh]]);
+  G.shin = mergeGeos([[cap(T.legR * 0.8, T.shin), 0, -T.shin / 2], [box(T.legR * 2.2, T.legR * 0.9, T.legR * 4.2), 0, -T.shin, T.legR * 1.3]]);
+  G.up = mergeGeos([[cap(T.armR, T.up), 0, -T.up / 2], [sph(T.armR * 1.15), 0, -T.up]]);
+  G.fore = mergeGeos([[cap(T.armR * 0.85, T.fore), 0, -T.fore / 2], [sph(T.armR * 1.35), 0, -T.fore, 0, 0, 0, 0, 1, 0.8, 1.3]]);
+  const cl = T.fore * 0.4;   // griffes : trois longues pointes recourbées vers l'avant
+  G.claws = mergeGeos([-1, 0, 1].map(s => [cone(T.armR * 0.38, cl), s * T.armR * 0.9, -T.fore - cl * 0.5, T.armR * 0.6, Math.PI - 0.35, 0, s * 0.15]));
+  if (T.fat) {   // la Brute : gros ventre, épaules massives, pointes d'os dans le dos, tête enfoncée
+    G.torso = mergeGeos([[sph(0.45, 14, 12), 0, 0.45, 0.04, 0, 0, 0, 1.15, 1, 1.05], [sph(0.4, 14, 12), 0, 0.82, -0.02, 0, 0, 0, 1.5, 0.75, 1.05], [sph(0.22, 10, 8), 0, 0.02, 0, 0, 0, 0, 1.4, 0.8, 1]]);
+    G.bones = mergeGeos([0.45, 0.65, 0.85, 1.02].flatMap((y, i) => [-1, 1].map(s => [cone(0.05, 0.3 - i * 0.03), s * 0.16, y, -0.36, -1.1, 0, s * 0.35])));
+    G.skull = mergeGeos([[sph(0.2, 12, 10), 0, 0.12, 0.08, 0, 0, 0, 1.05, 0.9, 1.05], [box(0.32, 0.06, 0.1), 0, 0.2, 0.22]]);
+    G.sockets = mergeGeos([[-0.08, 0.14], [0.08, 0.14], [0, 0.22], [-0.05, 0.06], [0.05, 0.06]].map(([x, y]) => [sph(0.04, 8, 6), x, y, 0.24]));
+    G.eyePos = [[-0.08, 0.14, 0.27], [0.08, 0.14, 0.27], [0, 0.22, 0.26], [-0.05, 0.06, 0.27], [0.05, 0.06, 0.27]];
+    G.jaw = mergeGeos([[box(0.26, 0.07, 0.22), 0, -0.04, 0.12]]);
+  } else {       // Rôdeur / Rampant : torse étroit, côtes et vertèbres apparentes, long cou, crâne allongé
+    G.torso = mergeGeos([[cap(0.2, 0.55), 0, 0.55, 0, 0, 0, 0, 1.35, 1, 0.8], [sph(0.19, 10, 8), 0, 0.05, 0, 0, 0, 0, 1.3, 0.8, 0.9]]);
+    G.bones = mergeGeos([
+      ...[0, 1, 2, 3].map(i => [box(0.38 - i * 0.04, 0.03, 0.05), 0, 0.44 + i * 0.11, 0.15]),
+      ...[0, 1, 2, 3, 4, 5, 6].map(i => [sph(0.035, 6, 5), 0, 0.22 + i * 0.12, -0.15])
+    ]);
+    G.neck = new THREE.CylinderGeometry(0.05, 0.07, 0.22, 7).translate(0, 0.06, 0);
+    G.skull = mergeGeos([[sph(0.17, 12, 10), 0, 0.22, 0.03, 0, 0, 0, 0.85, 1.2, 1.05], [box(0.2, 0.04, 0.06), 0, 0.3, 0.14]]);
+    G.sockets = mergeGeos([[sph(0.048, 8, 6), -0.065, 0.25, 0.14], [sph(0.048, 8, 6), 0.065, 0.25, 0.14]]);
+    G.eyePos = [[-0.065, 0.25, 0.18], [0.065, 0.25, 0.18]];
+    G.jaw = mergeGeos([[box(0.13, 0.045, 0.16), 0, -0.02, 0.08]]);
+  }
+  G.teeth = mergeGeos([-0.05, -0.017, 0.017, 0.05].map(x => [cone(0.013, 0.05), x * (T.fat ? 1.8 : 1), 0.02, T.fat ? 0.21 : 0.15]));
+  G.eye = sph(T.fat ? 0.03 : 0.026, 8, 6);
+  return (crGeoCache[ty] = G);
+}
+// Halo des yeux : visible de loin dans le noir
+const crGlowTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const x = c.getContext('2d'), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = gr; x.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+})();
+// Peau : marbrures, veines sombres et taches (texture générée, teintée par la couleur de chaque espèce)
+const crSkinTex = (() => {
+  const S = 256, c = document.createElement('canvas'); c.width = c.height = S;
+  const x = c.getContext('2d');
+  x.fillStyle = '#d8d8d8'; x.fillRect(0, 0, S, S);
+  for (let i = 0; i < 260; i++) {   // marbrures
+    const px = Math.random() * S, py = Math.random() * S, r = 4 + Math.random() * 22, v = 150 + Math.random() * 105;
+    const gr = x.createRadialGradient(px, py, 0, px, py, r);
+    gr.addColorStop(0, `rgba(${v},${v * 0.95},${v * 0.9},.5)`); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    x.fillStyle = gr; x.fillRect(px - r, py - r, r * 2, r * 2);
+  }
+  x.lineCap = 'round';
+  for (let i = 0; i < 38; i++) {    // veines
+    let px = Math.random() * S, py = Math.random() * S, a = Math.random() * 6.28;
+    x.strokeStyle = `rgba(${60 + Math.random() * 40},20,${40 + Math.random() * 40},${0.35 + Math.random() * 0.3})`;
+    x.lineWidth = 0.6 + Math.random() * 1.6;
+    x.beginPath(); x.moveTo(px, py);
+    for (let k = 0; k < 9; k++) { a += (Math.random() - 0.5) * 1.2; px += Math.cos(a) * 9; py += Math.sin(a) * 9; x.lineTo(px, py); }
+    x.stroke();
+  }
+  for (let i = 0; i < 70; i++) {    // plaies et taches sombres
+    x.fillStyle = `rgba(${40 + Math.random() * 50},${8 + Math.random() * 12},${10 + Math.random() * 14},${0.25 + Math.random() * 0.4})`;
+    x.beginPath(); x.arc(Math.random() * S, Math.random() * S, 1 + Math.random() * 5, 0, 7); x.fill();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+})();
+const crEyeMats = CR_TYPES.map(T => new THREE.MeshBasicMaterial({ color: T.eye }));
+const crGlowMats = CR_TYPES.map(T => new THREE.SpriteMaterial({ map: crGlowTex, color: T.eye, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.85 }));
+function makeCreature(ty) {
+  const T = CR_TYPES[ty], G = crGeos(ty);
+  const skin = new THREE.MeshStandardMaterial({ color: T.flesh, map: crSkinTex, roughness: 0.8, emissive: 0xa00000, emissiveIntensity: 0 });
+  const limb = new THREE.MeshStandardMaterial({ color: T.dark, map: crSkinTex, roughness: 0.9, emissive: 0xa00000, emissiveIntensity: 0 });
+  const g = new THREE.Group(), body = new THREE.Group();
+  body.scale.setScalar(T.scale); g.add(body);
+  const add = (geo, mat, parent, shadow) => { const m = new THREE.Mesh(geo, mat); m.castShadow = !!shadow; parent.add(m); return m; };
+  const hips = new THREE.Group(); hips.position.y = T.hipY; body.add(hips);
+  const torso = new THREE.Group(); torso.rotation.x = T.lean; hips.add(torso);
+  add(G.torso, skin, torso, true); add(G.bones, crBoneMat, torso);
+  const head = new THREE.Group(); head.position.set(0, T.headY, T.headZ || 0.04); head.rotation.x = -T.lean * 0.85; torso.add(head);
+  if (G.neck) add(G.neck, limb, head);
+  add(G.skull, skin, head, true); add(G.sockets, crDarkMat, head);
+  for (const [x, y, z] of G.eyePos) {
+    const e = add(G.eye, crEyeMats[ty], head); e.position.set(x, y, z);
+    const s = new THREE.Sprite(crGlowMats[ty]); s.position.set(x, y, z + 0.02); s.scale.setScalar(T.fat ? 0.13 : 0.22);
+    s.raycast = () => {}; head.add(s);
+  }
+  const jaw = new THREE.Group(); jaw.position.set(0, T.fat ? 0.02 : 0.13, T.fat ? 0.1 : 0.06); head.add(jaw);
+  add(G.jaw, skin, jaw); add(G.teeth, crBoneMat, jaw);
+  // membres en deux segments (épaule/coude, hanche/genou)
+  const limb2 = (parent, x, y, upG, loG, loY, mat, claws) => {
+    const p = new THREE.Group(); p.position.set(x, y, 0); parent.add(p);
+    add(upG, mat, p, true);
+    const lo = new THREE.Group(); lo.position.y = -loY; p.add(lo);
+    add(loG, mat === skin ? skin : limb, lo, true);
+    if (claws) add(G.claws, crBoneMat, lo);
+    return [p, lo];
+  };
+  const [armL, foreL] = limb2(torso, T.shX, T.sh, G.up, G.fore, T.up, skin, true);
+  const [armR, foreR] = limb2(torso, -T.shX, T.sh, G.up, G.fore, T.up, skin, true);
+  const [legL, shinL] = limb2(hips, T.legR * 2.1, 0, G.thigh, G.shin, T.thigh, limb, false);
+  const [legR, shinR] = limb2(hips, -T.legR * 2.1, 0, G.thigh, G.shin, T.thigh, limb, false);
+  armL.rotation.z = 0.12; armR.rotation.z = -0.12;
+  return { group: g, body, hips, torso, head, jaw, skin, limb, armL, armR, foreL, foreR, legL, legR, shinL, shinR, ty, T,
+    armBase: -T.lean + (ty === 2 ? 0 : 0.1) };
+}
+const hash01 = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+// Animation : démarche voûtée (ou galop pour le Rampant), bras qui se tendent quand la proie est proche,
+// tête secouée de spasmes, mâchoire qui s'ouvre
+function animCreature(sm, t, dt, spd, phase, near) {
+  const T = sm.T, ty = sm.ty;
+  const w = t * (ty === 2 ? 2.3 : ty === 1 ? 1.1 : 1.4) * Math.max(2.5, spd) + phase, s = Math.sin(w), c = Math.cos(w);
+  if (ty === 2) {   // galop : pattes avant/arrière en opposition, dos qui ondule
+    sm.legL.rotation.x = s * 0.85; sm.legR.rotation.x = Math.sin(w + 0.5) * 0.85;
+    sm.shinL.rotation.x = 0.5 + Math.max(0, c) * 0.9; sm.shinR.rotation.x = 0.5 + Math.max(0, Math.cos(w + 0.5)) * 0.9;
+    sm.armL.rotation.x = sm.armBase - Math.sin(w + Math.PI) * 0.9; sm.armR.rotation.x = sm.armBase - Math.sin(w + Math.PI + 0.5) * 0.9;
+    sm.foreL.rotation.x = -0.35 - Math.max(0, -c) * 0.8; sm.foreR.rotation.x = -0.35 - Math.max(0, -Math.cos(w + 0.5)) * 0.8;
+    sm.hips.position.y = T.hipY + Math.abs(s) * 0.1;
+    sm.torso.rotation.x = T.lean + s * 0.1;
+  } else {
+    const amp = ty === 1 ? 0.45 : 0.6;
+    sm.legL.rotation.x = -s * amp; sm.legR.rotation.x = s * amp;
+    sm.shinL.rotation.x = 0.12 + Math.max(0, c) * 0.95; sm.shinR.rotation.x = 0.12 + Math.max(0, -c) * 0.95;
+    const tw = (hash01(Math.floor(t * 5 + phase * 9)) - 0.5) * 0.25;   // petits tics nerveux
+    sm.armL.rotation.x = sm.armBase + s * 0.4 * (1 - near) - near * 1.25 + tw;
+    sm.armR.rotation.x = sm.armBase - s * 0.4 * (1 - near) - near * 1.25 - tw;
+    sm.foreL.rotation.x = -0.3 - near * 0.5; sm.foreR.rotation.x = -0.3 - near * 0.5 + Math.sin(t * 9 + phase) * 0.15 * near;
+    sm.hips.position.y = T.hipY + Math.abs(c) * (ty === 1 ? 0.1 : 0.06);
+    sm.torso.rotation.z = s * (ty === 1 ? 0.09 : 0.05);
+    sm.torso.rotation.x = T.lean + near * 0.12;
+  }
+  // tête : spasmes brusques de temps en temps
+  const k = Math.floor(t * 3.2 + phase * 5), jerk = hash01(k + ty * 97) > 0.78;
+  const tz = jerk ? (hash01(k * 7 + 3) - 0.5) * 1.3 : Math.sin(t * 1.7 + phase) * 0.12;
+  sm.head.rotation.z += (tz - sm.head.rotation.z) * Math.min(1, dt * (jerk ? 28 : 4));
+  sm.head.rotation.y = Math.sin(t * 1.1 + phase) * 0.25;
+  sm.jaw.rotation.x = 0.2 + near * 0.6 + Math.max(0, Math.sin(t * 2.3 + phase)) * 0.2;
+}
+// Mort : la créature s'effondre en arrière, mâchoire grande ouverte, puis s'enfonce dans le sol
+function deathCreature(sm, m, deathT, dt) {
+  sm.body.rotation.x = -Math.min(1, deathT * 2.6) * 1.45;
+  sm.jaw.rotation.x = 0.9; sm.head.rotation.z *= 0.9;
+  sm.armL.rotation.x += (sm.armBase - 1.4 - sm.armL.rotation.x) * Math.min(1, dt * 6);
+  sm.armR.rotation.x += (sm.armBase - 1.2 - sm.armR.rotation.x) * Math.min(1, dt * 6);
+  if (deathT > 0.9) m.position.y -= dt * 0.9;
+  return deathT > 1.9;   // true = à retirer
+}
+// Crachats d'acide (Rôdeur, Brute) : vraies boules visibles qu'on peut esquiver
+const spits = [];
+const spitGeo = new THREE.SphereGeometry(0.16, 8, 6);
+const spitMat = new THREE.MeshBasicMaterial({ color: 0x9dff3a });
+const spitGlowMat = new THREE.SpriteMaterial({ map: crGlowTex, color: 0x9dff3a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+function addSpit(from, vel, dmg, big) {
+  const m = new THREE.Mesh(spitGeo, spitMat);
+  const gl = new THREE.Sprite(spitGlowMat); gl.scale.setScalar(big ? 1.3 : 0.9); gl.raycast = () => {}; m.add(gl);
+  if (big) m.scale.setScalar(1.6);
+  m.position.copy(from); scene.add(m);
+  spits.push({ m, vel: vel.clone(), dmg, life: 3.2 });
+}
+const _spitRay = new THREE.Raycaster();
+function updateSpits(dt, targets) {
+  for (let i = spits.length - 1; i >= 0; i--) {
+    const s = spits[i], p = s.m.position, step = s.vel.length() * dt;
+    s.vel.y -= 4 * dt;   // légère retombée
+    _spitRay.set(p, _bV1.copy(s.vel).normalize()); _spitRay.far = step;
+    let gone = (s.life -= dt) <= 0 || p.y < 0.05 || _spitRay.intersectObjects(obstacleMeshes, false).length > 0;
+    p.addScaledVector(s.vel, dt);
+    if (!gone && targets) for (const tg of targets) {   // hôte : touche un joueur ?
+      const ty = tg.local ? player.pos.y - 0.6 : 1.2;
+      if (Math.hypot(tg.pos.x - p.x, ty - p.y, tg.pos.z - p.z) < 0.85) {
+        if (tg.local) hurt(s.dmg, _bV2.copy(p)); else if (tg.conn) send(tg.conn, { t: 'dmg', amount: s.dmg });
+        gone = true; break;
+      }
+    }
+    if (gone) { burst(p, 0x9dff3a, 6); scene.remove(s.m); spits.splice(i, 1); }
+  }
+}
+let crGrowlT = 0;   // limite les grognements simultanés
 function spawnEnemy(wave) {
   const ang = rand() * Math.PI * 2;
   const dist = ARENA * 0.75 + rand() * 10;
   const x = Math.cos(ang) * dist, z = Math.sin(ang) * dist;
-  const tough = rand() < Math.min(0.1 + wave * 0.04, 0.45); // costauds plus fréquents au fil des vagues
+  // espèces : les Brutes et les Rampants deviennent de plus en plus fréquents
+  const r = rand(), pBrute = Math.min(0.08 + wave * 0.035, 0.32), pCrawl = wave >= 2 ? Math.min(0.12 + wave * 0.03, 0.38) : 0;
+  const ty = r < pBrute ? 1 : r < pBrute + pCrawl ? 2 : 0, tough = ty === 1;
+  const hp = ty === 1 ? 10 + wave * 2 : ty === 2 ? 2 + Math.floor(wave / 3) : 3 + Math.floor(wave / 2);
   const e = {
-    id: ++enemySeq,
-    hp: tough ? 5 : 2, maxHp: tough ? 5 : 2, tough,
-    speed: (tough ? 3.2 : 4.5) + rand() * 1.5 + wave * 0.15,
-    attackCd: 0, shootCd: 1.5 + rand() * 2, hitFlash: 0, dead: false, deathT: 0,
-    phase: rand() * Math.PI * 2
+    id: ++enemySeq, ty, hp, maxHp: hp, tough,
+    speed: ty === 1 ? Math.min(7.5, 3.8 + wave * 0.18) : ty === 2 ? Math.min(14, 9 + wave * 0.3) : Math.min(10, 5.2 + wave * 0.25),
+    attackCd: 0, shootCd: 1.2 + rand() * 2, hitFlash: 0, dead: false, deathT: 0, lunge: 0, lungeCd: 2 + rand() * 2,
+    phase: rand() * Math.PI * 2, growl: 2 + rand() * 6
   };
-  const sm = makeStickman(tough ? 0x9b4dff : 0x2bb3e8, tough ? 0x2a0a55 : 0x101a8a);
+  e.speed *= 0.92 + rand() * 0.16;
+  const sm = makeCreature(ty);
   e.sm = sm;
   e.mesh = sm.group;
   e.mesh.position.set(x, 0, z);
-  if (tough) e.mesh.scale.setScalar(1.4);
   scene.add(e.mesh);
   e.mesh.traverse(o => o.userData.enemy = e);
   enemies.push(e);
@@ -2921,7 +3254,6 @@ function damageEnemy(e, point, dmg = 1) {
     e.dead = true;
     e.deathT = 0;
     score += e.tough ? 250 : 100;
-    gainXp(e.tough ? XP.botTough : XP.bot, 'Robots');
     sfx(120, 0.35, 'sawtooth', 0.15, 0.3);
     burst(e.mesh.position, e.tough ? 0xb266ff : 0x66ccff, 18);
   }
@@ -2949,7 +3281,7 @@ const BADGES = [ // id, icône, nom, comment l'obtenir
   ['glutton', '🍖', 'Appétit insatiable', 'En monstre, dévore 3 survivants dans la même partie'],
   ['wolf', '🐺', 'Le loup ne dort jamais', 'Gagne une partie de Loup en étant le loup'],
   ['cold', '🧊', 'Sang-froid', 'Gagne un duel sans perdre un seul cœur'],
-  ['wave10', '🤖', 'Fantôme du tutoriel', 'Atteins la vague 10 hors ligne'],
+  ['wave10', '🧟', 'Dernier debout', 'Atteins la vague 10 en Survival'],
   ['lvl10', '🕯', 'Habitué des cauchemars', 'Atteins le niveau 10'],
   ['hundred', '💀', 'Cent silhouettes', 'Élimine 100 joueurs'],
   ['insomnia', '🌙', 'Insomniaque', 'Joue 50 parties en ligne'],
@@ -2970,8 +3302,9 @@ const profile = {
   best: parseInt(localStorage.getItem('zh-best'), 10) || 0,
   title: parseInt(localStorage.getItem('zh-title'), 10) || 1,
   badges: (() => { try { return JSON.parse(localStorage.getItem('zh-badges') || '[]'); } catch (e) { return []; } })(),
-  stats: jsonLS('zh-stats', { kills: 0, bots: 0, wins: 0, losses: 0, games: 0, levers: 0, escapes: 0, devoured: 0 }),
-  cos: jsonLS('zh-cos', { tracer: 0, lamp: 0, kfx: 0, frame: 0 })
+  stats: jsonLS('zh-stats', { kills: 0, bots: 0, wins: 0, losses: 0, games: 0, levers: 0, escapes: 0, devoured: 0, bestWave: 0 }),
+  cos: jsonLS('zh-cos', { tracer: 0, lamp: 0, kfx: 0, frame: 0 }),
+  quests: jsonLS('zh-quests', { day: '', p: [0, 0, 0], done: [] })
 };
 const titleText = (lvl = profile.title) => (TITLES.find(t => t[0] === lvl) || TITLES[0])[1];
 function saveProfile(local = false) {
@@ -2982,6 +3315,7 @@ function saveProfile(local = false) {
   localStorage.setItem('zh-badges', JSON.stringify(profile.badges));
   localStorage.setItem('zh-stats', JSON.stringify(profile.stats));
   localStorage.setItem('zh-cos', JSON.stringify(profile.cos));
+  localStorage.setItem('zh-quests', JSON.stringify(profile.quests));
   if (!local) cloudSave();
 }
 // Ce que chaque niveau débloque (titres, cosmétiques, personnages)
@@ -3027,8 +3361,52 @@ function earnBadge(id) {
   sfx(880, 0.2, 'triangle', 0.12, 1.5);
   saveProfile();
 }
-function bumpStat(k, n = 1) {
-  profile.stats[k] = (profile.stats[k] || 0) + n;
+// ---------- Quêtes du jour : 3 par jour (les mêmes pour tout le monde ce jour-là), avec de l'XP à la clé ----------
+const DAILY = [ // [statistique, texte, objectifs possibles, XP, icône]
+  ['games', 'Joue {n} parties en ligne', [2, 3, 4], 120, '🎮'],
+  ['wins', 'Gagne {n} partie(s) en ligne', [1, 2], 200, '🏆'],
+  ['kills', 'Élimine {n} joueurs', [3, 5, 8], 150, '🎯'],
+  ['levers', 'Active {n} leviers en Extinction', [2, 3, 5], 150, '⚡'],
+  ['escapes', 'Atteins {n} fois le point B', [1, 2], 160, '🏁'],
+  ['bots', 'Tue {n} créatures en Survival', [40, 70, 100], 130, '🧟'],
+  ['wave', 'Atteins la vague {n} en Survival', [4, 6, 8], 180, '🌊'],
+  ['devoured', 'Dévore {n} survivant(s) en monstre', [1, 2], 200, '🐺']
+];
+const dayKey = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+function dailyQuests() {   // tirage déterministe à partir de la date du jour
+  const key = dayKey();
+  let h = 7; for (const c of key) h = (h * 131 + c.charCodeAt(0)) >>> 0;
+  const rnd = () => { h = (Math.imul(h, 1103515245) + 12345) >>> 0; return h / 4294967296; };
+  const pool = DAILY.slice(), out = [];
+  while (out.length < 3) {
+    const [k, txt, ns, xp, ic] = pool.splice(Math.floor(rnd() * pool.length), 1)[0];
+    const n = ns[Math.floor(rnd() * ns.length)];
+    out.push({ k, n, xp: xp + (ns.indexOf(n) * 40), ic, txt: txt.replace('{n}', n) });
+  }
+  if (!profile.quests || profile.quests.day !== key) profile.quests = { day: key, p: [0, 0, 0], done: [] };
+  return out;
+}
+function questEvent(k, n = 1, max = false) {
+  const qs = dailyQuests(), Q = profile.quests;
+  let changed = false;
+  qs.forEach((q, i) => {
+    if (q.k !== k || Q.done.includes(i)) return;
+    Q.p[i] = max ? Math.max(Q.p[i], n) : Q.p[i] + n;
+    changed = true;
+    if (Q.p[i] >= q.n) {
+      Q.done.push(i);
+      feed('📜 Quête du jour terminée : ' + q.txt + ' (+' + q.xp + ' XP)', 'gold');
+      gainXp(q.xp, 'Quêtes');
+    }
+  });
+  if (changed) { saveProfile(); updatePassBtn(); }
+}
+function bumpStat(k, n = 1, max = false) {
+  const before = profile.stats[k] || 0;
+  profile.stats[k] = max ? Math.max(before, n) : before + n;
+  for (const sk of SKINS) // personnage débloqué par une quête permanente
+    if (sk.quest && sk.quest[0] === k && before < sk.quest[1] && profile.stats[k] >= sk.quest[1]) { feed('🎭 Nouveau personnage débloqué : ' + sk.name + ' !', 'gold'); sfx(990, 0.3, 'triangle', 0.14, 1.6); }
+  questEvent(k === 'bestWave' ? 'wave' : k, n, max);
   const s = profile.stats;
   if (s.kills >= 1) earnBadge('first');
   if (s.kills >= 100) earnBadge('hundred');
@@ -3061,8 +3439,19 @@ function updateXpHud() {
   if (bar) bar.style.width = Math.min(100, profile.xp / need * 100) + '%';
   const lab = $('xp-label');
   if (lab) lab.textContent = 'Niv. ' + profile.level + ' · ' + profile.xp + '/' + need + ' XP';
-  const hl = $('home-level');
-  if (hl) { hl.innerHTML = '⭐ Niveau ' + profile.level + '<small></small>'; hl.querySelector('small').textContent = titleText(); }
+  updatePassBtn();
+}
+// Bouton « Passe de combat » de l'accueil : niveau, XP, quêtes du jour faites
+function updatePassBtn() {
+  const lv = $('pass-lv');
+  if (!lv) return;
+  const need = xpForLevel(profile.level);
+  lv.textContent = 'Niv. ' + profile.level;
+  $('pass-xp').textContent = profile.xp + ' / ' + need + ' XP';
+  $('pass-fill').style.width = Math.min(100, profile.xp / need * 100) + '%';
+  dailyQuests();
+  const d = profile.quests.done.length;
+  $('pass-q').textContent = d >= 3 ? '📜 Quêtes du jour : toutes faites ✓' : '📜 Quêtes du jour : ' + d + ' / 3';
 }
 // Cosmétiques équipés
 const cosVal = k => (COS[k][profile.cos[k]] || COS[k][0])[2];
@@ -3076,11 +3465,10 @@ function killFx(p) {
 
 // ---------- Ennemis côté client (multijoueur) : simple rendu piloté par l'hôte ----------
 const clientEnemies = new Map(); // id -> { mesh, rig|sm, target, tough, hp, dead, deathT, phase }
-function makeClientEnemy(id, tough) {
-  const v = { target: new THREE.Vector3(), tough, hp: tough ? 5 : 2, dead: false, deathT: 0, phase: rand() * Math.PI * 2 };
-  v.sm = makeStickman(tough ? 0x9b4dff : 0x2bb3e8, tough ? 0x2a0a55 : 0x101a8a);
+function makeClientEnemy(id, tough, ty = tough ? 1 : 0) {
+  const v = { target: new THREE.Vector3(), tough, ty, hp: 99, dead: false, deathT: 0, phase: rand() * Math.PI * 2 };
+  v.sm = makeCreature(ty);
   v.mesh = v.sm.group;
-  if (tough) v.mesh.scale.setScalar(1.4);
   scene.add(v.mesh);
   v.mesh.traverse(o => o.userData.enemyId = id);
   return v;
@@ -3091,13 +3479,14 @@ function applyEnemies(list) {
     seen.add(ed.id);
     let v = clientEnemies.get(ed.id);
     if (!v) {
-      v = makeClientEnemy(ed.id, !!ed.tg);
+      v = makeClientEnemy(ed.id, !!ed.tg, ed.ty | 0);
+      v.hp = ed.hp;
       v.mesh.position.set(ed.x, 0, ed.z);
       clientEnemies.set(ed.id, v);
     }
     v.target.set(ed.x, 0, ed.z);
     if (ed.hp < v.hp) {
-      if (v.sm) { v.sm.skin.emissiveIntensity = 2.5; setTimeout(() => v.sm.skin.emissiveIntensity = 0.15, 140); }
+      if (v.sm) { v.sm.skin.emissiveIntensity = v.sm.limb.emissiveIntensity = 2.5; setTimeout(() => { v.sm.skin.emissiveIntensity = v.sm.limb.emissiveIntensity = 0; }, 140); }
       else if (v.mats) { v.mats.forEach(mt => mt.emissive.setHex(0x991111)); setTimeout(() => v.mats.forEach(mt => mt.emissive.setHex(0)), 140); }
     }
     v.hp = ed.hp;
@@ -4602,11 +4991,50 @@ const SKINS = [
       C.face({ iris: 0x2e1f14, brow: 0x15161a });
     } },
   // Monstre (mode Extinction) : creature 100 % procedurale (voir buildCreature), absente du selecteur de skins.
-  { name: 'Monstre', hidden: true, creature: true, zones: {} }
+  { name: 'Monstre', hidden: true, creature: true, zones: {} },
+  // ── 10 personnages débloqués par niveau (licences vérifiées dans chaque fichier : CC0, ou licence VRoid/VRM
+  //    qui autorise tout le monde, l'usage commercial et la violence) ──
+  ...[
+    ['Perle', 'vroid/beta/Victoria_Rubin.vrm', 10, 0xf3dbe6, 0xf6f0f2],
+    ['Givre', 'vroid/beta/Vita.vrm', 20, 0x2f5fd0, 0x1c2f7a],
+    ['Noisette', 'vroid/beta/Vivi.vrm', 30, 0x9cc65a, 0x7a4a2a],
+    ['Cube', 'cryptovoxels.vrm', 40, 0x4fae6a, 0x283a2c],
+    ['Aiko', 'vroid/stable/AvatarSample_A.vrm', 50, 0xb0705a, 0x2c2220],
+    ['Violette', 'vroid/stable/AvatarSample_B.vrm', 60, 0x9a6ad8, 0xe8a0c0],
+    ['Kenji', 'vroid/stable/AvatarSample_C.vrm', 70, 0x3a3f48, 0x1d2027],
+    ['Lune', 'vroid/fem_vroid.vrm', 80, 0x8fb8d8, 0x23262c],
+    ['Axel', 'vroid/masc_vroid.vrm', 90, 0x6b5a45, 0x1f1d1a],
+    ['Spectre', 'https://cdn.jsdelivr.net/gh/pixiv/three-vrm@v3.1.0/packages/three-vrm/examples/models/VRM1_Constraint_Twist_Sample.vrm', 100, 0xe9e4f2, 0x26232e]
+  ].map(([name, file, lvl, top, pants]) => ({
+    name, lvl, vrm: file.startsWith('http') ? file : VRM_BASE + file, h: 1.0, morph: {}, chip: top,
+    zones: { hair: 0x2a2420, skin: 0xe9c6a8, top, sleeves: top, pants, boots: 0x1b1b1f }
+  }))
 ];
+// Déblocage des personnages : Vincent est offert, les autres viennent des quêtes (onglet Quêtes du passe) ou des niveaux
+const SKIN_FREE = 'Vincent';
+const SKIN_QUESTS = { // nom → [statistique, objectif, texte]
+  'Ombre':    ['devoured', 10, 'Dévore 10 survivants en monstre (Extinction)'],
+  'Marco':    ['wins', 5, 'Gagne 5 parties en ligne'],
+  'Punkette': ['kills', 25, 'Élimine 25 joueurs'],
+  'Rousse':   ['levers', 15, 'Active 15 leviers (Extinction)'],
+  'Kawaii':   ['escapes', 10, 'Atteins 10 fois le point B (Extinction)'],
+  'Soldate':  ['bestWave', 12, 'Atteins la vague 12 en Survival'],
+  'Gamer':    ['bots', 300, 'Tue 300 créatures en Survival']
+};
+SKINS.forEach(s => { const q = SKIN_QUESTS[s.name]; if (q) s.quest = q; });
 const SKIN_BOT = 0; // les bots incarnent « Ombre »
-let mySkin = parseInt(localStorage.getItem('zh-skin'), 10) || 0;
-if (!(mySkin >= 0 && mySkin < SKINS.length)) mySkin = 0;
+const SKIN_START = SKINS.findIndex(s => s.name === SKIN_FREE);
+function skinOwned(i) {
+  const s = SKINS[i];
+  if (!s || s.hidden) return false;
+  if (s.name === SKIN_FREE) return true;
+  if (s.lvl) return profile.level >= s.lvl;
+  if (s.quest) return (profile.stats[s.quest[0]] || 0) >= s.quest[1];
+  return false;
+}
+const skinHow = s => s.lvl ? 'Niveau ' + s.lvl : s.quest ? s.quest[2] : '';
+let mySkin = parseInt(localStorage.getItem('zh-skin'), 10);
+if (!skinOwned(mySkin)) mySkin = SKIN_START;   // personnage pas (ou plus) débloqué : on repart sur Vincent
 
 // Le personnage du joueur local (visible en 3e personne et pour les autres joueurs)
 const playerModel = makeCharacter(mySkin);
@@ -4736,8 +5164,9 @@ const UNLOCK_ORDER = [0, 1, 2];
 let killCount = 0, unlockedWeapons = 1;
 let duelLoadout = 0; // arme choisie avant un duel (cartes du salon)
 const isUnlocked = i => duelMode ? true : UNLOCK_ORDER.indexOf(i) < unlockedWeapons;
-function onKill() {
+function onKill(tough) {   // une créature tuée par MOI (XP + quêtes ; l'hôte crédite aussi les tirs des autres via « ukill »)
   killCount++;
+  if (!duelMode) { gainXp(tough ? XP.botTough : XP.bot, 'Créatures'); bumpStat('bots'); }
   buzz([30, 40, 70], 0, true); // kill : double pulsation
   if (killCount % 10 === 0 && unlockedWeapons < WEAPONS.length) {
     const wi = UNLOCK_ORDER[unlockedWeapons];
@@ -5223,10 +5652,13 @@ function updateHud() {
     + (gameMode && gameMode !== 'offline' ? ' · 👥 ' + (1 + remotePlayers.size) + ' joueur(s)' : '');
 }
 
+// Survival : des vagues de plus en plus grosses, plus serrées, avec plus de créatures en même temps
+const waveCap = () => Math.min(IS_TOUCH ? 24 : 34, 10 + wave * 2);
 function startWave() {
   wave++;
-  toSpawn = 3 + wave * 3;
+  toSpawn = 8 + wave * 5 + Math.floor(Math.pow(wave, 1.5));
   spawnTimer = 0;
+  if (!duelMode) bumpStat('bestWave', wave, true);
   showMsg(`⚔ VAGUE ${wave}`);
   sfx(220, 0.4, 'sawtooth', 0.12, 2);
   updateHud();
@@ -5735,7 +6167,7 @@ function shoot() {
         const cible = hit.object.userData.enemy;
         damageEnemy(cible, hit.point, w.dmg);
         if (cible) { buzz(24, 0, true); hitMarker(); }
-        if (cible && cible.dead) onKill(); // mon kill : compte pour le déblocage
+        if (cible && cible.dead) onKill(cible.tough); // mon kill : compte pour le déblocage
       }
       else {
         const eid = hit.object.userData.enemyId;
@@ -6251,10 +6683,10 @@ function animate() {
     const aliveCount = enemies.filter(e => !e.dead).length;
     if (toSpawn > 0) {
       spawnTimer -= dt;
-      if (spawnTimer <= 0 && aliveCount < 10) {
+      if (spawnTimer <= 0 && aliveCount < waveCap()) {
         spawnEnemy(wave);
         toSpawn--;
-        spawnTimer = 0.7;
+        spawnTimer = Math.max(0.18, 0.6 - wave * 0.04);
         updateHud();
       }
     } else if (aliveCount === 0) {
@@ -6279,15 +6711,7 @@ function animate() {
     const m = e.mesh;
     if (e.dead) {
       e.deathT += dt;
-      if (e.rig) { // humain : tombe à la renverse puis s'enfonce
-        m.rotation.x = -Math.min(1, e.deathT * 2.4) * (Math.PI / 2);
-        if (e.deathT > 0.8) m.position.y -= dt * 1.6;
-        if (e.deathT > 1.4) { scene.remove(m); enemies.splice(i, 1); updateHud(); }
-      } else {
-        m.scale.setScalar(Math.max(0.01, 1 - e.deathT * 2.2));
-        m.rotation.x += dt * 5;
-        if (e.deathT > 0.5) { scene.remove(m); enemies.splice(i, 1); updateHud(); }
-      }
+      if (deathCreature(e.sm, m, e.deathT, dt)) { scene.remove(m); enemies.splice(i, 1); updateHud(); }
       continue;
     }
     // Cible la plus proche
@@ -6313,101 +6737,86 @@ function animate() {
       }
     }
     toP.normalize();
-    if (tgt && dist > 1.9) {
-      let ex = m.position.x + toP.x * e.speed * dt;
-      let ez = m.position.z + toP.z * e.speed * dt;
-      [ex, ez] = collide(ex, ez, 0.6);
+    // Rampant : bondit sur sa proie quand il est assez près
+    e.lungeCd -= dt;
+    if (e.ty === 2 && tgt && dist < 9 && dist > 2.5 && e.lungeCd <= 0) { e.lunge = 0.45; e.lungeCd = 2.2 + rand() * 1.5; sfx3(m.position.x, m.position.z, 300, 0.25, 'sawtooth', 0.12, 2.2, 30); }
+    const spd = e.speed * (e.lunge > 0 ? 2.4 : 1);
+    if (e.lunge > 0) e.lunge -= dt;
+    if (tgt && dist > (e.ty === 1 ? 2.4 : 1.7)) {
+      let ex = m.position.x + toP.x * spd * dt;
+      let ez = m.position.z + toP.z * spd * dt;
+      [ex, ez] = collide(ex, ez, e.ty === 1 ? 0.9 : 0.6);
       m.position.x = ex; m.position.z = ez;
     }
     m.lookAt(tgtPos.x, m.position.y, tgtPos.z);
-    if (e.rig) { // le soldat regarde vers -Z : demi-tour après lookAt
-      m.rotateY(Math.PI);
-      m.position.y = 0;
-      if (e.rig.actions.Run) e.rig.actions.Run.timeScale = e.speed / 5.5;
-      e.rig.mixer.update(dt);
-      for (const b of e.rig.aimPose) b.bone.quaternion.copy(b.q); // garde le fusil épaulé
-    } else {
-      m.position.y = Math.max(0, Math.sin(t * 6 + e.phase)) * 0.08;
-      // Animation de marche : bras et jambes en balancier
-      const swing = Math.sin(t * e.speed * 2.2 + e.phase) * 0.6;
-      e.sm.armL.rotation.x = swing;  e.sm.armR.rotation.x = -swing;
-      e.sm.legL.rotation.x = -swing; e.sm.legR.rotation.x = swing;
+    m.position.y = 0;
+    animCreature(e.sm, t, dt, spd, e.phase, tgt ? Math.max(0, Math.min(1, 1 - (dist - 1.8) / 4)) : 0);
+    // Grognements situés (on entend d'où ils arrivent)
+    e.growl -= dt; crGrowlT -= dt / Math.max(1, enemies.length);
+    if (e.growl <= 0) {
+      e.growl = 4 + rand() * 6;
+      if (crGrowlT <= 0 && dist < 34) { crGrowlT = 0.5; sfx3(m.position.x, m.position.z, e.ty === 1 ? 70 : e.ty === 2 ? 210 : 120, 0.7, 'sawtooth', 0.1, e.ty === 2 ? 1.6 : 0.5, 30); }
     }
-    // Attaque au corps à corps
+    // Attaque au corps à corps (griffes / coup de poing de la Brute)
     e.attackCd -= dt;
-    if (tgt && dist < 2.1 && e.attackCd <= 0) {
-      e.attackCd = 1.0;
-      const dmg = e.tough ? 18 : 10;
+    const reach = e.ty === 1 ? 2.9 : 2.2;
+    if (tgt && dist < reach && e.attackCd <= 0) {
+      e.attackCd = e.ty === 1 ? 1.3 : e.ty === 2 ? 0.55 : 0.85;
+      const dmg = Math.round(e.ty === 1 ? 28 + wave * 1.5 : e.ty === 2 ? 9 + wave * 0.6 : 13 + wave);
+      if (e.ty === 1) shakeT = Math.max(shakeT, tgt.local ? 0.5 : 0);
       if (tgt.local) hurt(dmg, e.mesh.position);
       else if (tgt.conn) send(tgt.conn, { t: 'dmg', amount: dmg });
     }
-    // Tir à distance des bots : cadence lente, précision moyenne, ligne de vue requise
+    // Crachat d'acide (Rôdeur dès la vague 2, Brute) : boule visible, visée avec un peu d'anticipation
     e.shootCd -= dt;
-    if (tgt && dist > 7 && dist < 50 && e.shootCd <= 0) {
-      e.shootCd = 1.8 + rand() * 1.8;
-      const from = m.position.clone();
-      from.y = 1.5;
-      const to = tgtPos.clone();
-      to.y = tgt.local ? player.pos.y : 1.5;
-      const dir = to.clone().sub(from);
-      const dl = dir.length();
-      dir.normalize();
-      raycaster.set(from, dir);
-      raycaster.far = dl;
+    if (tgt && e.ty !== 2 && (e.ty === 1 || wave >= 2) && dist > 6 && dist < 45 && e.shootCd <= 0) {
+      e.shootCd = e.ty === 1 ? 3.5 + rand() * 2 : Math.max(1.3, 3 - wave * 0.1) + rand() * 1.5;
+      const from = _bV3.set(m.position.x, (e.ty === 1 ? 2.3 : 2.0), m.position.z);
+      const to = _bV4.set(tgtPos.x, tgt.local ? player.pos.y - 0.4 : 1.3, tgtPos.z);
+      raycaster.set(from, _bV5.subVectors(to, from).normalize());
+      raycaster.far = from.distanceTo(to);
       const blocked = raycaster.intersectObjects(obstacleMeshes, false).length > 0;
       raycaster.far = Infinity;
       if (!blocked) {
-        const jitter = new THREE.Vector3((rand() - 0.5) * 2.5, (rand() - 0.5) * 1.5, (rand() - 0.5) * 2.5);
-        addTracer(from, to.clone().add(jitter));
-        sfx(650 + rand() * 150, 0.07, 'square', 0.05, 0.2);
-        broadcast({ t: 'shot', a: from.toArray(), b: to.toArray() });
-        if (rand() < 0.3) { // 30 % de chances de toucher — jouable
-          const dmg = e.tough ? 8 : 5;
-          if (tgt.local) hurt(dmg, e.mesh.position);
-          else if (tgt.conn) send(tgt.conn, { t: 'dmg', amount: dmg });
-        }
+        const sp = e.ty === 1 ? 17 : 22, flight = from.distanceTo(to) / sp;
+        to.y += 2 * flight * flight;   // compense la retombée
+        const err = Math.max(0.15, 1.1 - wave * 0.07);   // de plus en plus précis
+        to.x += (rand() - 0.5) * err * 2; to.z += (rand() - 0.5) * err * 2;
+        const vel = _bV5.subVectors(to, from).normalize().multiplyScalar(sp);
+        const dmg = Math.round(e.ty === 1 ? 16 + wave : Math.min(25, 7 + wave * 0.7));
+        addSpit(from, vel, dmg, e.ty === 1);
+        broadcast({ t: 'spit', a: from.toArray(), v: vel.toArray(), b: e.ty === 1 ? 1 : 0 });
+        sfx3(from.x, from.z, 180, 0.22, 'sawtooth', 0.12, 0.3, 30); sfxNoise(0.12, 0.05, 1200, 400);
       }
     }
     // Flash de dégât
     const flashing = e.hitFlash > 0;
     if (flashing) e.hitFlash -= dt;
     if (e.sm) {
-      e.sm.skin.emissiveIntensity = flashing ? 2.5 : 0.15;
-      e.sm.limb.emissiveIntensity = flashing ? 2.5 : 0.1;
+      e.sm.skin.emissiveIntensity = flashing ? 2.5 : 0;
+      e.sm.limb.emissiveIntensity = flashing ? 2.5 : 0;
     } else if (e.mats) {
       for (const mt of e.mats) mt.emissive.setHex(flashing ? 0x991111 : 0x000000);
     }
   }
+  updateSpits(dt, aiTargets);
   } else {
     // Client : anime les ennemis miroirs pilotés par l'hôte
     for (const [id, v] of clientEnemies) {
       if (v.dead) {
         v.deathT += dt;
-        if (v.rig) {
-          v.mesh.rotation.x = -Math.min(1, v.deathT * 2.4) * (Math.PI / 2);
-          if (v.deathT > 0.8) v.mesh.position.y -= dt * 1.6;
-          if (v.deathT > 1.4) { scene.remove(v.mesh); clientEnemies.delete(id); updateHud(); }
-        } else {
-          v.mesh.scale.setScalar(Math.max(0.01, (v.tough ? 1.18 : 1) * (1 - v.deathT * 2.2)));
-          v.mesh.rotation.x += dt * 5;
-          if (v.deathT > 0.5) { scene.remove(v.mesh); clientEnemies.delete(id); updateHud(); }
-        }
+        if (deathCreature(v.sm, v.mesh, v.deathT, dt)) { scene.remove(v.mesh); clientEnemies.delete(id); updateHud(); }
         continue;
       }
+      const ox = v.mesh.position.x, oz = v.mesh.position.z;
       v.mesh.position.lerp(v.target, Math.min(1, dt * 8));
+      const spd = Math.hypot(v.mesh.position.x - ox, v.mesh.position.z - oz) / Math.max(dt, 1e-3);
       v.mesh.lookAt(player.pos.x, v.mesh.position.y, player.pos.z);
-      if (v.rig) {
-        v.mesh.rotateY(Math.PI);
-        v.mesh.position.y = 0;
-        v.rig.mixer.update(dt);
-        for (const b of v.rig.aimPose) b.bone.quaternion.copy(b.q);
-      } else {
-        v.mesh.position.y = Math.max(0, Math.sin(t * 6 + v.phase)) * 0.08;
-        const swing = Math.sin(t * 6 + v.phase) * 0.6;
-        v.sm.armL.rotation.x = swing;  v.sm.armR.rotation.x = -swing;
-        v.sm.legL.rotation.x = -swing; v.sm.legR.rotation.x = swing;
-      }
+      v.mesh.position.y = 0;
+      const d = Math.hypot(player.pos.x - v.mesh.position.x, player.pos.z - v.mesh.position.z);
+      animCreature(v.sm, t, dt, spd, v.phase, Math.max(0, Math.min(1, 1 - (d - 1.8) / 4)));
     }
+    updateSpits(dt, null);   // client : crachats seulement visuels (l'hôte décide des dégâts)
   }
 
   // Joueurs distants : interpolation + animations + arme
@@ -6687,7 +7096,7 @@ function broadcastWorld() {
   for (const r of remotePlayers.values()) if (r.lastState) players.push(r.lastState);
   const en = enemies.map(e => ({
     id: e.id, x: +e.mesh.position.x.toFixed(1), z: +e.mesh.position.z.toFixed(1),
-    hp: e.hp, tg: e.tough ? 1 : 0, dd: e.dead ? 1 : 0
+    hp: e.hp, tg: e.tough ? 1 : 0, ty: e.ty | 0, dd: e.dead ? 1 : 0
   }));
   broadcast({ t: 'world', players, enemies: en, wave, score });
 }
@@ -6777,7 +7186,7 @@ function onMsg(conn, d) {
       const e = enemies.find(x => x.id === d.id);
       if (e) {
         damageEnemy(e, e.mesh.position.clone().setY(1.2), d.d || 1);
-        if (e.dead) send(conn, { t: 'ukill' }); // crédite le kill au tireur distant
+        if (e.dead) send(conn, { t: 'ukill', tg: e.tough ? 1 : 0 }); // crédite le kill au tireur distant
       }
       break;
     }
@@ -6787,7 +7196,8 @@ function onMsg(conn, d) {
       if (authority) broadcastExcept(conn, d);
       break;
     case 'dmg': hurt(d.amount); break;
-    case 'ukill': if (d._to === undefined || d._to === myId) onKill(); break; // mon kill validé par l'hôte
+    case 'spit': if (!authority && d.a && d.v) addSpit(new THREE.Vector3(...d.a), new THREE.Vector3(...d.v), 0, !!d.b); break;
+    case 'ukill': if (d._to === undefined || d._to === myId) onKill(!!d.tg); break; // mon kill validé par l'hôte
     case 'pvp': // dégâts joueur-contre-joueur (duel)
       if (d.to === myId && duelMode && !duelOver) {
         if (duelMode === '2v2' && conn && conn.relayId && teamOf(conn.relayId) === myTeam) break; // anti tir allié
@@ -7193,7 +7603,7 @@ const code6 = (first) => {
   return s;
 };
 function hasNet() {
-  if (typeof Peer === 'undefined') { homeStatus('⚠ Réseau indisponible — essaie le mode hors ligne'); return false; }
+  if (typeof Peer === 'undefined') { homeStatus('⚠ Réseau indisponible — essaie le mode Survival'); return false; }
   return true;
 }
 // Serveurs STUN + relais TURN gratuits : sans TURN, deux joueurs derrière des box
@@ -7530,7 +7940,7 @@ document.getElementById('btn-start').onclick = () => {
 
 // Nom du personnage sélectionné, affiché sous l'aperçu 3D
 const skinNameEl = document.getElementById('skin-name');
-const updateSkinName = () => { skinNameEl.textContent = (SKINS[mySkin] || {}).name || ''; };
+const updateSkinName = () => { skinNameEl.innerHTML = '<span></span><small>👆 ' + (IS_TOUCH ? 'touche' : 'clique') + ' le perso : vestiaire</small>'; skinNameEl.firstChild.textContent = (SKINS[mySkin] || {}).name || ''; };
 updateSkinName();
 // Aperçu secret : 5 clics rapides sur le titre montrent le Monstre sur l'accueil (re-5 clics ou
 // choisir un skin pour revenir). Ne touche ni mySkin ni la sauvegarde.
@@ -7555,27 +7965,72 @@ document.querySelector('#home h1').addEventListener('click', () => {
   skinNameEl.textContent = monsterPreview ? 'Monstre 🐺' : (SKINS[mySkin] || {}).name || '';
 });
 
-// Choix du skin : pastille de la couleur du haut + nom, sélection mémorisée
-const skinRow = document.getElementById('skin-row');
-SKINS.forEach((s, i) => {
-  if (s.hidden) return; // rôles spéciaux (ex: Monstre) absents du sélecteur normal
-  const b = document.createElement('button');
-  b.className = 'chip' + (i === mySkin ? ' sel' : '');
-  b.innerHTML = `<span class="dot" style="background:#${(s.chip !== undefined ? s.chip : s.zones.top).toString(16).padStart(6, '0')}"></span>${s.name}`;
-  if (s.lvl > profile.level) { b.classList.add('locked'); b.title = 'Débloqué au niveau ' + s.lvl; b.insertAdjacentText('beforeend', ' 🔒' + s.lvl); }
-  b.onclick = () => {
-    if (s.lvl > profile.level) { homeStatus('🔒 ' + s.name + ' se débloque au niveau ' + s.lvl); return; }
-    mySkin = i;
-    localStorage.setItem('zh-skin', i);
-    skinRow.querySelectorAll('.chip').forEach((c, j) => c.classList.toggle('sel', j === i));
-    updateSkinName();
-    if (playerModel.loaded) applySkinToRig(playerModel, i);
-    if (monsterPreview && pvRig) { framePreview(false); pvRig.postBuild = poseReady; }
-    monsterPreview = false; // choisir un skin quitte l'aperçu secret du Monstre
-    if (pvRig) applySkinToRig(pvRig, i); // met à jour l'aperçu
-  };
-  skinRow.appendChild(b);
-});
+// ---------- Vestiaire : toucher le personnage de l'accueil ouvre la liste de tous les personnages ----------
+// Cliquer une carte essaie le perso sur l'aperçu 3D (même verrouillé) ; « Équiper » le garde s'il est débloqué.
+let wardSel = -1;
+const skinHex = s => '#' + (s.chip !== undefined ? s.chip : s.zones.top).toString(16).padStart(6, '0');
+function leaveMonsterPreview() {
+  if (monsterPreview && pvRig) { framePreview(false); pvRig.postBuild = poseReady; }
+  monsterPreview = false; // choisir un skin quitte l'aperçu secret du Monstre
+}
+function equipSkin(i) {
+  if (!skinOwned(i)) return;
+  mySkin = i;
+  localStorage.setItem('zh-skin', i);
+  cloudSave();
+  updateSkinName();
+  if (playerModel.loaded) applySkinToRig(playerModel, i);
+  leaveMonsterPreview();
+  if (pvRig) applySkinToRig(pvRig, i); // met à jour l'aperçu
+}
+function renderWardrobe() {
+  const grid = $('wd-grid');
+  grid.innerHTML = '';
+  SKINS.forEach((s, i) => {
+    if (s.hidden) return; // rôles spéciaux (ex: Monstre) absents du vestiaire
+    const own = skinOwned(i), b = document.createElement('button');
+    b.className = 'wd-card' + (own ? '' : ' lock') + (i === mySkin ? ' eq' : '') + (i === wardSel ? ' sel' : '');
+    b.style.setProperty('--c', skinHex(s));
+    let sub = own ? (i === mySkin ? 'Équipé' : 'Débloqué') : skinHow(s), bar = '';
+    if (!own && s.quest) {
+      const v = Math.min(s.quest[1], profile.stats[s.quest[0]] || 0);
+      bar = '<span class="qb"><i style="width:' + (v / s.quest[1] * 100) + '%"></i></span>';
+      sub += ' (' + v + '/' + s.quest[1] + ')';
+    }
+    b.innerHTML = '<span class="tag">' + (i === mySkin ? '✅' : own ? '' : '🔒') + '</span><span class="av">' + s.name[0] + '</span><b></b><small></small>' + bar;
+    b.querySelector('b').textContent = s.name;
+    b.querySelector('small').textContent = sub;
+    b.onclick = () => {
+      wardSel = i;
+      ensurePreviewRig(); leaveMonsterPreview();
+      applySkinToRig(pvRig, i);
+      skinNameEl.textContent = s.name + (own ? '' : ' 🔒');
+      renderWardrobe();
+    };
+    grid.appendChild(b);
+  });
+  const s = SKINS[wardSel], own = skinOwned(wardSel), eq = $('wd-equip');
+  $('wd-info').innerHTML = '<b></b><span></span>';
+  $('wd-info').querySelector('b').textContent = s ? s.name : '';
+  $('wd-info').querySelector('span').textContent = !s ? '' : own ? (wardSel === mySkin ? 'Ton personnage actuel' : 'Débloqué : prêt à équiper') : 'Pour le débloquer : ' + skinHow(s);
+  eq.disabled = !own || wardSel === mySkin;
+  eq.textContent = !own ? '🔒 Verrouillé' : wardSel === mySkin ? '✅ Équipé' : 'Équiper';
+}
+function openWardrobe() {
+  wardSel = mySkin;
+  $('wardrobe').classList.add('on'); document.body.classList.add('wd-open');
+  renderWardrobe();
+  const sel = $('wd-grid').querySelector('.sel'); if (sel) sel.scrollIntoView({ block: 'nearest' });
+}
+function closeWardrobe() {
+  if (!$('wardrobe').classList.contains('on')) return false;
+  $('wardrobe').classList.remove('on'); document.body.classList.remove('wd-open');
+  if (pvRig && !monsterPreview) applySkinToRig(pvRig, mySkin); // on remet le perso équipé sur l'aperçu
+  updateSkinName();
+  return true;
+}
+$('wd-equip').onclick = () => { equipSkin(wardSel); renderWardrobe(); };
+$('wd-close').onclick = closeWardrobe;
 
 // Bouton plein écran (accueil) — bascule et adapte l'icône
 const btnFs = document.getElementById('btn-fullscreen');
@@ -7643,9 +8098,10 @@ addEventListener('popstate', () => {
   }
   if (ctrlEditing) { closeCtrlEdit(false); return; } // éditeur de commandes : fermer sans garder
   if (pfTab) { closeProfile(); return; }              // fenêtre Profil
-  // panneaux de l'accueil (duel, paramètres, skins) : les refermer
-  for (const id of ['settings-panel', 'skin-panel'])
-    setPanel(document.getElementById(id), false);
+  if (psTab) { closePass(); return; }                 // passe de combat
+  if (closeWardrobe()) return;                        // vestiaire
+  // panneaux de l'accueil (duel, paramètres) : les refermer
+  setPanel(document.getElementById('settings-panel'), false);
   duelChoiceEl.style.display = 'none';
 });
 
@@ -7653,9 +8109,8 @@ addEventListener('popstate', () => {
 document.querySelectorAll('[data-quality]').forEach(b => b.onclick = () => applyQuality(b.dataset.quality));
 applyQuality(quality); // resurligne le bouton actif maintenant que le DOM est prêt
 
-// Panneaux ⚙ paramètres (haut droite) et 🎭 skin (bas gauche)
+// Panneau ⚙ paramètres (haut droite)
 const settingsPanel = document.getElementById('settings-panel');
-const skinPanel = document.getElementById('skin-panel');
 // Ouverture avec rebond, fermeture en fondu (la classe « closing » joue l'animation de sortie avant de retirer « open »)
 function setPanel(el, open) {
   if (open) { clearTimeout(el._ct); el.classList.remove('closing'); el.classList.add('open'); }
@@ -7667,11 +8122,6 @@ function setPanel(el, open) {
 const panelOpen = el => el.classList.contains('open') && !el.classList.contains('closing');
 document.getElementById('btn-settings').onclick = () => {
   setPanel(settingsPanel, !panelOpen(settingsPanel));
-  setPanel(skinPanel, false);
-};
-document.getElementById('btn-skin').onclick = () => {
-  setPanel(skinPanel, !panelOpen(skinPanel));
-  setPanel(settingsPanel, false);
 };
 [...document.getElementById('home-left').children].forEach((c, i) => c.style.setProperty('--i', i));   // entrée en cascade du menu d'accueil
 const chkFps = document.getElementById('chk-fps');
@@ -7715,7 +8165,7 @@ chkMusic.onchange = () => {
 
 // ---------- Sons d'interface + musique d'accueil + arrivée du signal au chargement ----------
 // Le son démarre au 1er geste (règle des navigateurs) ; survol et clic des boutons de menu ont leur petit bruit.
-const UI_SEL = '.menu-btn, .chip, .icon-btn, .team-btn, .wcard, #btn-skin';
+const UI_SEL = '.menu-btn, .chip, .icon-btn, .team-btn, .wcard, #btn-pass, .wd-card';
 let uiLastHover = null;
 const uiMenuVisible = el => !gameStarted || !!el.closest('#home, #lobby, #duel-choice, .panel, #ctrl-edit');
 addEventListener('pointerdown', () => { setAudioPaused(document.hidden); ensureAudio(); if (!gameStarted) startMenuMusic(); }, true); // un geste prouve que la page est au premier plan
@@ -8015,16 +8465,20 @@ pvCanvasEl.style.touchAction = 'none';
 let pvDrag = null, pvAutoSpin = true, pvIdleT = 0;
 pvCanvasEl.addEventListener('pointerdown', e => {
   if (!pvRig) return;
-  pvDrag = { x: e.clientX, rot: pvRig.model.rotation.y };
+  pvDrag = { x: e.clientX, rot: pvRig.model.rotation.y, t: performance.now(), moved: 0 };
   pvAutoSpin = false;
   pvCanvasEl.style.cursor = 'grabbing';
   pvCanvasEl.setPointerCapture(e.pointerId);
 });
 pvCanvasEl.addEventListener('pointermove', e => {
-  if (pvDrag && pvRig) pvRig.model.rotation.y = pvDrag.rot + (e.clientX - pvDrag.x) * 0.02;
+  if (pvDrag && pvRig) { pvRig.model.rotation.y = pvDrag.rot + (e.clientX - pvDrag.x) * 0.02; pvDrag.moved = Math.max(pvDrag.moved, Math.abs(e.clientX - pvDrag.x)); }
 });
 const pvEndDrag = () => { pvDrag = null; pvIdleT = 0; pvCanvasEl.style.cursor = 'grab'; };
-pvCanvasEl.addEventListener('pointerup', pvEndDrag);
+pvCanvasEl.addEventListener('pointerup', () => {
+  // simple toucher (pas un glisser pour le faire tourner) : ouvre le vestiaire
+  if (pvDrag && pvDrag.moved < 8 && performance.now() - pvDrag.t < 400 && !$('wardrobe').classList.contains('on')) { uiClick(); openWardrobe(); }
+  pvEndDrag();
+});
 pvCanvasEl.addEventListener('pointercancel', pvEndDrag);
 const pvClock = new THREE.Clock();
 (function pvLoop() {
@@ -8125,6 +8579,7 @@ function cloudData() {
   return {
     name: cloudName(), level: profile.level | 0, xp: profile.xp | 0, total: totalXpOf(profile.level, profile.xp) | 0,
     best: profile.best | 0, title: profile.title | 0, badges: profile.badges.slice(0, 64), stats: profile.stats, cos: profile.cos,
+    quests: profile.quests, skin: mySkin | 0,
     upd: fb.fs.serverTimestamp()
   };
 }
@@ -8145,6 +8600,8 @@ async function onFbUser(u) {
         profile.title = d.title | 0 || 1;
         profile.badges = Array.isArray(d.badges) ? d.badges : [];
         Object.assign(profile.stats, d.stats || {}); Object.assign(profile.cos, d.cos || {});
+        if (d.quests && d.quests.day) profile.quests = d.quests;
+        if (typeof d.skin === 'number' && skinOwned(d.skin) && d.skin !== mySkin) equipSkin(d.skin);
         if (!myPseudo && d.name) { myPseudo = d.name; localStorage.setItem('zh-pseudo', myPseudo); }
         saveProfile(true);
       } else cloudSave(true);
@@ -8152,6 +8609,7 @@ async function onFbUser(u) {
     applyCos(); updateXpHud();
   }
   if (pfTab) renderProfile();
+  if (psTab) renderPass();
 }
 // Erreurs Firebase → phrases claires
 const FB_ERR = {
@@ -8207,11 +8665,6 @@ let pfTab = null;
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 function openProfile(tab = 'compte') { pfTab = tab; $('profile-modal').classList.add('on'); fbInit(); renderProfile(); }
 function closeProfile() { pfTab = null; $('profile-modal').classList.remove('on'); }
-function nextRewards() {
-  const out = [];
-  for (let l = profile.level + 1; l <= profile.level + 40 && out.length < 3; l++) { const u = unlocksAt(l); if (u.length) out.push('Niv. ' + l + ' : ' + u.join(', ')); }
-  return out;
-}
 async function renderProfile() {
   if (!pfTab) return;
   const need = xpForLevel(profile.level), head = $('pf-head');
@@ -8222,16 +8675,15 @@ async function renderProfile() {
   document.querySelectorAll('#pf-tabs [data-pf]').forEach(b => b.classList.toggle('sel', b.dataset.pf === pfTab));
   const body = $('pf-body'), lv = profile.level;
   if (pfTab === 'compte') {
-    const s = profile.stats, nx = nextRewards();
+    const s = profile.stats;
     const stats = '<div class="pf-stats">' + [['Victoires', s.wins], ['Défaites', s.losses], ['Éliminations', s.kills], ['Dévorés (monstre)', s.devoured],
       ['Leviers', s.levers], ['Point B atteint', s.escapes], ['Parties', s.games], ['Badges', profile.badges.length + ' / ' + BADGES.length]]
       .map(([k, v]) => '<div><b>' + (v || 0) + '</b>' + k + '</div>').join('') + '</div>';
     const rules = '<div class="muted">Victoire +' + XP.win + ' · Défaite ' + XP.loss + ' (sans perdre de niveau) · Élimination +' + XP.kill
       + ' · Levier +' + XP.lever + ' · Point B +' + XP.escape + ' · Survivant dévoré +' + XP.devour + '</div>';
-    const next = nx.length ? '<div><b>Prochaines récompenses</b><br>' + nx.map(esc).join('<br>') + '</div>' : '';
     if (fbUser) {
       body.innerHTML = '<div class="ok">✅ Connecté : ' + esc(fbUser.email || fbUser.displayName || 'compte') + ' — ta progression est sauvegardée en ligne.</div>'
-        + stats + next + rules + '<div class="row"><button class="chip" id="pf-logout">Se déconnecter</button></div>';
+        + stats + rules + '<div class="row"><button class="chip" id="pf-logout">Se déconnecter</button></div>';
       $('pf-logout').onclick = () => fb.au.signOut(fb.auth);
     } else {
       body.innerHTML = '<div>Connecte-toi pour <b>sauvegarder ta progression en ligne</b>, la retrouver sur tous tes appareils et <b>apparaître au classement</b>.</div>'
@@ -8240,7 +8692,7 @@ async function renderProfile() {
         + '<div class="row"><input id="pf-email" type="email" placeholder="E-mail" autocomplete="email"></div>'
         + '<div class="row"><input id="pf-pass" type="password" placeholder="Mot de passe (6 caractères min.)" autocomplete="current-password"></div>'
         + '<div class="row"><button class="menu-btn small" id="pf-login">Se connecter</button><button class="menu-btn small" id="pf-signup">Créer un compte</button><button class="chip" id="pf-reset">Mot de passe oublié ?</button></div>'
-        + '<div class="err"></div>' + stats + next + rules;
+        + '<div class="err"></div>' + stats + rules;
       $('pf-google').onclick = fbGoogle;
       $('pf-login').onclick = () => fbEmail(false);
       $('pf-signup').onclick = () => fbEmail(true);
@@ -8288,7 +8740,63 @@ async function renderProfile() {
   }
 }
 $('btn-profile').onclick = () => openProfile();
-$('home-level').onclick = () => openProfile();
+// ---------- Passe de combat : ce que l'XP rapporte, niveau par niveau + quêtes ----------
+let psTab = null;
+function passRewards(l) {   // récompenses d'un niveau : [icône (ou couleur de perso), texte]
+  const out = [];
+  for (const s of SKINS) if (s.lvl === l) out.push({ av: skinHex(s), txt: 'Personnage ' + s.name, big: true });
+  for (const [tl, t] of TITLES) if (tl === l && l > 1) out.push({ ic: '🏷', txt: 'Titre « ' + t + ' »' });
+  const IC = { tracer: '🔫', lamp: '🔦', kfx: '💥', frame: '🖼' };
+  for (const k in COS) for (const [cl, n] of COS[k]) if (cl === l && l > 1) out.push({ ic: IC[k], txt: COS_LABEL[k] + ' « ' + n + ' »' });
+  return out;
+}
+function openPass(tab = 'recompenses') { psTab = tab; $('pass-modal').classList.add('on'); renderPass(); }
+function closePass() { psTab = null; $('pass-modal').classList.remove('on'); }
+function renderPass() {
+  if (!psTab) return;
+  const need = xpForLevel(profile.level), head = $('ps-head'), lv = profile.level;
+  head.querySelector('.lv').textContent = lv;
+  head.querySelector('.ti').textContent = 'Niveau ' + lv + ' · ' + profile.xp + ' / ' + need + ' XP — encore ' + (need - profile.xp) + ' XP pour le niveau ' + (lv + 1);
+  head.querySelector('.bar i').style.width = Math.min(100, profile.xp / need * 100) + '%';
+  document.querySelectorAll('#ps-tabs [data-ps]').forEach(b => b.classList.toggle('sel', b.dataset.ps === psTab));
+  const body = $('ps-body');
+  if (psTab === 'recompenses') {
+    let html = '<div class="muted">Chaque niveau gagné avec l\'XP débloque ces récompenses. Un nouveau personnage tous les 10 niveaux !</div><div class="ps-track">';
+    for (let l = 2; l <= 100; l++) {
+      const rw = passRewards(l);
+      if (!rw.length) continue;
+      html += '<div class="ps-lv' + (l <= lv ? ' done' : '') + (rw.some(r => r.big) ? ' big' : '') + (l === lv + 1 || (l > lv && !html.includes('cur')) ? ' cur' : '') + '" data-l="' + l + '"><div class="n">Niv. ' + l + '</div>'
+        + rw.map(r => '<div class="ps-rw">' + (r.av ? '<span class="av" style="--c:' + r.av + '"></span>' : '<span class="i">' + r.ic + '</span>') + '<span>' + esc(r.txt) + '</span></div>').join('') + '</div>';
+    }
+    body.innerHTML = html + '</div><div class="muted">XP : victoire +' + XP.win + ' · défaite ' + XP.loss + ' · élimination +' + XP.kill + ' · levier +' + XP.lever
+      + ' · point B +' + XP.escape + ' · survivant dévoré +' + XP.devour + ' · créature +' + XP.bot + ' (Brute +' + XP.botTough + ') · quêtes du jour</div>';
+    const cur = body.querySelector('.ps-lv.cur');
+    if (cur) cur.parentNode.scrollLeft = cur.offsetLeft - cur.parentNode.clientWidth / 2 + cur.clientWidth / 2;
+  } else {
+    const qs = dailyQuests(), Q = profile.quests;
+    const now = new Date(), next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1), ms = next - now;
+    let html = '<div class="ps-h">QUÊTES DU JOUR <small>nouvelles dans ' + Math.floor(ms / 3600000) + ' h ' + String(Math.floor(ms / 60000) % 60).padStart(2, '0') + '</small></div>';
+    qs.forEach((q, i) => {
+      const done = Q.done.includes(i), p = Math.min(q.n, Q.p[i] || 0);
+      html += '<div class="ps-q' + (done ? ' ok' : '') + '"><span class="i">' + (done ? '✅' : q.ic) + '</span><div class="t"><b>' + esc(q.txt) + '</b><small>' + p + ' / ' + q.n + '</small>'
+        + '<div class="qb"><i style="width:' + (p / q.n * 100) + '%"></i></div></div><div class="r">+' + q.xp + ' XP</div></div>';
+    });
+    html += '<div class="ps-h">QUÊTES PERMANENTES <small>chacune débloque un personnage</small></div>';
+    SKINS.forEach((s, i) => {
+      if (!s.quest) return;
+      const [k, n, txt] = s.quest, p = Math.min(n, profile.stats[k] || 0), done = p >= n;
+      html += '<div class="ps-q' + (done ? ' ok' : '') + '"><span class="i">' + (done ? '✅' : '🎭') + '</span><div class="t"><b>' + esc(txt) + '</b><small>' + p + ' / ' + n + '</small>'
+        + '<div class="qb"><i style="width:' + (p / n * 100) + '%"></i></div></div><div class="r">' + esc(s.name) + '</div></div>';
+    });
+    body.innerHTML = html;
+  }
+}
+$('btn-pass').onclick = () => openPass();
+$('ps-close').onclick = closePass;
+$('pass-modal').addEventListener('click', e => { if (e.target === $('pass-modal')) closePass(); });
+document.querySelectorAll('#ps-tabs [data-ps]').forEach(b => b.onclick = () => { psTab = b.dataset.ps; renderPass(); });
+addEventListener('keydown', e => { if (e.key === 'Escape') { if (psTab) closePass(); else closeWardrobe(); } });
+updatePassBtn();
 $('pf-close').onclick = closeProfile;
 $('profile-modal').addEventListener('click', e => { if (e.target === $('profile-modal')) closeProfile(); });
 document.querySelectorAll('#pf-tabs [data-pf]').forEach(b => b.onclick = () => { pfTab = b.dataset.pf; renderProfile(); });
