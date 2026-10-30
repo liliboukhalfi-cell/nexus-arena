@@ -3307,6 +3307,11 @@ const profile = {
   cos: jsonLS('zh-cos', { tracer: 0, lamp: 0, kfx: 0, frame: 0 }),
   quests: jsonLS('zh-quests', { day: '', p: [0, 0, 0], done: [] })
 };
+// Compte du créateur du jeu : tout est débloqué (persos, titres, style) sans toucher au niveau ni au classement.
+// On ne garde que l'empreinte SHA-256 de l'e-mail (l'adresse n'apparaît pas dans le code public).
+const OWNER_HASH = '6b0fbc928fc00552b455fecab771288a2c2dfffc778480945d3a5d66c1989a41';
+let ownerMode = localStorage.getItem('zh-owner') === '1';
+const unlockLv = () => ownerMode ? 9999 : profile.level;
 const titleText = (lvl = profile.title) => (TITLES.find(t => t[0] === lvl) || TITLES[0])[1];
 function saveProfile(local = false) {
   localStorage.setItem('zh-level', profile.level);
@@ -5028,7 +5033,7 @@ const SKIN_START = SKINS.findIndex(s => s.name === SKIN_FREE);
 function skinOwned(i) {
   const s = SKINS[i];
   if (!s || s.hidden) return false;
-  if (s.name === SKIN_FREE) return true;
+  if (s.name === SKIN_FREE || ownerMode) return true;
   if (s.lvl) return profile.level >= s.lvl;
   if (s.quest) return (profile.stats[s.quest[0]] || 0) >= s.quest[1];
   return false;
@@ -8591,8 +8596,22 @@ function cloudSave(now = false) {   // regroupe les sauvegardes (au plus une tou
   const go = () => fb.fs.setDoc(fb.fs.doc(fb.db, 'players', fbUser.uid), cloudData()).catch(e => console.warn('Sauvegarde en ligne refusée', e));
   if (now) go(); else cloudT = setTimeout(go, 2000);
 }
+async function sha256Hex(s) {
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+}
 async function onFbUser(u) {
   fbUser = u;
+  // mode créateur : seulement avec l'e-mail vérifié du propriétaire (connexion Google, ou e-mail confirmé)
+  let owner = false;
+  try { owner = !!(u && u.email && u.emailVerified && await sha256Hex(u.email.trim().toLowerCase()) === OWNER_HASH); } catch (e) {}
+  if (owner !== ownerMode) {
+    ownerMode = owner;
+    localStorage.setItem('zh-owner', owner ? '1' : '0');
+    if (owner) feed('👑 Mode créateur : tout est débloqué', 'gold');
+    else if (!skinOwned(mySkin)) equipSkin(SKIN_START);
+    if ($('wardrobe').classList.contains('on')) renderWardrobe();
+  }
   if (u) {
     try {   // compte existant : sa progression fait foi ; nouveau compte : on y verse la progression de cet appareil
       const snap = await fb.fs.getDoc(fb.fs.doc(fb.db, 'players', u.uid));
@@ -8675,7 +8694,7 @@ async function renderProfile() {
   head.querySelector('.ti').textContent = '« ' + titleText() + ' » · ' + profile.xp + ' / ' + need + ' XP';
   head.querySelector('.bar i').style.width = Math.min(100, profile.xp / need * 100) + '%';
   document.querySelectorAll('#pf-tabs [data-pf]').forEach(b => b.classList.toggle('sel', b.dataset.pf === pfTab));
-  const body = $('pf-body'), lv = profile.level;
+  const body = $('pf-body'), lv = unlockLv();
   if (pfTab === 'compte') {
     const s = profile.stats;
     const stats = '<div class="pf-stats">' + [['Victoires', s.wins], ['Défaites', s.losses], ['Éliminations', s.kills], ['Dévorés (monstre)', s.devoured],
@@ -8685,6 +8704,7 @@ async function renderProfile() {
       + ' · Levier +' + XP.lever + ' · Point B +' + XP.escape + ' · Survivant dévoré +' + XP.devour + '</div>';
     if (fbUser) {
       body.innerHTML = '<div class="ok">✅ Connecté : ' + esc(fbUser.email || fbUser.displayName || 'compte') + ' — ta progression est sauvegardée en ligne.</div>'
+        + (ownerMode ? '<div class="ok">👑 Mode créateur : tous les personnages, titres et styles sont débloqués.</div>' : '')
         + stats + rules + '<div class="row"><button class="chip" id="pf-logout">Se déconnecter</button></div>';
       $('pf-logout').onclick = () => fb.au.signOut(fb.auth);
     } else {
