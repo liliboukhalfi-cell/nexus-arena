@@ -1086,7 +1086,21 @@
   </div>
 </div>
 
-<script>window.__errs = []; window.onerror = (m, s, l, c) => { window.__errs.push(m + ' @' + l + ':' + c); };</script>
+<script>
+window.__errs = [];
+// Si le jeu plante AVANT d'être prêt (le clic sur « Touche pour entrer » ne ferait alors rien), on affiche l'erreur à l'écran.
+window.__gameReady = false;
+window.__showErr = function (msg) {
+  try {
+    var d = document.getElementById('zh-err');
+    if (!d) { d = document.createElement('div'); d.id = 'zh-err'; d.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:99999;background:#300;color:#fff;font:12px/1.4 monospace;padding:8px 10px;border:1px solid #f66;border-radius:8px;white-space:pre-wrap;max-height:40vh;overflow:auto'; document.body.appendChild(d); }
+    d.textContent = '⚠ Le jeu n\'a pas pu démarrer. Envoie une capture de ce message à Claude :\n' + msg;
+  } catch (e) {}
+};
+window.onerror = function (m, s, l, c) { window.__errs.push(m + ' @' + l + ':' + c); if (!window.__gameReady) window.__showErr(m + ' (ligne ' + l + ')'); };
+addEventListener('error', function (e) { if (e.target && e.target.tagName === 'SCRIPT' && !window.__gameReady) window.__showErr('Fichier non chargé : ' + (e.target.src || 'script') + '\n(connexion internet ou site bloqué ?)'); }, true);
+addEventListener('unhandledrejection', function (e) { if (!window.__gameReady) window.__showErr('Erreur : ' + (e.reason && e.reason.message || e.reason)); });
+</script>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script type="importmap">
 { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
@@ -9269,6 +9283,7 @@ setTimeout(fbInit, 2500);   // reconnecte la session sans ralentir le chargement
 
 const OVERLAY0 = { h1: $('overlay').querySelector('h1').textContent, intro: $('intro').innerHTML, go: $('go-label').textContent };   // textes d'origine de l'écran de départ
 initEndUi();
+window.__gameReady = true;
 applyFx(quality);   // tous les modules d'effets sont définis : on règle les effets selon la qualité
 animate();
 updateHud();
