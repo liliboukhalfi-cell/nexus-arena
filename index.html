@@ -1079,6 +1079,7 @@
   ZQSD / WASD : bouger · Souris : viser · Clic : tirer · R : recharger · Maj : courir · Espace : sauter · V : vue 1ʳᵉ/3ᵉ personne</p>
   <div id="match-xp"></div>
   <div class="go" id="go-label">Clique pour combattre</div>
+  <button class="menu-btn small" id="btn-quit-game" style="margin-top:14px">🚪 Quitter la partie</button>
   <div id="end-actions" style="display:none">
     <button class="menu-btn primary" id="btn-replay">🔁 Rejouer</button>
     <button class="menu-btn small" id="btn-invite">🔗 Inviter</button>
@@ -1097,7 +1098,10 @@ import { clone as skeletonClone } from 'https://unpkg.com/three@0.160.0/examples
 
 // ---------- Audio (synthèse WebAudio, aucun fichier) ----------
 let audioCtx = null, outBus = null;
-let introActive = !/[?&]nointro\b/.test(location.search); // porte « Touche pour entrer » + intro horreur (pas de musique d'accueil avant la fin)
+// Quitter une partie recharge la page pour tout arrêter proprement ; on revient alors directement à l'accueil, sans la porte.
+const SKIP_GATE = (() => { try { const v = sessionStorage.getItem('zh-skip-gate') === '1'; sessionStorage.removeItem('zh-skip-gate'); return v; } catch (e) { return false; } })();
+function reloadToMenu() { try { sessionStorage.setItem('zh-skip-gate', '1'); } catch (e) {} location.reload(); }
+let introActive = !/[?&]nointro\b/.test(location.search) && !SKIP_GATE; // porte « Touche pour entrer » + intro horreur (pas de musique d'accueil avant la fin)
 const MASTER_BOOST = /[?&]silent\b/.test(location.search) ? 0 : 3.6; // gain général : les sons de synthèse sont créés très bas, on les remonte d'un coup (?silent = tests automatisés, aucun son)
 // Tout le son passe par un gain général puis un limiteur : beaucoup plus fort, sans saturer.
 function bus() {
@@ -2870,11 +2874,12 @@ function updateSpectate(dt) {   // true = la caméra suit un survivant (appelée
 function initEndUi() {
   $('spec-prev').onclick = () => specPick(-1);
   $('spec-next').onclick = () => specPick(1);
-  $('spec-quit').onclick = () => location.reload();
+  $('spec-quit').onclick = quitToMenu;
   addEventListener('keydown', e => { if (spec.on && (e.code === 'ArrowRight' || e.code === 'ArrowLeft' || e.code === 'Space')) { specPick(e.code === 'ArrowLeft' ? -1 : 1); e.preventDefault(); } });
   $('btn-invite').onclick = e => { e.stopPropagation(); shareInvite($('go-label')); };
   $('btn-lobby-invite').onclick = () => shareInvite($('lobby-info'));
   $('btn-replay').onclick = e => { e.stopPropagation(); startRematch(); };
+  $('btn-quit-game').onclick = e => { e.stopPropagation(); quitToMenu(); };
 }
 
 // ---------- Récapitulatif de fin de partie, Rejouer, lien d'invitation ----------
@@ -6045,8 +6050,8 @@ for (const id of CTRL_IDS) {
 
 const overlay = $('overlay');
 overlay.addEventListener('click', e => {
-  if (e.target.closest && e.target.closest('#end-actions')) return;   // Rejouer / Inviter : ne pas quitter la partie
-  if (!player.alive) { location.reload(); return; }
+  if (e.target.closest && e.target.closest('#end-actions, #btn-quit-game')) return;   // Rejouer / Inviter : ne pas quitter la partie
+  if (!player.alive) { quitToMenu(); return; }
   ensureAudio();
   if (IS_TOUCH) { // pas de pointer lock sur mobile : on lance directement
     goFullscreenLandscape();
@@ -7307,20 +7312,36 @@ function removeRemote(id) {
   updateLobby();
 }
 
+// Quitter une PARTIE en cours : on prévient les autres, puis on recharge la page (réseau, boucle de jeu, vagues, sons : tout s'arrête)
+function quitToMenu() {
+  try { if (isRoomHost) broadcast({ t: 'closed' }); else netSelf({ t: 'leave', id: myId }); } catch (e) {}
+  setTimeout(reloadToMenu, 200);   // laisse partir le message avant de recharger
+}
+// Quitter un SALON d'attente (bouton « Quitter », flèche retour) : retour immédiat à l'accueil, compte à rebours annulé
+function leaveLobby() {
+  if (gameStarted) return;
+  try { if (isRoomHost) broadcast({ t: 'closed' }); else netSelf({ t: 'leave', id: myId }); } catch (e) {}
+  retourAccueil('');
+}
 // Retour à l'accueil depuis un salon (refus, code erroné, salon fermé, bouton Quitter)
 function retourAccueil(msg) {
+  lobbyCdId++;   // annule le compte à rebours du salon : sinon il lançait la partie après qu'on est parti
+  for (const id of ['lobby-timer']) { const el = document.getElementById(id); if (el) el.textContent = ''; }
+  const bar = document.getElementById('lobby-bar'); if (bar) { bar.classList.remove('on', 'hot'); if (bar.firstElementChild) bar.firstElementChild.style.width = '0%'; }
+  relaySeen.clear(); relayRejected.clear();
   transition(() => {
     document.getElementById('lobby').style.display = 'none';
     document.getElementById('home').style.display = 'flex';
   });
   homeStatus(msg || '');
   relayRoom = null;
-  try { peer && peer.destroy(); } catch (e) {}
-  peer = null;
+  const oldPeer = peer; peer = null;
+  setTimeout(() => { try { oldPeer && oldPeer.destroy(); } catch (e) {} }, 400);   // laisse partir le message « je quitte »
   conns.length = 0;
   remotePlayers.forEach((r, id) => removeRemote(id));
-  duelMode = null; myTeam = 0; isRoomHost = false; pendingMode = null; lobbyEndsAt = null;
-  duelTeams.clear(); extNames.clear();
+  duelMode = null; myTeam = 0; isRoomHost = false; pendingMode = null; lobbyEndsAt = null; joinedHub = false;
+  duelTeams.clear(); duelElim.clear(); extNames.clear(); duelOver = false;
+  try { updateOwnerUi(); } catch (e) {}
 }
 const fullMsg = () => duelMode === '1v1' || duelMode === '2v2' ? '⚠ Le duel est déjà plein' : '⚠ Le salon est déjà plein';
 function onMsg(conn, d) {
@@ -7540,7 +7561,7 @@ function setupConn(conn, asHost) {
     const i = conns.indexOf(conn);
     if (i >= 0) conns.splice(i, 1);
     for (const [id, r] of remotePlayers) if (r.conn === conn) removeRemote(id);
-    if (!authority && gameStarted) { showMsg('⚠ Hôte déconnecté'); setTimeout(() => location.reload(), 2500); }
+    if (!authority && gameStarted) { showMsg('⚠ Hôte déconnecté'); setTimeout(reloadToMenu, 2500); }
     else if (!asHost && !gameStarted && document.getElementById('lobby').style.display === 'flex') retourAccueil('⚠ Le salon s\'est fermé');
     updateLobby();
   };
@@ -7740,10 +7761,13 @@ function openLobbyScreen(opts) {
   document.getElementById('lobby-info').textContent = opts.info;
   document.getElementById('btn-start').style.display = opts.startBtn ? 'block' : 'none';
 }
+let lobbyCdId = 0;   // numéro du compte à rebours en cours : quitter le salon l'invalide
 function startLobbyCountdown(seconds, onEnd) {
   const el = document.getElementById('lobby-timer'), bar = document.getElementById('lobby-bar'), fill = bar.firstElementChild;
   let left = Math.max(0, Math.round(seconds));
+  const myCd = ++lobbyCdId;
   const tick = () => {
+    if (myCd !== lobbyCdId) return;   // on a quitté le salon (ou un autre compte à rebours a pris le relais)
     if (gameStarted) { el.textContent = ''; bar.classList.remove('on', 'hot'); return; }
     if (left <= 0) { el.textContent = 'Démarrage…'; fill.style.width = '0%'; bar.classList.remove('hot'); if (onEnd) onEnd(); return; }
     el.textContent = '⏱ La partie démarre dans ' + left + ' s';
@@ -8079,11 +8103,7 @@ function updateTeamRow() {
   b1.disabled = myTeam !== 1 && counts[1] >= 2;
 }
 // Quitter le salon : l'hôte le ferme pour tout le monde, un client prévient l'hôte
-document.getElementById('btn-lobby-leave').onclick = () => {
-  if (gameStarted) return;
-  if (isRoomHost) { broadcast({ t: 'closed' }); setTimeout(() => retourAccueil(''), 300); }
-  else { netSelf({ t: 'leave', id: myId }); setTimeout(() => retourAccueil(''), 150); }
-};
+document.getElementById('btn-lobby-leave').onclick = leaveLobby;
 document.getElementById('btn-team-0').onclick = () => { myTeam = 0; sendTeam(); updateTeamRow(); };
 document.getElementById('btn-team-1').onclick = () => { myTeam = 1; sendTeam(); updateTeamRow(); };
 
@@ -8231,45 +8251,9 @@ addEventListener('popstate', () => {
   const now = Date.now();
   if (now - lastPopstate < 800) return; // anti-rebond (déclenchements en rafale)
   lastPopstate = now;
-  if (gameStarted) {
-    // Sortie propre vers l'accueil, sans recharger la page (ne coupe jamais
-    // un duel/partie en cours à cause d'un événement involontaire)
-    if (!IS_TOUCH) { try { document.exitPointerLock(); } catch (e) {} }
-    setScoped(false);
-    gameStarted = false;
-    duelMode = null; duelOver = true;
-    clearExtinctionMaze();
-    // Extinction : tout remettre en état pour les autres modes
-    applyExtinctionLights(false);
-    gun.visible = true;
-    flashlight.intensity = 0; player.flashOn = false;
-    monsterIds.clear(); extNames.clear(); extOver = false; extHealT = 0;
-    const mm = document.getElementById('minimap'); if (mm) mm.style.display = 'none';
-    toggleExtBigMap(false);
-    const mb = document.getElementById('mblind'); if (mb) mb.style.opacity = 0;
-    if (playerModel && playerModel.skinIdx === MONSTER_SKIN) applySkinToRig(playerModel, mySkin);
-    relayRoom = null;
-    try { peer && peer.destroy(); } catch (e) {}
-    conns.length = 0;
-    remotePlayers.forEach((r, id) => { if (r.rig) scene.remove(r.rig.model); });
-    remotePlayers.clear();
-    document.getElementById('overlay').style.display = 'none';
-    document.getElementById('lobby').style.display = 'none';
-    document.getElementById('home').style.display = 'flex';
-    document.getElementById('hearts').style.display = 'none';
-    homeStatus('');
-    return;
-  }
+  if (gameStarted) { quitToMenu(); return; }   // en partie : on quitte pour de vrai (tout est arrêté)
   const lobby = document.getElementById('lobby');
-  if (getComputedStyle(lobby).display !== 'none') { // dans un salon : retour à l'accueil
-    relayRoom = null;
-    try { peer && peer.destroy(); } catch (e) {}
-    conns.length = 0;
-    lobby.style.display = 'none';
-    document.getElementById('home').style.display = 'flex';
-    homeStatus('');
-    return;
-  }
+  if (getComputedStyle(lobby).display !== 'none') { leaveLobby(); return; }   // dans un salon : retour à l'accueil
   if (ctrlEditing) { closeCtrlEdit(false); return; } // éditeur de commandes : fermer sans garder
   if (typeof sensOpen === 'function' && sensOpen()) { closeSens(); return; }   // page sensibilité
   if (pfTab) { closeProfile(); return; }              // fenêtre Profil
