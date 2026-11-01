@@ -426,7 +426,7 @@
   #pm-input:focus { outline: none; border-color: #ffe98a; box-shadow: 0 0 16px rgba(255,233,138,.25); }
   #pseudo-modal .menu-btn { width: 100%; }
   /* ---------- Salon : joueurs présents, code copiable, compte à rebours en barre ---------- */
-  #lobby-roster { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; width: min(820px, 94vw); margin: 2px 0; }
+  #lobby-roster { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 26px 10px; padding-bottom: 18px; width: min(820px, 94vw); margin: 2px 0; }
   .slot { display: flex; align-items: center; gap: 10px; padding: 6px 12px; min-height: 44px; border-radius: 12px; text-align: left;
     border: 2px solid rgba(127,212,255,.32); background: rgba(127,212,255,.07); font-family: var(--font-ui); font-size: 22px; font-weight: 600; letter-spacing: .5px; }
   .slot .av { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 18px; font-weight: 700;
@@ -443,12 +443,75 @@
   .slot .who { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.05; }
   .slot .ti { font-size: .52em; font-weight: 500; letter-spacing: .5px; color: #ffe98a; opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .slot .ti:empty { display: none; }
-  /* Cadres du salon (cosmétique) */
-  .slot.fr-1 { border-style: dashed; border-color: #9aa4b0; box-shadow: inset 0 0 0 2px rgba(10,12,16,.9), inset 0 0 0 3px rgba(154,164,176,.5); }
-  .slot.fr-2 { border-color: #bfeaff; box-shadow: 0 0 12px rgba(191,234,255,.45), inset 0 0 14px rgba(191,234,255,.18); }
-  .slot.fr-3 { border-color: #ff7a2a; box-shadow: 0 0 14px rgba(255,90,20,.5), inset 0 -10px 16px rgba(255,90,20,.18); }
-  .slot.fr-4 { border-color: #b8913a; background: linear-gradient(135deg, rgba(184,145,58,.18), rgba(60,44,12,.25)); box-shadow: inset 0 0 0 1px rgba(255,220,140,.35); }
-  .slot.fr-5 { border-color: #000; background: radial-gradient(circle at 20% 50%, rgba(120,60,200,.25), rgba(0,0,0,.6)); box-shadow: 0 0 16px rgba(110,40,200,.55), inset 0 0 18px #000; }
+  /* Cadres du salon (cosmétique) : bien visibles, du plus simple au plus rare */
+  .slot { position: relative; }
+  .slot .fx { display: none; }
+  /* 1 · Barbelés : fil de fer barbelé en haut et en bas */
+  .slot.fr-1 { border: 4px solid #8d96a1; border-radius: 6px; background: rgba(22,24,28,.9);
+    box-shadow: 0 0 0 2px #14161a, 0 0 16px rgba(160,170,182,.5), inset 0 0 0 2px #14161a; }
+  .slot.fr-1::before, .slot.fr-1::after { content: ''; position: absolute; left: -7px; right: -7px; height: 16px; pointer-events: none; background-repeat: repeat-x; background-size: 30px 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='16' viewBox='0 0 30 16'%3E%3Cpath d='M0 8Q7.5 1 15 8T30 8' stroke='%23a9b2bc' fill='none' stroke-width='2.2'/%3E%3Cpath d='M10 2l10 12M20 2L10 14' stroke='%23f0f3f6' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E"); }
+  .slot.fr-1::before { top: -10px; } .slot.fr-1::after { bottom: -10px; }
+  /* 2 · Givre : cristaux de glace qui scintillent */
+  .slot.fr-2 { border: 4px solid #c4ecff; background: linear-gradient(160deg, rgba(196,236,255,.32), rgba(50,110,165,.22));
+    box-shadow: 0 0 22px rgba(150,220,255,.8), inset 0 0 20px rgba(196,236,255,.45); animation: frostpulse 2.6s ease-in-out infinite alternate; }
+  @keyframes frostpulse { to { box-shadow: 0 0 34px rgba(190,240,255,1), inset 0 0 28px rgba(196,236,255,.65); } }
+  .slot.fr-2::before, .slot.fr-2::after { content: '✻'; position: absolute; font-size: 26px; line-height: 1; color: #f0fbff; text-shadow: 0 0 10px #8fdcff, 0 0 18px #8fdcff; pointer-events: none; animation: twinkle 1.8s ease-in-out infinite; }
+  .slot.fr-2::before { left: -10px; top: -12px; } .slot.fr-2::after { right: -10px; bottom: -12px; animation-delay: .9s; }
+  @keyframes twinkle { 50% { opacity: .45; transform: scale(.8) rotate(25deg); } }
+  /* 3 · Braise : flammes et étincelles qui montent */
+  .slot.fr-3 { border: 4px solid #ff6d1c; background: linear-gradient(0deg, rgba(255,95,20,.5), rgba(45,10,0,.55) 75%);
+    box-shadow: 0 0 24px rgba(255,100,20,.85), inset 0 -16px 22px rgba(255,130,30,.5); animation: emberglow 1.1s ease-in-out infinite alternate; }
+  @keyframes emberglow { to { box-shadow: 0 0 36px rgba(255,140,40,1), inset 0 -22px 28px rgba(255,160,40,.65); border-color: #ffa040; } }
+  .slot.fr-3::before { content: ''; position: absolute; inset: 0; border-radius: 8px; pointer-events: none; clip-path: inset(0 round 8px);
+    background-image: radial-gradient(circle, #ffe08a 0 1.6px, transparent 2.6px), radial-gradient(circle, #ff9a3c 0 1.2px, transparent 2.2px), radial-gradient(circle, #fff1b0 0 1px, transparent 2px);
+    background-size: 26px 44px, 38px 60px, 19px 33px; background-position: 4px 0, 14px 20px, 9px 8px; animation: embers 2.2s linear infinite; }
+  @keyframes embers { to { background-position: 4px -88px, 14px -100px, 9px -66px; } }
+  /* 4 · Or terni : uniquement une aura dorée qui respire */
+  .slot.fr-4 { border: 2px solid rgba(255,220,130,.45); border-radius: 12px; background: linear-gradient(135deg, rgba(74,57,18,.55), rgba(40,30,8,.6));
+    box-shadow: 0 0 18px 3px rgba(255,214,110,.95), 0 0 56px 8px rgba(240,190,70,.6); animation: goldaura 2.4s ease-in-out infinite alternate; }
+  @keyframes goldaura { to { box-shadow: 0 0 30px 6px rgba(255,226,140,1), 0 0 88px 14px rgba(245,196,80,.8); } }
+  /* 5 · Néant : le plus rare — uniquement une grande aura qui pulse du violet au cyan */
+  .slot.fr-5 { border: 2px solid rgba(190,150,255,.4); border-radius: 12px; background: linear-gradient(rgba(10,5,24,.9), rgba(18,8,36,.9));
+    box-shadow: 0 0 20px 4px rgba(123,44,255,1), 0 0 64px 10px rgba(0,229,255,.6); animation: voidaura 2.8s ease-in-out infinite alternate; }
+  @keyframes voidaura { to { box-shadow: 0 0 32px 7px rgba(255,61,242,1), 0 0 96px 16px rgba(0,229,255,.85); } }
+  /* 6 · Symbiote (comptes créateur) : matière noire qui déborde et coule, yeux et crocs */
+  .slot.fr-6 { border: 4px solid #0d0818; border-radius: 12px; background: linear-gradient(180deg, #34245a, #231845 60%, #170f30);
+    box-shadow: 0 0 0 2px rgba(155,130,255,.75), 0 0 26px rgba(141,90,255,.8), inset 0 0 18px rgba(0,0,0,.85); }
+  .slot.fr-6::before, .slot.fr-6::after { content: ''; position: absolute; left: -6px; right: -6px; pointer-events: none; background-repeat: repeat-x; }
+  .slot.fr-6::before { top: -11px; height: 18px; background-size: 64px 18px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='18' viewBox='0 0 64 18'%3E%3Cpath d='M0 6C8 6 10 6 12 9C13 10.5 13 12 12.5 13C10.5 13.8 10.8 16.5 13.5 16.8C16.2 16.5 16.5 13.8 14.5 13C14 12 14 10.5 15 9C17 6.5 22 6 30 6C40 6 45 6 47 8C48 9 48 10 47.5 10.8C46 11.5 46.2 14 48.5 14.2C50.8 14 51 11.5 49.5 10.8C49 10 49 9 50 8C52 6 58 6 64 6V0H0Z' fill='%230d0818'/%3E%3Cpath d='M0 6C8 6 10 6 12 9C13 10.5 13 12 12.5 13C10.5 13.8 10.8 16.5 13.5 16.8C16.2 16.5 16.5 13.8 14.5 13C14 12 14 10.5 15 9C17 6.5 22 6 30 6C40 6 45 6 47 8C48 9 48 10 47.5 10.8C46 11.5 46.2 14 48.5 14.2C50.8 14 51 11.5 49.5 10.8C49 10 49 9 50 8C52 6 58 6 64 6' fill='none' stroke='%239b82ff' stroke-width='1.4'/%3E%3Cpath d='M11.500 14C11.700 15 12.200 15.700 13 15.900' stroke='%23fff' stroke-opacity='.6' stroke-width='1.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); animation: gooflow 3.2s ease-in-out infinite alternate; }
+  .slot.fr-6::after { bottom: -26px; height: 34px; background-size: 64px 34px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='34' viewBox='0 0 64 34'%3E%3Cpath d='M0 8C5 8 7 8.5 8 11C8.6 13 8.8 16 8.6 19C5 21 5.5 29.5 11 30C16.5 29.5 17 21 13.4 19C13.2 16 13.4 13 14.2 11C15.5 8.5 19 8 24 8C27 8 28.5 8.5 29.3 11C29.8 13 29.8 15 29.5 17C27 18.5 27.5 23.5 31.5 24C35.5 23.5 36 18.5 33.5 17C33.2 15 33.2 13 33.8 11C35 8.5 39 8 44 8C46.5 8 47.8 8.5 48.5 11C49 14 49.2 17 48.8 20C45 22 45.5 32.5 51.5 33C57.5 32.5 58 22 54.2 20C53.8 17 54 14 54.6 11C55.8 8.5 59 8 64 8V0H0Z' fill='%230d0818'/%3E%3Cpath d='M0 8C5 8 7 8.5 8 11C8.6 13 8.8 16 8.6 19C5 21 5.5 29.5 11 30C16.5 29.5 17 21 13.4 19C13.2 16 13.4 13 14.2 11C15.5 8.5 19 8 24 8C27 8 28.5 8.5 29.3 11C29.8 13 29.8 15 29.5 17C27 18.5 27.5 23.5 31.5 24C35.5 23.5 36 18.5 33.5 17C33.2 15 33.2 13 33.8 11C35 8.5 39 8 44 8C46.5 8 47.8 8.5 48.5 11C49 14 49.2 17 48.8 20C45 22 45.5 32.5 51.5 33C57.5 32.5 58 22 54.2 20C53.8 17 54 14 54.6 11C55.8 8.5 59 8 64 8' fill='none' stroke='%239b82ff' stroke-width='1.4'/%3E%3Cpath d='M8.500 24C8.700 27 9.700 28.500 11.500 28.800M47.500 27C47.800 30 49 31.500 51 31.800M30 20.500C30.200 22 31 22.800 32 22.900' stroke='%23fff' stroke-opacity='.6' stroke-width='1.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); animation: gooflow 4.1s ease-in-out infinite alternate-reverse; }
+  @keyframes gooflow { to { transform: translateY(3px); } }
+  .slot.fr-6 > :not(.fx) { position: relative; z-index: 3; }
+  .slot.fr-6 .fx { display: block; position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+  .slot.fr-6 .fx b { position: absolute; top: -9px; width: 30px; height: 16px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='16' viewBox='0 0 30 16'%3E%3Cpath d='M1 2C10 0 22 5 29 15C20 16 8 12 1 2Z' fill='white'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+    filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 10px #a77bff); animation: eyeblink 5.5s infinite; }
+  .slot.fr-6 .fx b:nth-child(1) { left: calc(50% - 34px); } .slot.fr-6 .fx b:nth-child(2) { left: calc(50% + 4px); scale: -1 1; }
+  @keyframes eyeblink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.12); } }
+  .slot.fr-6 .fx::after { content: ''; position: absolute; left: 50%; right: 14px; bottom: -3px; height: 9px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='9' viewBox='0 0 11 9'%3E%3Cpath d='M0 9L5.500 0L11 9Z' fill='%23f4f1fb'/%3E%3C/svg%3E") repeat-x left bottom / 11px 9px; }
+
+  .pf-item.frm { flex-direction: column; align-items: stretch; gap: 12px; padding: 14px 12px 24px; }
+  .pf-item.frm > span:last-child { text-align: center; }
+  .slot.frprev { font-size: 15px; min-height: 36px; padding: 4px 10px; pointer-events: none; }
+  .slot.frprev .av { width: 24px; height: 24px; font-size: 14px; }
+  .pf-lb tr.row { cursor: pointer; } .pf-lb tr.row:hover td { background: rgba(127,212,255,.12); }
+  /* Fiche d'un joueur (ouverte depuis le classement) */
+  .slot.pcard { flex-direction: column; align-items: stretch; gap: 10px; padding: 16px 18px 18px; font-size: 16px; margin: 10px 10px 30px; }
+  .pcard .top { display: flex; align-items: center; gap: 14px; }
+  .pcard .av { width: 58px; height: 58px; font-size: 30px; }
+  .pcard .who { display: flex; flex-direction: column; min-width: 0; }
+  .pcard .pnm { font-family: var(--font-ui); font-size: 30px; font-weight: 700; line-height: 1; overflow: hidden; text-overflow: ellipsis; }
+  .pcard .plv { font-size: 13px; font-weight: 500; opacity: .8; }
+  .pcard .ptitle { text-align: center; font-family: var(--font-title); font-weight: 400; font-size: 27px; letter-spacing: 2px; color: #ffe98a; text-shadow: 0 0 16px rgba(255,214,90,.65);
+    padding: 8px 4px; border-top: 1px solid rgba(255,233,138,.3); border-bottom: 1px solid rgba(255,233,138,.3); }
+  .pcard .pst { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: 11px; font-weight: 500; opacity: .85; text-align: center; }
+  .pcard .pst b { display: block; font-size: 18px; }
+  .pcard .pbadges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; font-weight: 500; opacity: .75; }
+  .pcard .pbadges .b { font-size: 17px; padding: 2px 6px; border-radius: 8px; background: rgba(255,255,255,.07); }
+  /* Flash d'écran quand on élimine quelqu'un */
+  #kfx-flash { position: fixed; inset: 0; pointer-events: none; z-index: 35; opacity: 0; background: radial-gradient(circle at 50% 50%, transparent 28%, var(--kc, #fff) 150%); }
+  #kfx-flash.go { animation: kfxflash .75s ease-out; }
+  @keyframes kfxflash { 0% { opacity: .9; } 100% { opacity: 0; } }
   /* Niveau + titre à l'accueil (cliquable : ouvre le profil) */
   #home-level { cursor: pointer; text-align: right; z-index: 4; }
   #home-level small { display: block; font-size: 12px; font-weight: 500; color: #fff2d8; opacity: .8; letter-spacing: .5px; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -849,6 +912,7 @@
   <div id="health-wrap"><div id="health-trail"></div><div id="health"></div></div>
   <div id="ammo"><span id="weapon-name">Fusil d'assaut</span><br><span id="clip">30</span><small id="clip-max"> / ∞</small></div>
   <div id="hearts">❤️❤️❤️</div>
+  <div id="kfx-flash"></div>
   <div id="scope"><div class="h"></div><div class="v"></div></div>
   <div id="stam-wrap" style="display:none"><div id="stam"></div></div>
   <canvas id="minimap" width="180" height="180" style="display:none"></canvas>
@@ -912,6 +976,11 @@
     <div id="set-acc-guest" style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="menu-btn small" id="btn-set-login">🔐 Se connecter</button>
       <button class="menu-btn small" id="btn-set-signup">✨ Créer un compte</button>
+    </div>
+    <div id="set-acc-google" style="display:none;flex-direction:column;gap:8px">
+      <div class="muted" id="set-acc-hint"></div>
+      <button class="menu-btn small gbtn" id="set-google"><svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continuer avec Google</button>
+      <div id="set-err" style="color:#ff8a7a;font-size:13px"></div>
     </div>
     <button class="menu-btn small" id="btn-set-logout" style="display:none">🚪 Se déconnecter</button>
     <div class="opt-label">Graphismes</div>
@@ -992,8 +1061,15 @@
     <div class="opt-label">Bienvenue</div>
     <h2 style="margin:0;font-family:var(--font-title);font-weight:400;font-size:36px;letter-spacing:3px;color:#7fd4ff">ZONE HOSTILE</h2>
     <div class="muted" style="max-width:340px">Crée un compte pour sauvegarder ton niveau, ton XP, tes personnages, tes titres et tes victoires, et les retrouver sur tous tes appareils.</div>
-    <button class="menu-btn primary" id="wl-login" style="width:100%">🔐 Se connecter</button>
-    <button class="menu-btn" id="wl-signup" style="width:100%">✨ Créer un compte</button>
+    <div id="wl-btns" style="display:flex;flex-direction:column;gap:12px;width:100%">
+      <button class="menu-btn primary" id="wl-login">🔐 Se connecter</button>
+      <button class="menu-btn" id="wl-signup">✨ Créer un compte</button>
+    </div>
+    <div id="wl-google" style="display:none;flex-direction:column;gap:10px;width:100%">
+      <div class="muted" id="wl-hint"></div>
+      <button class="menu-btn gbtn" id="wl-google-btn"><svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continuer avec Google</button>
+      <div id="wl-err" style="color:#ff8a7a;font-size:13px"></div>
+    </div>
     <button class="chip" id="wl-skip">Jouer sans compte</button>
   </div>
 </div>
@@ -1036,7 +1112,6 @@
       <button class="chip zh-close" id="pf-close">✕</button>
     </div>
     <div id="pf-tabs" class="zh-tabs">
-      <button class="chip" data-pf="compte">👤 Compte</button>
       <button class="chip" data-pf="titres">🏷 Titres</button>
       <button class="chip" data-pf="badges">🏅 Badges</button>
       <button class="chip" data-pf="style">🎨 Style</button>
@@ -2614,7 +2689,8 @@ function updateMist(dt, lampF) {
 
 // ---------- Lampe torche (mode Extinction) ----------
 const BATTERY_DRAIN = 100 / 240; // 100% en 4 min d'utilisation continue
-const flashlight = new THREE.SpotLight(0xfff2d8, 0, 34, Math.PI / 8.5, 0.35, 1.4);
+// Cône large (≈ 75° au total) et bord doux : le rond de lumière est environ 2× plus grand qu'avant, on voit bien mieux en bougeant
+const flashlight = new THREE.SpotLight(0xfff2d8, 0, 38, Math.PI / 4.8, 0.55, 1.3);
 flashlight.position.set(0, 0, 0.2);
 const flashTarget = new THREE.Object3D();
 flashTarget.position.set(0, 0, -1);
@@ -3426,9 +3502,14 @@ const BADGES = [ // id, icône, nom, comment l'obtenir
 const COS = {
   tracer: [[1, 'Ambre', 0xffd27a], [4, 'Néon glacé', 0x7fe8ff], [12, 'Sang neuf', 0xff3a3a], [22, 'Vide', 0xb266ff], [35, 'Radioactif', 0x8aff5a], [50, 'Statique', -1]],
   lamp:   [[1, 'Chaude', 0xfff2d8], [6, 'Blanc clinique', 0xf4fbff], [14, 'Lune morte', 0xa8c8ff], [28, 'Chambre noire', 0xff5a4a], [45, 'Vision de nuit', 0x9aff8a]],
-  kfx:    [[1, 'Étincelles', 0xffb84d], [9, 'Cendres', 0x5a5a5a], [18, 'Glitch', 0x00f0ff], [33, 'Âmes', 0xcfeaff]],
-  frame:  [[1, 'Aucun', 0], [8, 'Barbelés', 0], [16, 'Givre', 0], [26, 'Braise', 0], [40, 'Or terni', 0], [60, 'Néant', 0]]
+  kfx:    [[1, 'Étincelles', 0xffb84d], [9, 'Cendres', 0x5a5a5a], [18, 'Glitch', 0x00f0ff], [33, 'Âmes', 0xcfeaff],
+          [5, 'Explosion', 0xff6a1a], [13, 'Sang', 0xb0101a], [26, 'Foudre', 0x9fd8ff], [44, 'Supernova', 0xffe27a], [58, 'Éclipse', 0xa04bff]],
+  frame:  [[1, 'Aucun', 0], [8, 'Barbelés', 0], [16, 'Givre', 0], [26, 'Braise', 0], [40, 'Or terni', 0], [60, 'Néant', 0], [9999, 'Symbiote (créateur)', 0]]
 };
+const COS_HELP = { tracer: 'La traînée lumineuse que laissent tes balles quand tu tires.', lamp: 'La couleur de ta lampe torche (mode Extinction).',
+  kfx: 'Ce qui explose à l\'écran quand tu élimines un joueur.', frame: 'Le cadre autour de ton nom dans le salon d\'attente et sur ta fiche.' };
+// Cadre réellement montré : le cadre « Symbiote » n'existe que pour les comptes créateur
+const effFrame = () => (profile.cos.frame === COS.frame.length - 1 && !ownerMode) ? 0 : profile.cos.frame;
 const COS_LABEL = { tracer: 'Traçantes', lamp: 'Lampe torche', kfx: 'Effet d\'élimination', frame: 'Cadre dans le salon' };
 // Deux « casiers » sur l'appareil : celui de l'invité (clés « zh-… ») et celui de chaque compte (« zh-u-<id>-… »).
 // Se connecter charge le casier du compte, se déconnecter recharge celui de l'invité : rien n'est mélangé ni perdu.
@@ -3606,11 +3687,113 @@ function updatePassBtn() {
 // Cosmétiques équipés
 const cosVal = k => (COS[k][profile.cos[k]] || COS[k][0])[2];
 function myTracerColor() { const c = cosVal('tracer'); return c < 0 ? new THREE.Color().setHSL(Math.random(), 1, 0.6).getHex() : c; }
+// ---------- Effets d'élimination : gros, lumineux, bien visibles (un par cosmétique, dans l'ordre de COS.kfx) ----------
+const kfxList = [];
+const KG = { ball: new THREE.SphereGeometry(0.16, 8, 6), cube: new THREE.BoxGeometry(0.28, 0.28, 0.28), ring: new THREE.RingGeometry(0.88, 1, 56), cyl: new THREE.CylinderGeometry(1, 1, 1, 20, 1, true), disc: new THREE.CircleGeometry(1, 28) };
+const kfxMat = (color, op = 1, add = true) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, depthWrite: false, side: THREE.DoubleSide, blending: add ? THREE.AdditiveBlending : THREE.NormalBlending });
+const kfxPartMats = new Map();
+const kfxPartMat = c => { let m = kfxPartMats.get(c); if (!m) { m = new THREE.MeshBasicMaterial({ color: c }); kfxPartMats.set(c, m); } return m; };
+function kfxAdd(obj, life, upd, delay = 0) { scene.add(obj); if (delay) obj.visible = false; kfxList.push({ obj, life, delay, t: 0, upd }); return obj; }
+function updateKfx(dt) {
+  for (let i = kfxList.length - 1; i >= 0; i--) {
+    const o = kfxList[i]; o.t += dt;
+    if (o.t < o.delay) continue;
+    const k = Math.min(1, (o.t - o.delay) / o.life);
+    if (!o.obj.visible) o.obj.visible = true;
+    o.upd(k);
+    if (k >= 1) {
+      scene.remove(o.obj);
+      o.obj.traverse(m => { if (m.material) m.material.dispose(); if (m.geometry && !Object.values(KG).includes(m.geometry)) m.geometry.dispose(); });
+      kfxList.splice(i, 1);
+    }
+  }
+}
+function kfxFlashSprite(pos, color, s0, s1, life, op = 1, add = true, delay = 0) {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: softDot, color, transparent: true, opacity: op, depthWrite: false, blending: add ? THREE.AdditiveBlending : THREE.NormalBlending }));
+  sp.position.copy(pos); sp.raycast = () => {};
+  kfxAdd(sp, life, k => { sp.scale.setScalar(s0 + (s1 - s0) * Math.sqrt(k)); sp.material.opacity = op * (1 - k) * (1 - k); }, delay);
+}
+function kfxRing(x, z, color, r, life, delay = 0, y = 0.08) {
+  const m = new THREE.Mesh(KG.ring, kfxMat(color, 1)); m.rotation.x = -Math.PI / 2; m.position.set(x, y, z);
+  kfxAdd(m, life, k => { m.scale.setScalar(0.3 + r * Math.sqrt(k)); m.material.opacity = 1 - k; }, delay);
+}
+function kfxBeam(x, z, color, h, r, life, delay = 0) {
+  const m = new THREE.Mesh(KG.cyl, kfxMat(color, 0.85)); m.position.set(x, h / 2, z);
+  kfxAdd(m, life, k => { m.scale.set(r * (1 - k * 0.7), h, r * (1 - k * 0.7)); m.material.opacity = 0.85 * (1 - k); }, delay);
+}
+function kfxBurst(pos, colors, n, o = {}) {
+  const life = o.life || 1.1, size = o.size || 1;
+  for (let i = 0; i < n; i++) {
+    const m = new THREE.Mesh(o.cube ? KG.cube : KG.ball, kfxPartMat(colors[i % colors.length]));
+    m.position.copy(pos); scene.add(m);
+    const a = Math.random() * Math.PI * 2, sp = (o.speed || 10) * (0.4 + Math.random() * 0.6);
+    const L = life * (0.6 + Math.random() * 0.4);
+    particles.push({ mesh: m, life: L, base: size / L, grav: o.grav, drag: o.drag, spin: o.spin,
+      vel: new THREE.Vector3(Math.cos(a) * sp, (o.up || 6) * (0.3 + Math.random() * 0.9), Math.sin(a) * sp) });
+  }
+}
+function kfxBolt(x, z, color) {
+  const g = new THREE.Group();
+  for (let j = 0; j < 3; j++) {
+    const pts = []; let px = x, pz = z;
+    for (let i = 0; i <= 14; i++) { pts.push(new THREE.Vector3(px, 38 - i * (38 / 14), pz)); px += (Math.random() - 0.5) * 2.2; pz += (Math.random() - 0.5) * 2.2; }
+    pts[14].set(x, 0.05, z);
+    g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: j ? color : 0xffffff, transparent: true, opacity: 1 })));
+  }
+  kfxAdd(g, 0.55, k => { g.visible = k < 0.25 || Math.floor(k * 18) % 2 === 0; g.children.forEach(l => { l.material.opacity = 1 - k; }); });
+}
+function kfxScreen(color) {
+  const el = document.getElementById('kfx-flash'); if (!el) return;
+  el.style.setProperty('--kc', color); el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
+}
+const KFX = [
+  // 0 Étincelles
+  (P, x, y, z) => { kfxFlashSprite(P, 0xffb84d, 1.5, 9, 0.4); kfxRing(x, z, 0xffd27a, 7, 0.6); kfxBeam(x, z, 0xffc86a, 9, 0.5, 0.5);
+    kfxBurst(P, [0xffb84d, 0xffe08a, 0xff7a2a], 70, { speed: 12, up: 9, size: 0.9, life: 1.1 }); },
+  // 1 Cendres
+  (P, x, y, z) => { kfxBurst(P, [0x555555, 0x3a3a3a, 0x7a7a7a], 45, { speed: 3.5, up: 4, size: 1.1, life: 1.8, grav: -1.5, cube: true, spin: 3 });
+    kfxBurst(P, [0xff7a2a, 0xffb84d], 24, { speed: 5, up: 6, size: 0.6, life: 1.4, grav: 2 });
+    for (let i = 0; i < 3; i++) kfxFlashSprite(new THREE.Vector3(x + (Math.random() - 0.5) * 1.5, y + i * 0.8, z + (Math.random() - 0.5) * 1.5), 0x2a2a2a, 2, 9, 1.6, 0.7, false, i * 0.1);
+    kfxRing(x, z, 0x999999, 6, 0.8); },
+  // 2 Glitch
+  (P, x, y, z) => { kfxBurst(P, [0x00f0ff, 0xff2bd6, 0xffffff], 50, { speed: 10, up: 3, size: 1, life: 0.9, grav: 0, cube: true, drag: 3, spin: 8 });
+    for (let i = 0; i < 12; i++) { const m = new THREE.Mesh(KG.cube, kfxMat(i % 2 ? 0x00f0ff : 0xff2bd6, 0.9)); m.scale.set(0.9, 14 + Math.random() * 14, 0.9); m.position.set(x + (Math.random() - 0.5) * 6, y + 2, z + (Math.random() - 0.5) * 6);
+      kfxAdd(m, 0.7, k => { m.visible = Math.random() > 0.4; m.material.opacity = 0.9 * (1 - k); }, Math.random() * 0.2); }
+    kfxFlashSprite(P, 0x00f0ff, 2, 10, 0.35); kfxRing(x, z, 0xff2bd6, 6, 0.5); kfxRing(x, z, 0x00f0ff, 9, 0.6, 0.1); },
+  // 3 Âmes
+  (P, x, y, z) => { for (let i = 0; i < 14; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: softDot, color: i % 2 ? 0xcfeaff : 0x9fd0ff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+      sp.raycast = () => {}; sp.scale.setScalar(1.5); const a0 = i * 0.45;
+      kfxAdd(sp, 1.8, k => { const a = a0 + k * 6, r = 0.6 + k * 2; sp.position.set(x + Math.cos(a) * r, y + k * 10 + i * 0.05, z + Math.sin(a) * r); sp.material.opacity = 1 - k; }, i * 0.04); }
+    kfxBeam(x, z, 0xcfeaff, 14, 0.8, 1.4); kfxRing(x, z, 0xcfeaff, 5, 1); kfxFlashSprite(P, 0xffffff, 2, 7, 0.6); },
+  // 4 Explosion
+  (P, x, y, z) => { kfxFlashSprite(P, 0xff5a1a, 2, 13, 0.55); kfxFlashSprite(P, 0xffe27a, 1, 7, 0.4);
+    kfxBurst(P, [0xff5a1a, 0xffb02e, 0xffe27a, 0x7a1a00], 80, { speed: 14, up: 8, size: 1, life: 1.2 });
+    for (let i = 0; i < 2; i++) kfxFlashSprite(new THREE.Vector3(x, y + 1.5 + i, z), 0x252525, 3, 11, 1.6, 0.65, false, 0.15 + i * 0.1);
+    kfxRing(x, z, 0xff6a1a, 10, 0.6); },
+  // 5 Sang
+  (P, x, y, z) => { kfxBurst(P, [0xb0101a, 0xd8242e, 0x7a0a10], 70, { speed: 8, up: 11, size: 0.8, life: 1.3, grav: 24 });
+    const d = new THREE.Mesh(KG.disc, kfxMat(0x8a0a12, 0.9, false)); d.rotation.x = -Math.PI / 2; d.position.set(x, 0.05, z);
+    kfxAdd(d, 2.6, k => { d.scale.setScalar(0.3 + 2.4 * Math.min(1, k * 8)); d.material.opacity = k < 0.7 ? 0.9 : 0.9 * (1 - (k - 0.7) / 0.3); });
+    kfxRing(x, z, 0xff2a2a, 6, 0.5); kfxFlashSprite(P, 0xc0121c, 2, 8, 0.4); },
+  // 6 Foudre
+  (P, x, y, z) => { kfxBolt(x, z, 0x9fd8ff); kfxFlashSprite(P, 0xffffff, 3, 16, 0.4); kfxBeam(x, z, 0xbfe4ff, 40, 0.5, 0.45);
+    kfxBurst(P, [0x9fd8ff, 0xffffff, 0xcfa8ff], 45, { speed: 13, up: 6, size: 0.8, life: 0.9, cube: true, spin: 10 }); kfxRing(x, z, 0x9fd8ff, 9, 0.5); },
+  // 7 Supernova
+  (P, x, y, z) => { kfxFlashSprite(P, 0xffe27a, 2, 20, 0.8); kfxFlashSprite(P, 0xffffff, 1, 8, 0.5);
+    kfxRing(x, z, 0xffe27a, 8, 0.7); kfxRing(x, z, 0xffffff, 11, 0.8, 0.12); kfxRing(x, z, 0xffb84d, 14, 0.9, 0.24);
+    kfxBurst(P, [0xffe27a, 0xffffff, 0xffb84d], 90, { speed: 16, up: 7, size: 0.8, life: 1.4, grav: 6 }); kfxBeam(x, z, 0xffe27a, 25, 0.7, 0.9); },
+  // 8 Éclipse
+  (P, x, y, z) => { const b = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshBasicMaterial({ color: 0x000000 })); b.position.copy(P);
+    kfxAdd(b, 1.4, k => { b.scale.setScalar(Math.max(0.01, k < 0.45 ? 0.2 + 2.2 * (k / 0.45) : 2.4 * (1 - (k - 0.45) / 0.55))); });
+    kfxFlashSprite(P, 0xa04bff, 5, 12, 1.2); kfxBurst(P, [0xa04bff, 0xff3df2, 0x5a1aff], 70, { speed: 11, up: 5, size: 0.9, life: 1.4, grav: 0, drag: 2 });
+    kfxRing(x, z, 0xa04bff, 9, 0.8); kfxBeam(x, z, 0xa04bff, 18, 0.9, 0.9); }
+];
+const KFX_SCREEN = ['#ffb84d', '#aaaaaa', '#00f0ff', '#cfeaff', '#ff6a1a', '#b0101a', '#bfe4ff', '#ffe27a', '#a04bff'];
 function killFx(p) {
   if (!p) return;
-  const pos = new THREE.Vector3(p[0], p[1], p[2]), k = profile.cos.kfx;
-  if (k === 2) { burst(pos, 0x00f0ff, 14); burst(pos, 0xff2bd6, 14); }
-  else burst(pos, cosVal('kfx'), k === 1 ? 26 : k === 3 ? 30 : 16);
+  const k = KFX[profile.cos.kfx] ? profile.cos.kfx : 0, x = p[0], y = Math.max(p[1], 0.9), z = p[2];
+  KFX[k](new THREE.Vector3(x, y, z), x, y, z);
+  kfxScreen(KFX_SCREEN[k]);
 }
 
 // ---------- Ennemis côté client (multijoueur) : simple rendu piloté par l'hôte ----------
@@ -7109,13 +7292,15 @@ function animate() {
     const p = particles[i];
     p.life -= dt;
     if (p.life <= 0) { scene.remove(p.mesh); particles.splice(i, 1); continue; }
-    p.vel.y -= 15 * dt;
+    p.vel.y -= (p.grav === undefined ? 15 : p.grav) * dt;
+    if (p.drag) p.vel.multiplyScalar(Math.exp(-p.drag * dt));
     p.mesh.position.addScaledVector(p.vel, dt);
     if (p.spin) { p.mesh.rotation.x += p.spin * dt; p.mesh.rotation.z += p.spin * 0.7 * dt; }
     if (p.mesh.position.y < 0.03 && p.vel.y < 0) { p.vel.y *= -0.35; p.vel.x *= 0.6; p.vel.z *= 0.6; } // rebond au sol
-    if (!p.noShrink) p.mesh.scale.setScalar(Math.max(p.life, 0.05));
+    if (!p.noShrink) p.mesh.scale.setScalar(Math.max(p.life, 0.05) * (p.base || 1));
   }
 
+  updateKfx(dt);   // effets d'élimination
   // Fumée de canon qui se dissipe, trous de balle qui s'estompent
   for (let i = smokes.length - 1; i >= 0; i--) {
     const s = smokes[i];
@@ -7611,12 +7796,12 @@ function rosterEntries() {
   return list;
 }
 function announceName() {   // diffuse mon pseudo + niveau, titre et cadre (l'hôte le relaie à tous et met à jour la liste)
-  const m = { t: 'name', id: myId, nm: extPseudo(), lv: profile.level, ti: profile.title, fr: profile.cos.frame };
+  const m = { t: 'name', id: myId, nm: extPseudo(), lv: profile.level, ti: profile.title, fr: effFrame() };
   netSelf(m);
   if (isRoomHost) { broadcast(m); updateLobby(); }
 }
 const extMeta = new Map();   // id → { lv, ti, fr } des autres joueurs du salon
-const metaOf = id => id === myId ? { lv: profile.level, ti: profile.title, fr: profile.cos.frame } : (extMeta.get(id) || {});
+const metaOf = id => id === myId ? { lv: profile.level, ti: profile.title, fr: effFrame() } : (extMeta.get(id) || {});
 let rosterSig = '';
 function resetRoster() { rosterEls.clear(); rosterPrevN = 0; rosterSig = ''; lobbyRos = null; const b = document.getElementById('lobby-roster'); if (b) b.innerHTML = ''; }
 // Colonnes symétriques : on prend le plus grand diviseur du nombre de places qui tient dans la largeur (10 → 5×2, 4 → 4×1, 2 → 2×1…)
@@ -7639,7 +7824,7 @@ function renderRoster() {
     let el = rosterEls.get(e.id);
     if (!el) {
       el = document.createElement('div'); el.className = 'slot enter';
-      el.innerHTML = '<span class="av"></span><span class="who"><span class="nm"></span><span class="ti"></span></span><span class="tag"></span>';
+      el.innerHTML = '<span class="av"></span><span class="who"><span class="nm"></span><span class="ti"></span></span><span class="tag"></span><i class="fx"><b></b><b></b></i>';
       rosterEls.set(e.id, el); box.appendChild(el);
       setTimeout(() => el.classList.remove('enter'), 650);
     }
@@ -8294,6 +8479,7 @@ function setPanel(el, open) {
 }
 const panelOpen = el => el.classList.contains('open') && !el.classList.contains('closing');
 document.getElementById('btn-settings').onclick = () => {
+  if (!panelOpen(settingsPanel)) $('set-acc-google').style.display = 'none';   // on repart des deux boutons à chaque ouverture
   renderSettingsAccount();
   setPanel(settingsPanel, !panelOpen(settingsPanel));
 };
@@ -8366,8 +8552,10 @@ $('sens-modal').addEventListener('click', e => { if (e.target === $('sens-modal'
 for (const [id, key] of [['sens-gen', 'sens'], ['sens-snp', 'sniper'], ['sens-fov', 'fov']]) $(id).oninput = e => { setAimPref(key, +e.target.value); refreshSensUi(); };
 $('sens-scope').onclick = () => { if (sensPrev) { sensPrev.scoped = !sensPrev.scoped; $('sens-scope').classList.toggle('sel', sensPrev.scoped); } };
 $('sens-reset').onclick = () => { setAimPref('sens', 50); setAimPref('sniper', 50); setAimPref('fov', FOV_IDLE); refreshSensUi(); };
-$('btn-set-login').onclick = () => { setPanel(settingsPanel, false); openProfile('compte', 'login'); };
-$('btn-set-signup').onclick = () => { setPanel(settingsPanel, false); openProfile('compte', 'signup'); };
+const GOOGLE_HINT = { login: 'Connecte-toi avec Google pour retrouver ta progression sur n\'importe quel appareil.', signup: 'Crée ton compte avec Google pour tout sauvegarder : niveau, XP, personnages, titres, badges et victoires.' };
+$('btn-set-login').onclick = () => { authMode = 'login'; $('set-acc-guest').style.display = 'none'; $('set-acc-google').style.display = 'flex'; $('set-acc-hint').textContent = GOOGLE_HINT.login; $('set-err').textContent = ''; };
+$('btn-set-signup').onclick = () => { authMode = 'signup'; $('set-acc-guest').style.display = 'none'; $('set-acc-google').style.display = 'flex'; $('set-acc-hint').textContent = GOOGLE_HINT.signup; $('set-err').textContent = ''; };
+$('set-google').onclick = fbGoogle;
 $('btn-set-logout').onclick = () => { setPanel(settingsPanel, false); fbLogout(); };
 setTimeout(fbInit, 600);   // retrouve la session déjà ouverte (on ne se reconnecte pas à chaque visite)
 // Fenêtre de bienvenue : une seule fois, à la toute première visite (jamais après une mise à jour du site)
@@ -8377,8 +8565,10 @@ function maybeWelcome() {
   if (seen) return;
   setTimeout(() => { if (!fbUser && !gameStarted) $('welcome-modal').classList.add('on'); }, 1400);
 }
-$('wl-login').onclick = () => { $('welcome-modal').classList.remove('on'); openProfile('compte', 'login'); };
-$('wl-signup').onclick = () => { $('welcome-modal').classList.remove('on'); openProfile('compte', 'signup'); };
+const wlGoogle = mode => { authMode = mode; $('wl-btns').style.display = 'none'; $('wl-google').style.display = 'flex'; $('wl-hint').textContent = GOOGLE_HINT[mode]; $('wl-err').textContent = ''; };
+$('wl-login').onclick = () => wlGoogle('login');
+$('wl-signup').onclick = () => wlGoogle('signup');
+$('wl-google-btn').onclick = fbGoogle;
 $('wl-skip').onclick = () => $('welcome-modal').classList.remove('on');
 [...document.getElementById('home-left').children].forEach((c, i) => c.style.setProperty('--i', i));   // entrée en cascade du menu d'accueil
 const chkFps = document.getElementById('chk-fps');
@@ -9039,21 +9229,6 @@ function onSignedOut() {
   if (pfTab) renderProfile(); if (psTab) renderPass();
   if ($('wardrobe').classList.contains('on')) renderWardrobe();
 }
-// E-mail de confirmation (au plus un toutes les 30 s ; à la connexion, seulement si l'adresse n'est pas encore confirmée)
-async function sendVerify(u, manual) {
-  const k = 'zh-verif-' + u.uid; let last = 0; try { last = +localStorage.getItem(k) || 0; } catch (e) {}
-  if (Date.now() - last < (manual ? 30000 : 300000)) return false;
-  try { await fb.au.sendEmailVerification(u); try { localStorage.setItem(k, Date.now()); } catch (e) {} return true; }
-  catch (e) { pfError(e); return false; }
-}
-async function recheckVerified(manual) {
-  if (!fbUser || !fb) return;
-  try { await fbUser.reload(); } catch (e) { if (manual) pfError(e); return; }
-  setOwnerMode(await isOwnerUser(fbUser));
-  if (manual) pfNotice = fbUser.emailVerified ? '✅ Adresse e-mail confirmée, merci !' : 'Pas encore confirmée : clique sur le lien dans l\'e-mail reçu.';
-  if (pfTab) renderProfile(); renderSettingsAccount();
-}
-addEventListener('focus', () => { if (fbUser && fbUser.email && !fbUser.emailVerified) recheckVerified(false); });
 // Erreurs Firebase → phrases claires
 const FB_ERR = {
   'auth/invalid-email': 'Adresse e-mail invalide.',
@@ -9071,9 +9246,8 @@ const FB_ERR = {
   'auth/operation-not-allowed': 'Cette méthode de connexion n\'est pas activée dans Firebase.'
 };
 function pfError(e) {
-  const el = document.querySelector('#pf-body .err');
   const msg = e ? (FB_ERR[e.code] !== undefined ? FB_ERR[e.code] : 'Erreur : ' + (e.code || e.message)) : '';
-  if (el) { el.classList.remove('ok'); el.textContent = msg; }
+  document.querySelectorAll('#set-err, #wl-err').forEach(el => { el.textContent = msg; });
 }
 async function fbGoogle() {
   pfNotice = '';
@@ -9085,30 +9259,6 @@ async function fbGoogle() {
     else pfError(e);
   }
 }
-async function fbEmail(create) {
-  const em = ($('pf-email').value || '').trim(), pw = $('pf-pass').value || '';
-  pfNotice = '';
-  if (!await fbInit()) return pfError({ code: 'auth/network-request-failed' });
-  try {
-    if (create) {
-      const cred = await fb.au.createUserWithEmailAndPassword(fb.auth, em, pw);
-      if (await sendVerify(cred.user, true)) pfNotice = '📧 E-mail de confirmation envoyé à ' + em + ' : clique sur le lien reçu (regarde aussi dans les spams).';
-    } else {
-      const cred = await fb.au.signInWithEmailAndPassword(fb.auth, em, pw);
-      if (!cred.user.emailVerified && await sendVerify(cred.user, false)) pfNotice = '📧 Ton adresse n\'est pas encore confirmée : un e-mail de confirmation vient d\'être envoyé à ' + em + '.';
-    }
-    if (pfTab) renderProfile();
-  } catch (e) { pfError(e); }
-}
-async function fbReset() {
-  const em = ($('pf-email').value || '').trim();
-  if (!em) return pfError({ code: 'auth/invalid-email' });
-  if (!await fbInit()) return;
-  try {
-    await fb.au.sendPasswordResetEmail(fb.auth, em);
-    const el = document.querySelector('#pf-body .err'); el.textContent = '📧 E-mail de réinitialisation envoyé à ' + em; el.classList.add('ok');
-  } catch (e) { pfError(e); }
-}
 async function fbLogout() {
   const f = await fbInit();
   if (f && fbUser) { try { await f.au.signOut(f.auth); } catch (e) { pfError(e); } }
@@ -9118,18 +9268,20 @@ async function fbLogout() {
 function renderSettingsAccount() {
   const g = $('set-acc-guest'), o = $('btn-set-logout'), i = $('set-acc-info');
   if (!g) return;
-  const on = !!fbUser || !!acctUid;
-  g.style.display = on ? 'none' : 'flex'; o.style.display = on ? '' : 'none';
+  const on = !!fbUser || !!acctUid, gs = $('set-acc-google');
+  if (on) gs.style.display = 'none';
+  g.style.display = (on || gs.style.display === 'flex') ? 'none' : 'flex'; o.style.display = on ? '' : 'none';
   i.textContent = on ? '👤 ' + (fbUser ? (fbUser.email || fbUser.displayName || 'Compte connecté') + (ownerMode ? ' 👑' : '') : 'Connexion…')
     : 'Sans compte, ta progression reste sur cet appareil seulement.';
 }
 // Cosmétiques appliqués au jeu
 function applyCos() { flashlight.color.setHex(cosVal('lamp')); }
 // Fenêtre Profil
-let pfTab = null;
+let pfTab = null, pfView = null;
+const lbData = new Map();   // classement : uid → fiche
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-function openProfile(tab = 'compte', mode) { pfTab = tab; if (mode) authMode = mode; pfNotice = ''; $('profile-modal').classList.add('on'); fbInit(); renderProfile(); }
-function closeProfile() { pfTab = null; $('profile-modal').classList.remove('on'); }
+function openProfile(tab = 'titres') { pfTab = tab; $('profile-modal').classList.add('on'); fbInit(); renderProfile(); }
+function closeProfile() { pfTab = null; pfView = null; $('profile-modal').classList.remove('on'); }
 async function renderProfile() {
   if (!pfTab) return;
   const need = xpForLevel(profile.level), head = $('pf-head');
@@ -9139,44 +9291,7 @@ async function renderProfile() {
   head.querySelector('.bar i').style.width = Math.min(100, profile.xp / need * 100) + '%';
   document.querySelectorAll('#pf-tabs [data-pf]').forEach(b => b.classList.toggle('sel', b.dataset.pf === pfTab));
   const body = $('pf-body'), lv = unlockLv();
-  if (pfTab === 'compte') {
-    const s = profile.stats;
-    const stats = '<div class="pf-stats">' + [['Victoires', s.wins], ['Défaites', s.losses], ['Éliminations', s.kills], ['Dévorés (monstre)', s.devoured],
-      ['Leviers', s.levers], ['Point B atteint', s.escapes], ['Parties', s.games], ['Badges', (ownerMode ? BADGES.length : profile.badges.length) + ' / ' + BADGES.length]]
-      .map(([k, v]) => '<div><b>' + (v || 0) + '</b>' + k + '</div>').join('') + '</div>';
-    const rules = '<div class="muted">Victoire +' + XP.win + ' · Défaite ' + XP.loss + ' (sans perdre de niveau) · Élimination +' + XP.kill
-      + ' · Levier +' + XP.lever + ' · Point B +' + XP.escape + ' · Survivant dévoré +' + XP.devour + '</div>';
-    if (fbUser) {
-      const verified = fbUser.emailVerified;
-      body.innerHTML = '<div class="ok">✅ Connecté : ' + esc(fbUser.email || fbUser.displayName || 'compte') + ' — ton niveau, ton XP, tes personnages, tes titres, tes badges et tes victoires sont sauvegardés sur ton compte.</div>'
-        + (!verified && fbUser.email ? '<div class="warn">📧 Confirme ton adresse e-mail : clique sur le lien reçu dans ta boîte mail (regarde aussi les spams).<div class="row"><button class="chip" id="pf-resend">Renvoyer l\'e-mail</button><button class="chip" id="pf-recheck">J\'ai confirmé</button></div></div>' : '')
-        + (pfNotice ? '<div class="ok">' + esc(pfNotice) + '</div>' : '')
-        + (ownerMode ? '<div class="ok">👑 Compte créateur : tous les personnages, titres, styles et badges sont débloqués.</div>' : '')
-        + '<div class="muted" id="pf-cloud"></div><div class="err"></div>'
-        + stats + rules + '<div class="row"><button class="chip" id="pf-logout">Se déconnecter</button></div>';
-      $('pf-logout').onclick = fbLogout;
-      if ($('pf-resend')) $('pf-resend').onclick = async () => { if (await sendVerify(fbUser, true)) { pfNotice = '📧 E-mail renvoyé à ' + fbUser.email + '.'; renderProfile(); } else pfError({ code: 'auth/too-many-requests' }); };
-      if ($('pf-recheck')) $('pf-recheck').onclick = () => recheckVerified(true);
-      cloudInd(cloudState);
-    } else {
-      const signup = authMode === 'signup';
-      body.innerHTML = '<div>' + (signup ? 'Crée ton compte pour <b>tout sauvegarder</b> : niveau, XP, personnages, titres, badges et victoires, sur tous tes appareils.' : 'Connecte-toi pour <b>retrouver ta progression</b> sur n\'importe quel appareil.') + '</div>'
-        + '<button class="menu-btn small gbtn" id="pf-google"><svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continuer avec Google</button>'
-        + '<div class="muted" style="text-align:center">— ou avec un e-mail —</div>'
-        + '<div class="row"><input id="pf-email" type="email" placeholder="E-mail" autocomplete="email"></div>'
-        + '<div class="row"><input id="pf-pass" type="password" placeholder="Mot de passe (6 caractères min.)" autocomplete="' + (signup ? 'new-password' : 'current-password') + '"></div>'
-        + '<div class="row"><button class="menu-btn small" id="pf-submit">' + (signup ? '✨ Créer mon compte' : '🔐 Se connecter') + '</button>'
-        + '<button class="chip" id="pf-switch">' + (signup ? 'J\'ai déjà un compte' : 'Créer un compte') + '</button>'
-        + (signup ? '' : '<button class="chip" id="pf-reset">Mot de passe oublié ?</button>') + '</div>'
-        + (signup ? '<div class="muted">Un e-mail de confirmation te sera envoyé.</div>' : '')
-        + '<div class="err"></div>' + (pfNotice ? '<div class="ok">' + esc(pfNotice) + '</div>' : '') + stats + rules;
-      $('pf-google').onclick = fbGoogle;
-      $('pf-submit').onclick = () => fbEmail(signup);
-      $('pf-switch').onclick = () => { authMode = signup ? 'login' : 'signup'; renderProfile(); };
-      if ($('pf-reset')) $('pf-reset').onclick = fbReset;
-      $('pf-pass').addEventListener('keydown', e => { if (e.key === 'Enter') fbEmail(signup); });
-    }
-  } else if (pfTab === 'titres') {
+  if (pfTab === 'titres') {
     body.innerHTML = '<div class="muted">Ton titre s\'affiche sous ton pseudo dans les salons.</div><div class="pf-grid">'
       + TITLES.map(([l, t]) => '<button class="pf-item' + (l > lv ? ' lock' : '') + (l === profile.title ? ' sel' : '') + '" data-ti="' + l + '"' + (l > lv ? ' disabled' : '') + '>'
         + '<span class="ic">' + (l > lv ? '🔒' : '🏷') + '</span><span><b>' + esc(t) + '</b><small>Niveau ' + l + '</small></span></button>').join('') + '</div>';
@@ -9187,34 +9302,55 @@ async function renderProfile() {
       return '<div class="pf-item' + (has ? ' sel' : ' lock') + '"><span class="ic">' + ic + '</span><span><b>' + esc(n) + '</b><small>' + esc(how) + '</small></span></div>';
     }).join('') + '</div>';
   } else if (pfTab === 'style') {
-    body.innerHTML = Object.keys(COS).map(k => '<div><b>' + COS_LABEL[k] + '</b></div><div class="pf-grid">'
-      + COS[k].map(([l, n, c], i) => '<button class="pf-item' + (l > lv ? ' lock' : '') + (profile.cos[k] === i ? ' sel' : '') + '" data-cos="' + k + '" data-i="' + i + '"' + (l > lv ? ' disabled' : '') + '>'
-        + (k === 'frame' ? '<span class="ic">🖼</span>' : '<span class="sw" style="color:' + (c < 0 ? '#fff' : '#' + c.toString(16).padStart(6, '0')) + (c < 0 ? ';background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)' : '') + '"></span>')
-        + '<span><b>' + esc(n) + '</b><small>' + (l > lv ? '🔒 Niveau ' + l : 'Débloqué') + '</small></span></button>').join('') + '</div>').join('');
+    const FR_HIDE = (k, l) => k === 'frame' && l >= 9999 && !ownerMode;   // cadre créateur : invisible pour les autres
+    body.innerHTML = Object.keys(COS).map(k => '<div><b>' + COS_LABEL[k] + '</b></div><div class="muted">' + COS_HELP[k] + '</div><div class="pf-grid">'
+      + COS[k].map((e, i) => [e, i]).filter(([e]) => !FR_HIDE(k, e[0])).sort((a, b) => a[0][0] - b[0][0]).map(([[l, n, c], i]) => '<button class="pf-item' + (k === 'frame' ? ' frm' : '') + (l > lv ? ' lock' : '') + (profile.cos[k] === i ? ' sel' : '') + '" data-cos="' + k + '" data-i="' + i + '"' + (l > lv ? ' disabled' : '') + '>'
+        + (k === 'frame' ? '<span class="slot frprev' + (i ? ' fr-' + i : '') + '"><span class="av">A</span><span class="who"><span class="nm">Ton pseudo</span></span><i class="fx"><b></b><b></b></i></span>'
+          : '<span class="sw" style="color:' + (c < 0 ? '#fff' : '#' + c.toString(16).padStart(6, '0')) + (c < 0 ? ';background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)' : '') + '"></span>')
+        + '<span><b>' + esc(n) + '</b><small>' + (l >= 9999 ? '👑 Réservé aux créateurs' : l > lv ? '🔒 Niveau ' + l : 'Débloqué') + '</small></span></button>').join('') + '</div>').join('');
     body.querySelectorAll('[data-cos]').forEach(b => b.onclick = () => {
       profile.cos[b.dataset.cos] = +b.dataset.i; saveProfile(); applyCos();
       if (b.dataset.cos === 'frame') announceName();
       renderProfile();
     });
   } else if (pfTab === 'classement') {
+    if (pfView) { renderPlayerCard(body); return; }
     body.innerHTML = '<div class="muted">Chargement du classement…</div>';
     const f = await fbInit();
-    if (pfTab !== 'classement') return;
+    if (pfTab !== 'classement' || pfView) return;
     if (!f) { body.innerHTML = '<div class="err">Classement indisponible (pas de connexion).</div>'; return; }
     try {
       const q = f.fs.query(f.fs.collection(f.db, 'players'), f.fs.orderBy('total', 'desc'), f.fs.limit(30));
       const snap = await f.fs.getDocs(q);
-      if (pfTab !== 'classement') return;
+      if (pfTab !== 'classement' || pfView) return;
       let i = 0, rows = '';
+      lbData.clear();
       snap.forEach(d => {
-        const p = d.data(); i++;
-        rows += '<tr' + (fbUser && d.id === fbUser.uid ? ' class="me"' : '') + '><td>' + (i <= 3 ? ['🥇', '🥈', '🥉'][i - 1] : i) + '</td><td>' + esc(p.name || 'Agent')
+        const p = d.data(); i++; lbData.set(d.id, p);
+        rows += '<tr class="row' + (fbUser && d.id === fbUser.uid ? ' me' : '') + '" data-uid="' + esc(d.id) + '"><td>' + (i <= 3 ? ['🥇', '🥈', '🥉'][i - 1] : i) + '</td><td>' + esc(p.name || 'Agent')
           + '<small>' + esc(titleText(p.title | 0)) + '</small></td><td>Niv. ' + (p.level | 0) + '</td></tr>';
       });
-      body.innerHTML = (rows ? '<table class="pf-lb">' + rows + '</table>' : '<div class="muted">Personne au classement pour l\'instant : sois le premier !</div>')
-        + (fbUser ? '' : '<div class="muted">Connecte-toi (onglet Compte) pour y apparaître.</div>');
+      body.innerHTML = (rows ? '<div class="muted">Touche un joueur pour voir son profil.</div><table class="pf-lb">' + rows + '</table>' : '<div class="muted">Personne au classement pour l\'instant : sois le premier !</div>')
+        + (fbUser ? '' : '<div class="muted">Connecte-toi (dans les paramètres ⚙) pour y apparaître.</div>');
+      body.querySelectorAll('tr.row').forEach(tr => tr.onclick = () => { pfView = tr.dataset.uid; renderProfile(); });
     } catch (e) { body.innerHTML = '<div class="err">Classement indisponible (' + esc(e.code || e.message) + ').</div>'; }
   }
+}
+// Fiche d'un joueur : son cadre, son niveau, son TITRE bien en vue, ses badges plus discrets
+function renderPlayerCard(body) {
+  const p = lbData.get(pfView);
+  if (!p) { pfView = null; renderProfile(); return; }
+  const fr = Math.max(0, Math.min(COS.frame.length - 1, (p.cos && p.cos.frame) | 0));
+  const nm = p.name || 'Agent', st = p.stats || {};
+  const got = (Array.isArray(p.badges) ? p.badges : []).map(id => BADGES.find(b => b[0] === id)).filter(Boolean);
+  body.innerHTML = '<div class="row"><button class="chip" id="pc-back">← Classement</button></div>'
+    + '<div class="slot pcard' + (fr ? ' fr-' + fr : '') + '"><div class="top"><span class="av" style="--c:' + AV_COLORS[hashStr(pfView) % AV_COLORS.length] + '">' + esc((nm.replace(/[^\p{L}\p{N}]/gu, '')[0] || '?').toUpperCase()) + '</span>'
+    + '<span class="who"><span class="pnm">' + esc(nm) + '</span><span class="plv">Niveau ' + (p.level | 0) + ' · ' + (p.total | 0) + ' XP au total</span></span></div>'
+    + '<div class="ptitle">« ' + esc(titleText(p.title | 0)) + ' »</div>'
+    + '<div class="pst">' + [['Victoires', st.wins], ['Éliminations', st.kills], ['Parties', st.games]].map(([k, v]) => '<div><b>' + (v | 0) + '</b>' + k + '</div>').join('') + '</div>'
+    + '<div class="pbadges">' + (got.length ? 'Badges (' + got.length + ' / ' + BADGES.length + ')&nbsp;' + got.map(b => '<span class="b" title="' + esc(b[2]) + '">' + b[1] + '</span>').join('') : 'Aucun badge pour l\'instant') + '</div>'
+    + '<i class="fx"><b></b><b></b></i></div>';
+  $('pc-back').onclick = () => { pfView = null; renderProfile(); };
 }
 $('btn-profile').onclick = () => openProfile();
 // ---------- Passe de combat : ce que l'XP rapporte, niveau par niveau + quêtes ----------
@@ -9276,7 +9412,7 @@ addEventListener('keydown', e => { if (e.key === 'Escape') { if (psTab) closePas
 updatePassBtn();
 $('pf-close').onclick = closeProfile;
 $('profile-modal').addEventListener('click', e => { if (e.target === $('profile-modal')) closeProfile(); });
-document.querySelectorAll('#pf-tabs [data-pf]').forEach(b => b.onclick = () => { pfTab = b.dataset.pf; renderProfile(); });
+document.querySelectorAll('#pf-tabs [data-pf]').forEach(b => b.onclick = () => { pfTab = b.dataset.pf; pfView = null; renderProfile(); });
 addEventListener('keydown', e => { if (e.key === 'Escape' && pfTab) closeProfile(); });
 applyCos();
 setTimeout(fbInit, 2500);   // reconnecte la session sans ralentir le chargement du jeu
