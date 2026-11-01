@@ -8371,7 +8371,6 @@ $('sens-reset').onclick = () => { setAimPref('sens', 50); setAimPref('sniper', 5
 $('btn-set-login').onclick = () => { setPanel(settingsPanel, false); openProfile('compte', 'login'); };
 $('btn-set-signup').onclick = () => { setPanel(settingsPanel, false); openProfile('compte', 'signup'); };
 $('btn-set-logout').onclick = () => { setPanel(settingsPanel, false); fbLogout(); };
-renderSettingsAccount();
 setTimeout(fbInit, 600);   // retrouve la session déjà ouverte (on ne se reconnecte pas à chaque visite)
 // Fenêtre de bienvenue : une seule fois, à la toute première visite (jamais après une mise à jour du site)
 function maybeWelcome() {
